@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול מחסן</title>
+<style>
+  :root {
+    --bg: #f2f4f8; --card: #fff; --ink: #18202f; --mut: #647084; --line: #e2e6ed;
+    --acc: #1d63d8; --acc-d: #174fb0; --acc-l: #e8f0fd; --nav: #111a2e;
+    --green: #0f7a55; --green-l: #e1f5ec; --amber: #a85d00; --amber-l: #fdf0d9;
+    --red: #bf3229; --red-l: #fde8e6; --gray-l: #eceff4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.45; }
+  a { color: var(--acc); text-decoration: none; }
+  h1 { font-size: 1.5rem; margin: 0; }
+  h2 { font-size: 1.1rem; margin: 0; }
+  h3 { font-size: 1rem; margin: 0 0 10px; }
+
+  #app { display: flex; min-height: 100vh; }
+  #nav { width: 224px; flex-shrink: 0; background: var(--nav); color: #c5cedd; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .brand { padding: 16px 18px 12px; border-bottom: 1px solid #25304a; }
+  .logo { font-weight: 700; letter-spacing: 2px; color: #fff; font-size: 1.15rem; }
+  #wh-name { font-size: .85rem; color: #8e9bb3; margin-top: 2px; }
+  #nav-links { padding: 8px 8px 20px; display: flex; flex-direction: column; gap: 1px; }
+  #nav-links a { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; border-radius: 7px; color: #c5cedd; }
+  #nav-links a:hover { background: #1c2740; }
+  #nav-links a.on { background: var(--acc); color: #fff; }
+  #nav-links .cnt { background: #fff; color: var(--nav); border-radius: 10px; font-size: .72rem; font-weight: 700; padding: 1px 7px; }
+  #nav-links .grp { font-size: .74rem; font-weight: 700; color: #7483a0; padding: 12px 12px 3px; letter-spacing: .5px; }
+
+  #content { flex: 1; min-width: 0; }
+  #topbar { background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 24px; display: flex; gap: 12px; align-items: center; position: sticky; top: 0; z-index: 5; }
+  #quick { flex: 1; max-width: 480px; }
+  #user-chip { color: var(--mut); font-size: .85rem; margin-inline-start: auto; }
+  #main { padding: 22px 24px 60px; max-width: 1320px; }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .sub { color: var(--mut); margin-top: 3px; font-size: .92rem; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .toolbar input[type=search] { flex: 1; min-width: 200px; max-width: 420px; }
+  .back { display: inline-block; margin-bottom: 10px; font-size: .9rem; }
+
+  button { font: inherit; padding: 8px 14px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; white-space: nowrap; }
+  button:hover { background: var(--gray-l); }
+  button.primary { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--acc-d); }
+  button.danger { color: var(--red); border-color: #efc4c0; }
+  button.danger:hover { background: var(--red-l); }
+  button.sm { padding: 4px 10px; font-size: .85rem; }
+  button.x { border: 0; background: transparent; font-size: 1.3rem; line-height: 1; padding: 2px 8px; color: var(--mut); }
+  button.x:hover { color: var(--red); background: var(--red-l); }
+
+  input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid #cfd5df; border-radius: 7px; background: #fff; color: var(--ink); max-width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--acc-l); border-color: var(--acc); }
+  input.qty { width: 96px; text-align: center; }
+  textarea { width: 100%; min-height: 150px; direction: ltr; text-align: right; font-family: Consolas, monospace; font-size: .88rem; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .tw { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; margin-bottom: 14px; }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: start; font-size: .8rem; color: var(--mut); font-weight: 600; padding: 9px 12px; background: #f8f9fb; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 12px; border-bottom: 1px solid #eef0f4; vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tr.click { cursor: pointer; }
+  tr.click:hover td { background: #f6f9ff; }
+  tr.done td { color: var(--mut); background: #fafbfc; }
+  tr.hl td { background: #fff7d6; }
+  td.n, th.n { text-align: center; font-variant-numeric: tabular-nums; }
+  td.code { font-family: Consolas, monospace; direction: ltr; text-align: right; white-space: nowrap; }
+  td.act { white-space: nowrap; text-align: end; }
+  .empty { background: var(--card); border: 1px dashed #cdd3de; border-radius: 10px; padding: 34px 16px; text-align: center; color: var(--mut); margin-bottom: 14px; }
+  .pos { color: var(--green); font-weight: 600; } .neg { color: var(--red); font-weight: 600; }
+  .mut { color: var(--mut); }
+  .hint { font-size: .8rem; color: var(--mut); min-height: 1.1em; margin-top: 2px; }
+  .hint.bad { color: var(--red); }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+  .b-blue { background: var(--acc-l); color: var(--acc-d); } .b-green { background: var(--green-l); color: var(--green); }
+  .b-amber { background: var(--amber-l); color: var(--amber); } .b-red { background: var(--red-l); color: var(--red); }
+  .b-gray { background: var(--gray-l); color: var(--mut); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; color: var(--ink); display: block; }
+  a.tile:hover { border-color: var(--acc); }
+  .tile .tv { font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
+  .tile .tl { color: var(--mut); font-size: .88rem; }
+  .tile.warn .tv { color: var(--red); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .fld { display: flex; flex-direction: column; gap: 4px; }
+  .fld > span { font-size: .82rem; color: var(--mut); font-weight: 600; }
+  .fld input, .fld select { width: 100%; }
+  table.lines td { vertical-align: top; }
+  table.lines input:not(.qty), table.lines select { width: 100%; min-width: 130px; }
+  ol.steps { margin: 8px 0 16px; padding-inline-start: 20px; } ol.steps li { margin-bottom: 4px; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(15, 22, 40, .5); display: flex; align-items: flex-start; justify-content: center; padding: 4vh 12px; z-index: 50; }
+  .modal { background: var(--card); border-radius: 12px; width: 100%; max-width: 900px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .mh { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .mb { padding: 18px; overflow-y: auto; }
+  .mf { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; }
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #18202f; color: #fff; padding: 11px 20px; border-radius: 8px; z-index: 99; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; }
+  #toast.show { opacity: 1; } #toast.err { background: var(--red); }
+
+  [hidden] { display: none !important; }
+  #sync { font-size: .82rem; color: var(--mut); white-space: nowrap; } #sync.bad { color: var(--red); font-weight: 600; }
+  #auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--nav); }
+  .auth-card { background: var(--card); border-radius: 14px; padding: 26px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
+  .auth-card .logo { color: var(--nav); } .auth-card form { display: flex; flex-direction: column; gap: 12px; }
+
+  @media (max-width: 820px) {
+    #app { flex-direction: column; }
+    #nav { width: 100%; height: auto; position: static; }
+    .brand { display: flex; gap: 10px; align-items: baseline; padding: 10px 14px; }
+    #nav-links { flex-direction: row; overflow-x: auto; padding: 6px 8px; scrollbar-width: thin; scrollbar-color: #3a4763 transparent; }
+    #nav-links a { white-space: nowrap; gap: 6px; } #nav-links .grp { display: none; }
+    #topbar { padding: 8px 12px; } #main { padding: 14px 12px 60px; }
+    #user-chip { display: none; }
+  }
+  @media print {
+    .no-print, #nav, #topbar, #modal-root, #toast { display: none !important; }
+    body { background: #fff; } #main { padding: 0; max-width: none; }
+    .tw, .card { border-color: #999; } input, select { border: 1px solid #999; }
+  }
+</style>
+</head>
+<body>
+<div id="auth" hidden>
+  <div class="auth-card">
+    <div class="logo">WMS</div>
+    <h2 id="auth-title"></h2>
+    <div id="auth-sub" class="sub"></div>
+    <form id="auth-form">
+      <label class="fld"><span>שם משתמש</span><input id="au-user" autocomplete="username"></label>
+      <label class="fld" id="au-name-row"><span>שם מלא</span><input id="au-name" autocomplete="name"></label>
+      <label class="fld"><span>סיסמה</span><input id="au-pass" type="password" autocomplete="current-password"></label>
+      <div id="auth-err" class="hint bad"></div>
+      <button class="primary" type="submit" id="auth-btn"></button>
+    </form>
+  </div>
+</div>
+<div id="app" hidden>
+  <aside id="nav">
+    <div class="brand"><div class="logo">WMS</div><div id="wh-name"></div></div>
+    <nav id="nav-links"></nav>
+  </aside>
+  <div id="content">
+    <div id="topbar">
+      <input id="quick" type="search" data-enter="quickFind" placeholder="איתור מהיר: סרקו או הקלידו מק״ט / ברקוד / איתור ולחצו Enter" autocomplete="off">
+      <span id="user-chip"></span>
+      <span id="sync"></span>
+      <button class="sm" data-act="changePass">החלפת סיסמה</button>
+      <button class="sm" data-act="logout">יציאה</button>
+    </div>
+    <main id="main"></main>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="toast"></div>
+<datalist id="dl-items"></datalist>
+<datalist id="dl-locs"></datalist>
+<input type="file" id="imp-file" accept="application/json,.json" hidden>
+
+<script>
+'use strict';
+/* ================= עזרים ================= */
+const KEY = 'wms-data-v1';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let _uid = 0;
+const uid = () => Date.now().toString(36) + (++_uid).toString(36) + Math.random().toString(36).slice(2, 7);
+const n = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
+const r3 = x => Math.round(x * 1000) / 1000;
+const num = v => r3(n(v)).toLocaleString('he-IL', { maximumFractionDigits: 3 });
+const sum = (arr, f) => arr.reduce((a, x) => a + n(f(x)), 0);
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fmtDate = s => s ? String(s).split('-').reverse().join('/') : '';
+const fmtTs = ts => new Date(ts).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
+const cmp = (a, b) => String(a).localeCompare(String(b), 'he', { numeric: true });
+
+const LOC_TYPES = { pick: 'ליקוט', storage: 'אחסון', receiving: 'קבלה', returns: 'החזרות', damaged: 'פסולים' };
+const PICKABLE = ['pick', 'storage'];
+/* סוגי תנועות מלאי, לפי סוגי התעודות */
+const MV = { open: 'יתרת פתיחה', grv: 'קבלה מספק', ship: 'משלוח ללקוח', tr: 'העברה בין מחסנים', cret: 'החזרה מלקוח', sret: 'החזרה לספק', count: 'ספירת מלאי', adj: 'תיקון יתרה' };
+const ST = {
+  receipt: { open: ['טיוטא', 'b-blue'], partial: ['התקבלה חלקית', 'b-amber'], done: ['סופית', 'b-green'], closed: ['סופית (בחוסר)', 'b-gray'] },
+  order: { new: ['טיוטא', 'b-gray'], picking: ['בליקוט', 'b-blue'], picked: ['לוקטה', 'b-amber'], shipped: ['סופקה', 'b-green'], cancelled: ['מבוטלת', 'b-red'] },
+  ship: { draft: ['טיוטא', 'b-blue'], final: ['סופית', 'b-green'], cancelled: ['מבוטלת', 'b-red'] }
+};
+const badge = (kind, s) => { const [t, c] = ST[kind][s] || [s, 'b-gray']; return `<span class="badge ${c}">${t}</span>`; };
+const FINAL = '<span class="badge b-green">סופית</span>';
+const URGENT = '<span class="badge b-red">דחוף</span>';
+
+function toast(msg, err) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = '', err ? 4500 : 2600);
+}
+const fail = msg => { toast(msg, true); return null; };
+function download(name, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const csv = rows => '﻿' + rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+
+/* ================= נתונים ================= */
+function emptyDb() {
+  return { v: 2, items: [], locations: [], warhs: {}, customers: [], suppliers: [], stock: {}, receipts: [], orders: [], shipments: [], transfers: [], returns: [], counts: [], moves: [], seq: {}, settings: { name: 'החברה שלי', user: '' } };
+}
+let db = emptyDb();
+let _idx = null;
+/* שמירה = שליחת השינויים לשרת. הפעולות נשלחות אחת אחרי השנייה, לפי הסדר */
+function save() { _idx = null; if (me) chain = chain.then(push); }
+function idx() {
+  if (!_idx) _idx = { items: new Map(db.items.map(i => [i.id, i])), locs: new Map(db.locations.map(l => [l.id, l])) };
+  return _idx;
+}
+const item = id => idx().items.get(id);
+const loc = id => idx().locs.get(id);
+/* מבנה איתור: מחסן.טור.ברזל.גובה.מיקום — לדוגמה 1.01.01.20.1. גבהים 10/20 לליקוט, 30/40 לאחסנה במשטחים */
+const PICK_LEVELS = [10, 20], STORE_LEVELS = [30, 40];
+function parseLoc(code) {
+  const m = /^([^.\s\/]+)\.(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(String(code || '').trim()); if (!m) return null;
+  return { warhs: m[1], aisle: m[2], bay: m[3], level: m[4], pos: m[5], type: PICK_LEVELS.includes(+m[4]) ? 'pick' : STORE_LEVELS.includes(+m[4]) ? 'storage' : '' };
+}
+/* איתור שכולל את קוד המחסן מוצג כמו שהוא; אחרת מחסן/איתור */
+const locLabel = l => l.code.startsWith(l.warhs + '.') ? l.code : l.warhs + '/' + l.code;
+const locCode = id => { const l = loc(id); return l ? locLabel(l) : '?'; };
+const locTd = id => { const l = loc(id); return `<td class="code">${esc(l ? l.warhs : '?')}</td><td class="code">${esc(l ? l.code : '?')}</td>`; };
+const sortedLocs = () => db.locations.slice().sort((a, b) => cmp(a.warhs, b.warhs) || cmp(a.code, b.code));
+/* מספור תעודות: קידומת + שנה + מספר רץ */
+function nextNum(prefix) { db.seq[prefix] = (db.seq[prefix] || 0) + 1; return prefix + String(new Date().getFullYear()).slice(2) + String(db.seq[prefix]).padStart(6, '0'); }
+
+const sk = (itemId, locId) => itemId + '|' + locId;
+const qtyAt = (itemId, locId) => db.stock[sk(itemId, locId)] || 0;
+function addStock(itemId, locId, delta, type, doc, note) {
+  const k = sk(itemId, locId), q = r3((db.stock[k] || 0) + delta);
+  if (q === 0) delete db.stock[k]; else db.stock[k] = q;
+  db.moves.push({ id: uid(), ts: Date.now(), type, itemId, locId, qty: r3(delta), doc: doc || '', note: note || '', user: me ? me.name || me.username : '' });
+}
+const stockRows = () => Object.keys(db.stock).map(k => { const [itemId, locId] = k.split('|'); return { itemId, locId, qty: db.stock[k] }; });
+/* כמויות שמשוריינות להזמנות לקוח שנמצאות בליקוט */
+function reservedMap() {
+  const m = {};
+  for (const o of db.orders) if (o.status === 'picking')
+    for (const ln of o.lines) for (const a of ln.allocs || []) if (!a.done) { const k = sk(ln.itemId, a.locId); m[k] = r3((m[k] || 0) + a.qty); }
+  return m;
+}
+/* סיכום לפי פריט: יתרה, משוריין, זמין לליקוט */
+function summary() {
+  const res = reservedMap(), m = new Map();
+  for (const k in db.stock) {
+    const [iid, lid] = k.split('|'), q = db.stock[k], l = loc(lid);
+    const s = m.get(iid) || { total: 0, avail: 0, reserved: 0, locs: [] };
+    const rs = res[k] || 0;
+    s.total = r3(s.total + q); s.reserved = r3(s.reserved + rs);
+    if (l && PICKABLE.includes(l.type)) s.avail = r3(s.avail + q - rs);
+    s.locs.push(locCode(lid)); m.set(iid, s);
+  }
+  return m;
+}
+function resolveItem(text) {
+  const t = String(text || '').trim().toLowerCase(); if (!t) return null;
+  return db.items.find(i => i.sku.toLowerCase() === t) || db.items.find(i => i.barcode && i.barcode.toLowerCase() === t) || db.items.find(i => i.name.toLowerCase() === t) || null;
+}
+const findLoc = (warhs, code) => db.locations.find(l => l.warhs.toLowerCase() === String(warhs).trim().toLowerCase() && l.code.toLowerCase() === String(code).trim().toLowerCase());
+/* איתור לפי טקסט שנסרק: "מחסן/איתור" או קוד איתור בלבד */
+function locByCode(text) {
+  const t = String(text || '').trim(); if (!t) return null;
+  if (t.includes('/')) { const [w, c] = t.split('/'); return findLoc(w, c) || null; }
+  return db.locations.find(l => l.code.toLowerCase() === t.toLowerCase()) || null;
+}
+const firstLocOfType = type => { const l = sortedLocs().find(x => x.type === type); return l ? l.id : ''; };
+/* איתור ברירת מחדל לאחסון פריט: היכן שכבר יש ממנו, אחרת איתור קבלה */
+function defaultPutaway(itemId) {
+  const rows = stockRows().filter(r => r.itemId === itemId && loc(r.locId) && PICKABLE.includes(loc(r.locId).type))
+    .sort((a, b) => (loc(a.locId).type === 'pick' ? 0 : 1) - (loc(b.locId).type === 'pick' ? 0 : 1) || cmp(locCode(a.locId), locCode(b.locId)));
+  if (rows.length) return rows[0].locId;
+  return firstLocOfType('receiving') || (sortedLocs()[0] || {}).id || '';
+}
+
+/* ---- לקוחות וספקים ---- */
+const PK = { customers: { one: 'לקוח', many: 'לקוחות', base: 10000 }, suppliers: { one: 'ספק', many: 'ספקים', base: 20000 } };
+function resolveParty(kind, text) {
+  const t = String(text || '').trim().toLowerCase(); if (!t) return null;
+  return db[kind].find(p => p.num.toLowerCase() === t) || db[kind].find(p => p.name.toLowerCase() === t) || null;
+}
+function nextPartyNum(kind) {
+  let x; do { db.seq[kind] = (db.seq[kind] || 0) + 1; x = String(PK[kind].base + db.seq[kind]); } while (db[kind].some(p => p.num === x));
+  return x;
+}
+/* מחזיר כרטיס קיים לפי מספר או שם; שם חדש פותח כרטיס אוטומטית */
+function ensureParty(kind, text) {
+  text = String(text || '').trim(); if (!text) return { num: '', name: '' };
+  let p = resolveParty(kind, text);
+  if (!p) { p = { id: uid(), num: nextPartyNum(kind), name: text, phone: '', notes: '' }; db[kind].push(p); }
+  return p;
+}
+function ensureShipment(o) {
+  let s = db.shipments.find(x => x.id === o.shId);
+  if (!s) { s = { id: uid(), num: nextNum('SH'), orderId: o.id, date: today(), status: 'draft' }; db.shipments.push(s); o.shId = s.id; }
+  return s;
+}
+/* התאמת נתונים שנשמרו בגרסה הקודמת למבנה הנוכחי */
+function migrate() {
+  db = Object.assign(emptyDb(), db, { v: db.v || 1 });
+  if (db.v < 2) {
+    const T = { 'מלאי פתיחה': MV.open, 'קליטה': MV.grv, 'ליקוט': MV.ship, 'העברה': MV.tr, 'ספירה': MV.count, 'תיקון מלאי': MV.adj };
+    db.moves.forEach(m => { if (T[m.type]) m.type = T[m.type]; });
+    db.orders.forEach(o => { if (o.customer && !o.custNum) o.custNum = ensureParty('customers', o.customer).num; if (o.status === 'shipped') ensureShipment(o).status = 'final'; });
+    db.receipts.forEach(r => { if (r.supplier && !r.suppNum) r.suppNum = ensureParty('suppliers', r.supplier).num; });
+    db.returns.forEach(r => { if (r.party && !r.partyNum) r.partyNum = ensureParty(r.type === 'customer' ? 'customers' : 'suppliers', r.party).num; });
+    db.v = 2;
+  }
+  db.locations.forEach(l => { if (!l.warhs) l.warhs = 'Main'; if (db.warhs[l.warhs] === undefined) db.warhs[l.warhs] = l.warhs === 'Main' ? 'מחסן ראשי' : ''; });
+  _idx = null;
+}
+
+/* ================= חיבור לשרת (Supabase) ================= */
+const SUPA_URL = 'https://iwatwpcemndhjysghzil.supabase.co';
+const SUPA_KEY = 'sb_publishable_4boIKxcwLdps6bgEtCDMAw_IcK7Ekev';   /* מפתח ציבורי; ההרשאות נאכפות בשרת */
+const COLLS = ['items', 'locations', 'customers', 'suppliers', 'receipts', 'orders', 'shipments', 'transfers', 'returns', 'counts', 'moves'];
+const METAS = ['warhs', 'seq', 'settings'];
+const ROLES = { admin: 'מנהל', worker: 'מחסנאי', viewer: 'צפייה בלבד' };
+let me = null, token = null, lastRev = 0, chain = Promise.resolve();
+/* base = הנתונים כפי שהשרת מכיר אותם; ההפרש בינם לבין db הוא מה שעוד לא נשלח */
+let base = new Map(), revs = new Map(), baseStock = {};
+try { token = localStorage.getItem('wms-token'); } catch (e) { /* אין אחסון מקומי */ }
+const storeToken = () => { try { if (token) localStorage.setItem('wms-token', token); else localStorage.removeItem('wms-token'); } catch (e) { /* לא קריטי */ } };
+
+async function rpc(fn, args) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) });
+  const txt = await res.text(); let body = null; try { body = txt ? JSON.parse(txt) : null; } catch (e) { /* תשובה ריקה */ }
+  if (!res.ok) { const err = new Error((body && body.message) || 'HTTP ' + res.status); err.server = true; err.status = res.status; throw err; }
+  return body;
+}
+function setSync(msg, bad) { const el = $('#sync'); el.textContent = msg || ''; el.className = bad ? 'bad' : ''; }
+const ERR = { BAD_LOGIN: 'שם משתמש או סיסמה שגויים', LOCKED: 'יותר מדי ניסיונות שגויים. נסו שוב בעוד 10 דקות.', INACTIVE: 'המשתמש לא פעיל. פנו למנהל.', WEAK_PASSWORD: 'הסיסמה חייבת להיות באורך 6 תווים לפחות',
+  BAD_USERNAME: 'שם משתמש חייב להיות 2 עד 30 תווים, בלי רווחים', USERNAME_TAKEN: 'שם המשתמש כבר תפוס', LAST_ADMIN: 'חייב להישאר לפחות מנהל פעיל אחד', ADMIN_ONLY: 'הפעולה מותרת למנהל בלבד', SETUP_DONE: 'כבר קיים מנהל במערכת — יש להיכנס עם שם משתמש וסיסמה',
+  READONLY: 'למשתמש צפייה אין הרשאה לשנות נתונים', CONFLICT: 'משתמש אחר עדכן את אותם נתונים באותו רגע. הפעולה לא נשמרה — נסו שוב.', NEGATIVE: 'הפעולה לא נשמרה: המלאי באיתור כבר נוצל על ידי משתמש אחר.' };
+const errText = err => { const m = String((err && err.message) || err || ''), k = Object.keys(ERR).find(x => m.startsWith(x)); return k ? ERR[k] : (err && err.server ? 'שגיאת שרת: ' + m : 'אין חיבור לשרת'); };
+
+function* localEnts() { for (const c of COLLS) for (const o of db[c]) yield [c, o.id, o]; for (const m of METAS) yield ['meta', m, db[m]]; }
+/* מה השתנה מקומית מאז הסנכרון האחרון */
+function diff() {
+  const ents = [], strs = new Map(), seen = new Set(), stock = [];
+  for (const [c, i, o] of localEnts()) { const k = c + '|' + i, s = JSON.stringify(o); seen.add(k); if (base.get(k) !== s) { ents.push({ c, i, d: o, b: revs.get(k) || 0 }); strs.set(k, s); } }
+  for (const k of base.keys()) if (!seen.has(k)) { const p = k.indexOf('|'); ents.push({ c: k.slice(0, p), i: k.slice(p + 1), d: null, b: revs.get(k) || 0 }); }
+  for (const k of new Set(Object.keys(db.stock).concat(Object.keys(baseStock)))) { const d = r3((db.stock[k] || 0) - (baseStock[k] || 0)); if (d) stock.push({ k, d }); }
+  return { ents, stock, strs };
+}
+async function push() {
+  if (!me || me.role === 'viewer') return;
+  const d = diff(); if (!d.ents.length && !d.stock.length) return;
+  setSync('שומר…');
+  try {
+    const r = await rpc('wms_apply', { p_token: token, p_ops: { ents: d.ents, stock: d.stock } });
+    d.ents.forEach(e => { const k = e.c + '|' + e.i; revs.set(k, r.rev); if (e.d === null) base.delete(k); else base.set(k, d.strs.get(k)); });
+    d.stock.forEach(s => { const q = r3((baseStock[s.k] || 0) + s.d); if (q) baseStock[s.k] = q; else delete baseStock[s.k]; });
+    setSync('');
+  } catch (err) {
+    if (!err.server) return setSync('אין חיבור — השינויים ממתינים לשמירה', true);   /* יישלח שוב בסנכרון הבא */
+    if (/^AUTH/.test(err.message)) return logoutLocal('החיבור פג. יש להיכנס מחדש.');
+    toast(errText(err), true);
+    try { await loadAll(); setSync(''); } catch (e) { setSync('אין חיבור', true); }
+    render();
+  }
+}
+/* מיזוג שינויים שהגיעו מהשרת לתוך db */
+function applyPull(r) {
+  const ix = {}, touched = new Set(); let changed = false;
+  for (const e of r.ents) {
+    const k = e.c + '|' + e.i, isMeta = e.c === 'meta';
+    if (revs.get(k) === e.r || (isMeta ? !METAS.includes(e.i) : !COLLS.includes(e.c))) continue;
+    const m = isMeta ? null : (ix[e.c] || (ix[e.c] = new Map(db[e.c].map(o => [o.id, o]))));
+    const cur = isMeta ? db[e.i] : m.get(e.i), b = base.get(k);
+    /* שינוי מקומי שעוד לא נשלח: לא דורסים אותו; השליחה שלו תיכשל בהתנגשות ואז הכול ייטען מחדש */
+    if (b !== undefined ? (cur === undefined || JSON.stringify(cur) !== b) : (cur !== undefined && !isMeta)) continue;
+    revs.set(k, e.r); changed = true;
+    if (e.d === null) { base.delete(k); if (!isMeta && m.delete(e.i)) touched.add(e.c); continue; }
+    base.set(k, JSON.stringify(e.d));
+    if (isMeta) db[e.i] = e.d; else { m.set(e.i, e.d); touched.add(e.c); }
+  }
+  /* המזהים מתחילים בזמן היצירה, ולכן מיון לפיהם שומר על סדר כרונולוגי */
+  touched.forEach(c => { db[c] = [...ix[c].values()].sort(c === 'moves' ? (a, b2) => a.ts - b2.ts || (a.id < b2.id ? -1 : 1) : (a, b2) => (a.id < b2.id ? -1 : a.id > b2.id ? 1 : 0)); });
+  for (const s of r.stock) {
+    const q = Number(s.q), local = r3(q + (db.stock[s.k] || 0) - (baseStock[s.k] || 0));
+    if ((db.stock[s.k] || 0) !== local) changed = true;
+    if (local) db.stock[s.k] = local; else delete db.stock[s.k];
+    if (q) baseStock[s.k] = q; else delete baseStock[s.k];
+  }
+  lastRev = Math.max(lastRev, r.rev || 0); _idx = null;
+  return changed;
+}
+async function loadAll() {
+  const r = await rpc('wms_pull', { p_token: token, p_since: 0 });
+  db = emptyDb(); base = new Map(); revs = new Map(); baseStock = {}; lastRev = 0;
+  applyPull(r);
+}
+/* רענון המסך אחרי שינוי של משתמש אחר, בלי למחוק מה שהמשתמש באמצע להקליד */
+function softRender() {
+  const main = $('#main'), busy = main.contains(document.activeElement) || [...main.querySelectorAll('input')].some(i => i.type !== 'checkbox' && i.value !== i.defaultValue);
+  if (busy) refreshList(); else render();
+}
+let ticking = false;
+async function tick() {
+  if (!me || ticking) return; ticking = true;
+  try {
+    await (chain = chain.then(push));
+    if (!me) return;
+    const r = await rpc('wms_pull', { p_token: token, p_since: lastRev });
+    if (applyPull(r)) softRender();
+    if ($('#sync').textContent === 'אין חיבור') setSync('');
+  } catch (err) {
+    if (err.server && /^AUTH/.test(err.message)) logoutLocal('החיבור פג. יש להיכנס מחדש.'); else if (!err.server) setSync('אין חיבור', true);
+  } finally { ticking = false; }
+}
+setInterval(tick, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+
+/* ---- כניסה ---- */
+let authMode = 'login';
+function showAuth(mode, msg) {
+  authMode = mode; $('#app').hidden = true; $('#auth').hidden = false; $('#modal-root').innerHTML = '';
+  const setup = mode === 'setup', err = mode === 'error';
+  $('#auth-title').textContent = setup ? 'הקמת מנהל המערכת' : err ? 'לא ניתן להתחבר' : 'כניסה למערכת';
+  $('#auth-sub').textContent = setup ? 'זו הכניסה הראשונה. המשתמש שייווצר כאן הוא המנהל, והוא יפתח את שאר המשתמשים.' : err ? '' : '';
+  $('#auth-err').textContent = msg || '';
+  $('#au-name-row').hidden = !setup;
+  $('#au-user').parentElement.hidden = err; $('#au-pass').parentElement.hidden = err;
+  $('#au-pass').autocomplete = setup ? 'new-password' : 'current-password';
+  $('#auth-btn').textContent = setup ? 'צור מנהל והיכנס' : err ? 'נסה שוב' : 'כניסה';
+  $('#au-pass').value = ''; if (!err) $('#au-user').focus();
+}
+$('#auth-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (authMode === 'error') return boot();
+  const btn = $('#auth-btn'); btn.disabled = true; $('#auth-err').textContent = '';
+  try {
+    const u = $('#au-user').value.trim(), p = $('#au-pass').value;
+    const r = authMode === 'setup' ? await rpc('wms_setup', { p_username: u, p_password: p, p_name: $('#au-name').value.trim() }) : await rpc('wms_login', { p_username: u, p_password: p });
+    if (r.error) throw new Error(r.error);
+    token = r.token; me = r.user; storeToken(); $('#au-pass').value = '';
+    await enter();
+  } catch (err) { me = null; $('#auth-err').textContent = errText(err); }
+  btn.disabled = false;
+});
+async function enter() {
+  await loadAll();
+  $('#auth').hidden = true; $('#app').hidden = false; setSync(''); render();
+  offerLocalUpload();
+}
+async function boot() {
+  try {
+    if (token) { try { me = await rpc('wms_me', { p_token: token }); } catch (err) { if (!err.server) throw err; if (err.status === 404) throw err; token = null; storeToken(); } }
+    if (me) return await enter();
+    const st = await rpc('wms_status');
+    showAuth(st.has_users ? 'login' : 'setup');
+  } catch (err) {
+    me = null;
+    showAuth('error', err.server && err.status === 404 ? 'מסד הנתונים עדיין לא הוגדר: יש להריץ את הקובץ supabase-setup.sql ב-SQL Editor של Supabase.' : errText(err));
+  }
+}
+function logoutLocal(msg) { me = null; token = null; storeToken(); db = emptyDb(); base = new Map(); revs = new Map(); baseStock = {}; lastRev = 0; closeModal(); showAuth('login', msg || ''); }
+/* מנהל שנכנס למסד ריק ויש בדפדפן שלו נתונים מהגרסה המקומית: מציעים להעלות אותם */
+function offerLocalUpload() {
+  if (me.role !== 'admin' || db.items.length || db.locations.length) return;
+  let old = null; try { if (!localStorage.getItem('wms-uploaded')) old = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* אין נתונים ישנים */ }
+  if (!old || !Array.isArray(old.items) || !(old.items.length || (old.locations || []).length)) return;
+  if (!confirm(`בדפדפן הזה שמורים נתונים מהגרסה המקומית (${old.items.length} פריטים, ${(old.locations || []).length} איתורים). להעלות אותם למערכת המשותפת?`)) return;
+  db = old; migrate(); try { localStorage.setItem('wms-uploaded', '1'); } catch (e) { /* לא קריטי */ }
+  commit(); toast('הנתונים המקומיים הועלו');
+}
+
+/* ================= מצב ממשק ================= */
+const ui = { f: {}, draft: null, modal: null, blank: null, onSet: null, route: '', id: '' };
+const views = {}, lists = {}, actions = {};
+const NAV = [['dashboard', 'לוח בקרה'],
+  'מכירות', ['orders', 'הזמנות לקוח'], ['picktasks', 'משימות ליקוט'], ['shipments', 'משלוחים ללקוח'], ['creturns', 'החזרות מלקוח'],
+  'רכש', ['grv', 'קבלות סחורה מספק'], ['sreturns', 'החזרות לספק'],
+  'מלאי', ['stock', 'יתרות מלאי'], ['transfers', 'העברות בין מחסנים'], ['counts', 'ספירות מלאי'], ['moves', 'תנועות מלאי'],
+  'נתוני בסיס', ['items', 'פריטים'], ['warehouses', 'מחסנים'], ['customers', 'לקוחות'], ['suppliers', 'ספקים'],
+  'מערכת', ['users', 'משתמשים'], ['settings', 'הגדרות וגיבוי']];
+const openTasks = () => { const out = []; db.orders.filter(o => o.status === 'picking').forEach(o => o.lines.forEach(ln => ln.allocs.forEach(a => { if (!a.done) out.push({ o, ln, a }); }))); return out; };
+
+function render() {
+  if (!me) return;
+  _idx = null;
+  const [r, id] = (location.hash.replace(/^#\/?/, '') || 'dashboard').split('/');
+  const route = Object.prototype.hasOwnProperty.call(views, r) && (r !== 'users' || me.role === 'admin') ? r : 'dashboard';
+  const changed = route !== ui.route || (id || '') !== ui.id;
+  ui.route = route; ui.id = id || '';
+  const cnt = { grv: db.receipts.filter(x => x.status === 'open' || x.status === 'partial').length, orders: db.orders.filter(x => x.status === 'new' || x.status === 'picking').length, picktasks: openTasks().length, shipments: db.orders.filter(x => x.status === 'picked').length };
+  $('#nav-links').innerHTML = NAV.filter(x => x[0] !== 'users' || me.role === 'admin').map(x => typeof x === 'string' ? `<div class="grp">${x}</div>` : `<a href="#/${x[0]}" class="${x[0] === route ? 'on' : ''}"><span>${x[1]}</span>${cnt[x[0]] ? `<span class="cnt">${cnt[x[0]]}</span>` : ''}</a>`).join('');
+  $('#wh-name').textContent = db.settings.name || '';
+  $('#user-chip').textContent = `${me.name || me.username} · ${ROLES[me.role]}`;
+  document.title = 'ניהול מחסן — ' + (db.settings.name || '');
+  $('#dl-items').innerHTML = db.items.filter(i => i.active !== false).map(i => `<option value="${esc(i.sku)}">${esc(i.name)}</option>`).join('');
+  $('#dl-locs').innerHTML = sortedLocs().map(l => `<option value="${esc(locLabel(l))}">${LOC_TYPES[l.type] || ''}</option>`).join('');
+  $('#main').innerHTML = views[route](ui.id);
+  if (changed) window.scrollTo(0, 0);
+}
+function commit() { save(); render(); }
+function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
+function refreshList() { const fn = lists[ui.route], el = $('#list'); if (fn && el) el.innerHTML = fn(); }
+const fq = key => String(ui.f[key] || '').trim().toLowerCase();
+
+const pageHead = (title, btns = '', sub = '') => `<div class="head"><div><h1>${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ''}</div><div class="btns no-print">${btns}</div></div>`;
+/* כותרת עמודה שמתחילה ב-# מיושרת למרכז (עמודה מספרית) */
+const tbl = (heads, rows, empty = 'אין נתונים להצגה') => rows.length ? `<div class="tw"><table><thead><tr>${heads.map(h => `<th${h.startsWith('#') ? ' class="n"' : ''}>${h.replace(/^#/, '')}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="empty">${empty}</div>`;
+const searchBar = (key, ph, extra = '') => `<div class="toolbar no-print"><input type="search" id="f-${key}" data-filter="${key}" value="${esc(ui.f[key] || '')}" placeholder="${ph}" autocomplete="off">${extra}</div>`;
+const notFound = back => `<div class="empty">התעודה לא נמצאה. <a href="#/${back}">חזרה לרשימה</a></div>`;
+const itemTd = id => { const it = item(id) || {}; return `<td class="code">${esc(it.sku)}</td><td>${esc(it.name)}</td>`; };
+
+/* ================= חלונות ================= */
+function showModal(fn) {
+  ui.modal = fn; rerenderModal();
+  const f = $('#modal-root .mb input:not([disabled]), #modal-root .mb select, #modal-root .mb textarea'); if (f) f.focus();
+}
+function rerenderModal() {
+  if (!ui.modal) return;
+  const a = document.activeElement, fid = a && a.id, mb = $('#modal-root .mb'), top = mb ? mb.scrollTop : 0;
+  $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${ui.modal()}</div></div>`;
+  const nb = $('#modal-root .mb'); if (nb) nb.scrollTop = top;
+  if (fid) { const el = document.getElementById(fid); if (el && $('#modal-root').contains(el)) el.focus(); }
+}
+function closeModal() { ui.modal = null; ui.draft = null; ui.blank = null; ui.onSet = null; $('#modal-root').innerHTML = ''; }
+actions.closeModal = closeModal;
+const frame = (title, body, foot = '', cancel = 'ביטול') => `<div class="mh"><h2>${title}</h2><button class="x" data-act="closeModal" aria-label="סגור">×</button></div><div class="mb">${body}</div><div class="mf">${foot}<button data-act="closeModal">${cancel}</button></div>`;
+
+const getPath = (o, p) => p.split('.').reduce((a, k) => a == null ? a : a[k], o);
+function bindSet(t, final) {
+  const ks = t.dataset.d.split('.'), key = ks.pop(), par = ks.reduce((a, k) => a[k], ui.draft);
+  const prev = par.itemId;
+  par[key] = t.type === 'checkbox' ? t.checked : t.value;
+  if (key === 'itemText') {
+    const it = resolveItem(par[key]);
+    par.itemId = it ? it.id : '';
+    if (final && it) par.itemText = it.sku;
+  }
+  if (LOCKEYS[key]) { const l = locByCode(par[key]); par[LOCKEYS[key]] = l ? l.id : ''; if (final && l) par[key] = locLabel(l); }
+  if (ui.onSet) ui.onSet(par, key, prev);
+}
+/* שדה איתור בהקלדה או בסריקה: הטקסט נשמר ב-locText / toLocText, והמזהה ב-locId / toLoc */
+const LOCKEYS = { locText: 'locId', toLocText: 'toLoc' };
+function locField(path, key, obj) {
+  const p = path ? path + '.' : '', l = loc(obj[LOCKEYS[key]]), txt = obj[key] || '';
+  return `<input id="d-${p}${key}" list="dl-locs" data-d="${p}${key}" data-rr value="${esc(txt)}" placeholder="סרקו או הקלידו איתור" autocomplete="off">
+    <div class="hint ${txt && !l ? 'bad' : ''}">${l ? esc(db.warhs[l.warhs] || 'מחסן ' + l.warhs) + ' · ' + LOC_TYPES[l.type] : (txt ? 'איתור לא נמצא' : '')}</div>`;
+}
+const fld = (label, path, o = {}) => `<label class="fld"><span>${label}</span><input id="d-${path}" data-d="${path}" ${o.rr ? 'data-rr' : ''} type="${o.type || 'text'}" value="${esc(getPath(ui.draft, path))}" ${o.list ? `list="${o.list}"` : ''} ${o.type === 'number' ? 'min="0" step="any" inputmode="decimal"' : ''} ${o.ph ? `placeholder="${o.ph}"` : ''} autocomplete="off"></label>`;
+const selectHtml = (path, opts, cur, o = {}) => `<select id="d-${path}" data-d="${path}" ${o.rr ? 'data-rr' : ''}>${o.placeholder ? `<option value="">${o.placeholder}</option>` : ''}${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+const selFld = (label, path, opts, o = {}) => `<label class="fld"><span>${label}</span>${selectHtml(path, opts, getPath(ui.draft, path), o)}</label>`;
+const qtyFld = (path, val) => `<input id="d-${path}" data-d="${path}" type="number" min="0" step="any" inputmode="decimal" class="qty" value="${esc(val)}">`;
+function itemField(path, ln, extraHint = '') {
+  const it = item(ln.itemId), p = path ? path + '.' : '';
+  return `<input id="d-${p}itemText" list="dl-items" data-d="${p}itemText" data-rr value="${esc(ln.itemText || '')}" placeholder="מק״ט / ברקוד" autocomplete="off">
+    <div class="hint ${ln.itemText && !it ? 'bad' : ''}">${it ? esc(it.name) + extraHint : (ln.itemText ? 'פריט לא נמצא' : '')}</div>`;
+}
+/* איתורים שיש בהם יתרה פנויה של הפריט */
+const fromOpts = (itemId, res) => itemId ? stockRows().filter(r => r.itemId === itemId && loc(r.locId)).map(r => [loc(r.locId), r3(r.qty - (res[sk(itemId, r.locId)] || 0))]).filter(x => x[1] > 0).sort((a, b) => cmp(locLabel(a[0]), locLabel(b[0]))).map(([l, a]) => [l.id, `${locLabel(l)} (פנוי ${num(a)})`]) : [];
+const partyFld = kind => `<datalist id="dl-party">${db[kind].map(p => `<option value="${esc(p.name)}">${esc(p.num)}</option>`).join('')}</datalist>` + fld(PK[kind].one, 'party', { list: 'dl-party', ph: 'מספר או שם' });
+function linesTable(heads, rowFn) {
+  return `<div class="tw"><table class="lines"><thead><tr>${heads.map(h => `<th>${h}</th>`).join('')}<th></th></tr></thead><tbody>${ui.draft.lines.map((ln, i) => `<tr>${rowFn(ln, i, 'lines.' + i)}<td><button class="x" data-act="delLine" data-i="${i}" title="הסר שורה">×</button></td></tr>`).join('')}</tbody></table></div><button data-act="addLine">+ הוסף שורה</button>`;
+}
+actions.addLine = () => { ui.draft.lines.push(ui.blank()); rerenderModal(); const el = document.getElementById(`d-lines.${ui.draft.lines.length - 1}.itemText`); if (el) el.focus(); };
+actions.delLine = el => { ui.draft.lines.splice(+el.dataset.i, 1); if (!ui.draft.lines.length && ui.blank && !ui.draft.keepEmpty) ui.draft.lines.push(ui.blank()); rerenderModal(); };
+/* בדיקת שורות תעודה: מחזיר רק שורות מלאות, או null אם יש שגיאה */
+function cleanLines(lines, qtyKey = 'qty') {
+  const used = lines.filter(l => String(l.itemText || '').trim() || l.itemId);
+  if (!used.length) return fail('יש להוסיף לפחות שורה אחת עם פריט');
+  for (let i = 0; i < used.length; i++) {
+    if (!used[i].itemId || !item(used[i].itemId)) return fail(`שורה ${i + 1}: המק״ט לא נמצא בטבלת הפריטים`);
+    if (!(n(used[i][qtyKey]) > 0)) return fail(`שורה ${i + 1}: יש להזין כמות גדולה מאפס`);
+  }
+  return used;
+}
+
+/* ================= לוח בקרה ================= */
+function moveRow(m) {
+  return `<tr><td class="mut">${fmtTs(m.ts)}</td><td>${esc(m.type)}</td>${itemTd(m.itemId)}${locTd(m.locId)}<td class="n ${m.qty > 0 ? 'pos' : 'neg'}" dir="ltr">${m.qty > 0 ? '+' : ''}${num(m.qty)}</td><td class="code">${esc(m.doc)}</td><td>${esc(m.note)}</td><td class="mut">${esc(m.user)}</td></tr>`;
+}
+const MOVE_HEADS = ['תאריך', 'סוג תנועה', 'מק״ט', 'תאור פריט', 'מחסן', 'איתור', '#כמות', 'תעודה', 'פרטים', 'משתמש'];
+views.dashboard = () => {
+  if (!db.items.length && !db.locations.length) return `<div class="card"><h1>ברוכים הבאים למערכת ניהול המחסן</h1>
+    <p class="sub">המערכת עדיין ריקה. כך מתחילים:</p>
+    <ol class="steps"><li>מגדירים <a href="#/warehouses">מחסנים ואיתורים</a>.</li><li>מקימים <a href="#/items">פריטים</a> — ידנית או בהדבקה מאקסל.</li><li>מזינים יתרות פתיחה דרך <a href="#/grv">קבלת סחורה מספק</a> או ייבוא ב<a href="#/settings">הגדרות</a>.</li><li>מתחילים לעבוד: הזמנות לקוח וליקוט, משלוחים, העברות בין מחסנים, החזרות וספירות.</li></ol>
+    <div class="btns"><button class="primary" data-act="loadDemo">טען נתוני דוגמה כדי להתנסות</button><button data-act="go" data-href="#/warehouses">התחל מהגדרת מחסנים</button></div></div>`;
+  const sm = summary(); let units = 0; sm.forEach(s => units = r3(units + s.total));
+  const low = db.items.filter(i => i.active !== false && n(i.minQty) > 0 && ((sm.get(i.id) || {}).avail || 0) < n(i.minQty));
+  const oOpen = db.orders.filter(o => o.status === 'new' || o.status === 'picking'), oShip = db.orders.filter(o => o.status === 'picked');
+  const rOpen = db.receipts.filter(r => r.status === 'open' || r.status === 'partial');
+  const tile = (label, val, href, cls = '') => `<a class="tile ${cls}" href="${href}"><div class="tv">${val}</div><div class="tl">${label}</div></a>`;
+  const tasks = [
+    ...oOpen.map(o => `<tr class="click" data-act="go" data-href="#/orders/${o.id}"><td>הזמנת לקוח</td><td class="code">${o.num}</td><td>${esc(o.customer)}</td><td>${badge('order', o.status)}${o.priority === 'urgent' ? ' ' + URGENT : ''}</td></tr>`),
+    ...oShip.map(o => `<tr class="click" data-act="go" data-href="#/orders/${o.id}"><td>משלוח ללקוח</td><td class="code">${o.num}</td><td>${esc(o.customer)}</td><td>${badge('order', o.status)}</td></tr>`),
+    ...rOpen.map(r => `<tr class="click" data-act="go" data-href="#/grv/${r.id}"><td>קבלה מספק</td><td class="code">${r.num}</td><td>${esc(r.supplier)}</td><td>${badge('receipt', r.status)}</td></tr>`)
+  ];
+  return pageHead('לוח בקרה', '', fmtDate(today())) +
+    `<div class="tiles">${tile('פריטים פעילים', num(db.items.filter(i => i.active !== false).length), '#/items')}${tile('יתרת מלאי כוללת', num(units), '#/stock')}${tile('הזמנות לקוח פתוחות', oOpen.length, '#/orders')}${tile('משימות ליקוט', openTasks().length, '#/picktasks')}${tile('ממתינות למשלוח', oShip.length, '#/shipments')}${tile('קבלות סחורה פתוחות', rOpen.length, '#/grv')}${tile('מתחת למינימום', low.length, '#/stock', low.length ? 'warn' : '')}</div>
+    <div class="cols"><div><h3>תעודות פתוחות</h3>${tbl(['סוג', 'מס׳ תעודה', 'לקוח / ספק', 'סטטוס'], tasks, 'אין תעודות פתוחות')}</div>
+    <div><h3>פריטים מתחת למלאי מינימום</h3>${tbl(['מק״ט', 'תאור פריט', '#זמין', '#מינימום'], low.slice(0, 12).map(i => `<tr class="click" data-act="itemCard" data-id="${i.id}"><td class="code">${esc(i.sku)}</td><td>${esc(i.name)}</td><td class="n neg">${num((sm.get(i.id) || {}).avail || 0)}</td><td class="n">${num(i.minQty)}</td></tr>`), 'כל הפריטים מעל המינימום')}</div></div>
+    <h3>תנועות מלאי אחרונות</h3>${tbl(MOVE_HEADS, db.moves.slice(-10).reverse().map(moveRow), 'עדיין אין תנועות מלאי')}`;
+};
+
+/* ================= יתרות מלאי ================= */
+views.stock = () => pageHead('יתרות מלאי', `<button data-act="invCsv">ייצוא לאקסל</button><button data-act="newAdjust">תיקון יתרה</button>`, 'יתרות לפי פריט או לפי מחסן ואיתור, כולל כמויות משוריינות להזמנות בליקוט') +
+  searchBar('inv', 'חיפוש לפי מק״ט, תאור, ברקוד, מחסן או איתור', `<select data-filter="invMode"><option value="item" ${ui.f.invMode !== 'loc' ? 'selected' : ''}>יתרות לפי פריט</option><option value="loc" ${ui.f.invMode === 'loc' ? 'selected' : ''}>יתרות לפי מחסן ואיתור</option></select><label class="chk"><input type="checkbox" data-filter="invLow" ${ui.f.invLow ? 'checked' : ''}> רק מתחת למינימום</label>`) +
+  `<div id="list">${lists.stock()}</div>`;
+const matchItem = (it, q) => !q || [it.sku, it.name, it.barcode, it.category].join(' ').toLowerCase().includes(q);
+function invStatus(it, s) {
+  if (!s || s.total <= 0) return '<span class="badge b-red">אזל</span>';
+  if (n(it.minQty) > 0 && s.avail < n(it.minQty)) return '<span class="badge b-amber">מתחת למינימום</span>';
+  return '<span class="badge b-green">תקין</span>';
+}
+lists.stock = () => {
+  const q = fq('inv'), sm = summary(), res = reservedMap();
+  if (ui.f.invMode === 'loc') {
+    const rows = stockRows().filter(r => { const it = item(r.itemId); return it && (matchItem(it, q) || locCode(r.locId).toLowerCase().includes(q)); })
+      .sort((a, b) => cmp(locCode(a.locId), locCode(b.locId)) || cmp(item(a.itemId).sku, item(b.itemId).sku)).slice(0, 500)
+      .map(r => { const it = item(r.itemId), l = loc(r.locId), rs = res[sk(r.itemId, r.locId)] || 0;
+        return `<tr>${locTd(r.locId)}<td>${l ? LOC_TYPES[l.type] : ''}</td>${itemTd(it.id)}<td class="n">${num(r.qty)}</td><td class="n">${rs ? num(rs) : '—'}</td><td class="n">${num(r.qty - rs)}</td><td class="act no-print"><button class="sm" data-act="newTransfer" data-item="${it.id}" data-loc="${r.locId}">העבר</button> <button class="sm" data-act="newAdjust" data-item="${it.id}" data-loc="${r.locId}">תיקון</button></td></tr>`; });
+    return tbl(['מחסן', 'איתור', 'סוג איתור', 'מק״ט', 'תאור פריט', '#יתרה', '#משוריין', '#פנוי', ''], rows, 'אין יתרות להצגה');
+  }
+  const rows = db.items.filter(it => it.active !== false || sm.has(it.id)).filter(it => matchItem(it, q) || ((sm.get(it.id) || {}).locs || []).some(c => c.toLowerCase().includes(q)))
+    .filter(it => !ui.f.invLow || (n(it.minQty) > 0 && ((sm.get(it.id) || {}).avail || 0) < n(it.minQty)))
+    .sort((a, b) => cmp(a.sku, b.sku)).slice(0, 500)
+    .map(it => { const s = sm.get(it.id);
+      return `<tr class="click" data-act="itemCard" data-id="${it.id}"><td class="code">${esc(it.sku)}</td><td>${esc(it.name)}</td><td>${esc(it.category)}</td><td class="n"><b>${num(s ? s.total : 0)}</b> <span class="mut">${esc(it.unit)}</span></td><td class="n">${s && s.reserved ? num(s.reserved) : '—'}</td><td class="n">${num(s ? s.avail : 0)}</td><td class="n">${n(it.minQty) ? num(it.minQty) : '—'}</td><td class="code">${s ? esc(s.locs.sort(cmp).slice(0, 3).join(', ')) + (s.locs.length > 3 ? ' …' : '') : ''}</td><td>${invStatus(it, s)}</td></tr>`; });
+  return tbl(['מק״ט', 'תאור פריט', 'משפחה', '#יתרה', '#משוריין', '#זמין לליקוט', '#מינימום', 'מחסן/איתור', 'מצב'], rows, db.items.length ? 'לא נמצאו פריטים' : 'אין פריטים. הקימו פריטים במסך ״פריטים״.');
+};
+actions.invCsv = () => {
+  const res = reservedMap();
+  const rows = [['מק״ט', 'תאור פריט', 'ברקוד', 'משפחה', 'מחסן', 'איתור', 'סוג איתור', 'יתרה', 'משוריין', 'פנוי']];
+  stockRows().sort((a, b) => cmp((item(a.itemId) || {}).sku, (item(b.itemId) || {}).sku)).forEach(r => { const it = item(r.itemId) || {}, l = loc(r.locId) || {}, rs = res[sk(r.itemId, r.locId)] || 0; rows.push([it.sku, it.name, it.barcode, it.category, l.warhs, l.code, LOC_TYPES[l.type], r.qty, rs, r3(r.qty - rs)]); });
+  download(`יתרות-מלאי-${today()}.csv`, csv(rows), 'text/csv;charset=utf-8');
+};
+actions.itemCard = el => {
+  const id = el.dataset.id; ui.draft = null;
+  showModal(() => {
+    const it = item(id); if (!it) return frame('פריט', 'הפריט לא נמצא', '', 'סגור');
+    const res = reservedMap(), s = summary().get(id) || { total: 0, avail: 0, reserved: 0 };
+    const rows = stockRows().filter(r => r.itemId === id).sort((a, b) => cmp(locCode(a.locId), locCode(b.locId))).map(r => { const l = loc(r.locId), rs = res[sk(id, r.locId)] || 0;
+      return `<tr>${locTd(r.locId)}<td>${l ? LOC_TYPES[l.type] : ''}</td><td class="n">${num(r.qty)}</td><td class="n">${rs ? num(rs) : '—'}</td><td class="act"><button class="sm" data-act="newTransfer" data-item="${id}" data-loc="${r.locId}">העבר</button> <button class="sm" data-act="newAdjust" data-item="${id}" data-loc="${r.locId}">תיקון</button></td></tr>`; });
+    const mv = db.moves.filter(m => m.itemId === id).slice(-8).reverse().map(moveRow);
+    return frame(`${esc(it.sku)} — ${esc(it.name)}`, `<div class="tiles"><div class="tile"><div class="tv">${num(s.total)}</div><div class="tl">יתרה (${esc(it.unit)})</div></div><div class="tile"><div class="tv">${num(s.avail)}</div><div class="tl">זמין לליקוט</div></div><div class="tile"><div class="tv">${num(s.reserved)}</div><div class="tl">משוריין</div></div><div class="tile"><div class="tv">${n(it.minQty) ? num(it.minQty) : '—'}</div><div class="tl">מלאי מינימום</div></div></div>
+      <p class="mut">ברקוד: ${esc(it.barcode) || '—'} · משפחה: ${esc(it.category) || '—'}</p>
+      <h3>יתרות לפי מחסן ואיתור</h3>${tbl(['מחסן', 'איתור', 'סוג איתור', '#יתרה', '#משוריין', ''], rows, 'אין יתרה לפריט זה')}
+      <h3>תנועות מלאי אחרונות</h3>${tbl(MOVE_HEADS, mv, 'אין תנועות')}`, `<button data-act="editItem" data-id="${id}">כרטיס פריט</button>`, 'סגור');
+  });
+};
+actions.locCard = el => {
+  const id = el.dataset.id; ui.draft = null;
+  showModal(() => {
+    const l = loc(id); if (!l) return frame('איתור', 'האיתור לא נמצא', '', 'סגור');
+    const rows = stockRows().filter(r => r.locId === id).sort((a, b) => cmp(item(a.itemId).sku, item(b.itemId).sku)).map(r => { const it = item(r.itemId);
+      return `<tr>${itemTd(it.id)}<td class="n">${num(r.qty)} <span class="mut">${esc(it.unit)}</span></td><td class="act"><button class="sm" data-act="newTransfer" data-item="${it.id}" data-loc="${id}">העבר</button></td></tr>`; });
+    return frame(`מחסן ${esc(l.warhs)} · איתור ${esc(l.code)}`, `<p class="mut">${esc(db.warhs[l.warhs] || '')}${db.warhs[l.warhs] ? ' · ' : ''}סוג איתור: ${LOC_TYPES[l.type]}</p>${tbl(['מק״ט', 'תאור פריט', '#יתרה', ''], rows, 'אין יתרות באיתור')}`, `<button data-act="newCount" data-loc="${id}">ספירת מלאי לאיתור</button><button data-act="editLoc" data-id="${id}">עריכה</button>`, 'סגור');
+  });
+};
+actions.quickFind = el => {
+  const t = el.value.trim(); if (!t) return;
+  const it = resolveItem(t), l = it ? null : locByCode(t);
+  el.value = '';
+  if (it) return actions.itemCard({ dataset: { id: it.id } });
+  if (l) return actions.locCard({ dataset: { id: l.id } });
+  ui.f.inv = t; ui.f.invMode = 'item'; ui.f.invLow = false; go('#/stock');
+};
+actions.newAdjust = el => {
+  const it = el.dataset.item ? item(el.dataset.item) : null;
+  ui.draft = { itemText: it ? it.sku : '', itemId: it ? it.id : '', locId: el.dataset.loc || '', locText: el.dataset.loc ? locCode(el.dataset.loc) : '', newQty: '', reason: '' };
+  showModal(() => { const d = ui.draft, cur = d.itemId && d.locId ? qtyAt(d.itemId, d.locId) : null;
+    return frame('תיקון יתרה', `<p class="sub">עדכון ידני של יתרת פריט באיתור. התיקון נרשם בתנועות המלאי.</p>
+      <div class="grid"><label class="fld"><span>מק״ט</span>${itemField('', d)}</label>
+      <label class="fld"><span>איתור</span>${locField('', 'locText', d)}</label>
+      <label class="fld"><span>יתרה במערכת</span><input disabled value="${cur == null ? '—' : num(cur)}"></label>
+      ${fld('יתרה נכונה בפועל', 'newQty', { type: 'number' })}</div>${fld('פרטים (סיבת התיקון)', 'reason')}`, `<button class="primary" data-act="saveAdjust">שמור תיקון</button>`); });
+};
+actions.saveAdjust = () => {
+  const d = ui.draft;
+  if (!d.itemId) return fail('יש לבחור פריט'); if (!d.locId) return fail('יש להזין איתור קיים');
+  if (String(d.newQty).trim() === '' || n(d.newQty) < 0) return fail('יש להזין יתרה תקינה (אפס ומעלה)');
+  const delta = r3(n(d.newQty) - qtyAt(d.itemId, d.locId));
+  if (delta === 0) return fail('היתרה זהה ליתרה במערכת — אין מה לתקן');
+  addStock(d.itemId, d.locId, delta, MV.adj, '', d.reason);
+  closeModal(); commit(); toast('היתרה עודכנה');
+};
+
+/* ================= פריטים ================= */
+views.items = () => pageHead('פריטים', `<button class="primary" data-act="editItem">+ פריט חדש</button><button data-act="importItems">ייבוא מאקסל</button>`, 'טבלת הפריטים (מק״טים)') +
+  searchBar('it', 'חיפוש לפי מק״ט, תאור, ברקוד או משפחה') + `<div id="list">${lists.items()}</div>`;
+lists.items = () => {
+  const q = fq('it'), sm = summary();
+  return tbl(['מק״ט', 'תאור פריט', 'ברקוד', 'משפחה', 'יח׳', '#מלאי מינימום', '#יתרה', 'סטטוס', ''], db.items.filter(i => matchItem(i, q)).sort((a, b) => cmp(a.sku, b.sku)).slice(0, 500).map(i =>
+    `<tr class="click ${i.active === false ? 'done' : ''}" data-act="editItem" data-id="${i.id}"><td class="code">${esc(i.sku)}</td><td>${esc(i.name)}</td><td class="code">${esc(i.barcode)}</td><td>${esc(i.category)}</td><td>${esc(i.unit)}</td><td class="n">${n(i.minQty) ? num(i.minQty) : '—'}</td><td class="n">${num((sm.get(i.id) || {}).total || 0)}</td><td>${i.active === false ? '<span class="badge b-gray">לא פעיל</span>' : '<span class="badge b-green">פעיל</span>'}</td><td class="act"><button class="sm">עריכה</button></td></tr>`),
+    db.items.length ? 'לא נמצאו פריטים' : 'טבלת הפריטים ריקה. לחצו על ״פריט חדש״ או ״ייבוא מאקסל״.');
+};
+actions.editItem = el => {
+  const it = el.dataset.id ? item(el.dataset.id) : null;
+  ui.draft = it ? Object.assign({}, it, { active: it.active !== false }) : { id: '', sku: '', name: '', barcode: '', unit: 'יח׳', category: '', minQty: '', active: true };
+  showModal(() => frame(ui.draft.id ? 'כרטיס פריט' : 'פריט חדש', `<div class="grid">${fld('מק״ט *', 'sku')}${fld('תאור פריט *', 'name')}${fld('ברקוד', 'barcode')}${fld('יחידת מידה', 'unit')}${fld('משפחה', 'category')}${fld('מלאי מינימום (להתראה)', 'minQty', { type: 'number' })}</div>
+    ${ui.draft.id ? `<label class="chk"><input type="checkbox" data-d="active" ${ui.draft.active ? 'checked' : ''}> פריט פעיל</label>` : ''}`,
+    `<button class="primary" data-act="saveItem">שמור</button>${ui.draft.id ? '<button class="danger" data-act="deleteItem">מחק פריט</button>' : ''}`));
+};
+actions.saveItem = () => {
+  const d = ui.draft, sku = d.sku.trim(), name = d.name.trim(), bc = String(d.barcode || '').trim();
+  if (!sku || !name) return fail('מק״ט ותאור פריט הם שדות חובה');
+  if (db.items.some(i => i.id !== d.id && i.sku.toLowerCase() === sku.toLowerCase())) return fail('כבר קיים פריט עם מק״ט זה');
+  if (bc && db.items.some(i => i.id !== d.id && i.barcode === bc)) return fail('כבר קיים פריט עם ברקוד זה');
+  const data = { sku, name, barcode: bc, unit: d.unit.trim() || 'יח׳', category: d.category.trim(), minQty: n(d.minQty), active: d.active !== false };
+  if (d.id) Object.assign(item(d.id), data); else db.items.push(Object.assign({ id: uid() }, data));
+  closeModal(); commit(); toast('הפריט נשמר');
+};
+actions.deleteItem = () => {
+  const id = ui.draft.id;
+  if (stockRows().some(r => r.itemId === id)) return fail('לא ניתן למחוק פריט שיש לו יתרת מלאי');
+  const used = db.moves.some(m => m.itemId === id) || db.receipts.some(r => r.lines.some(l => l.itemId === id)) || db.orders.some(o => o.lines.some(l => l.itemId === id));
+  if (used) { item(id).active = false; closeModal(); commit(); return toast('לפריט יש תנועות, ולכן הוא סומן כלא פעיל במקום להימחק'); }
+  if (!confirm('למחוק את הפריט?')) return;
+  db.items = db.items.filter(i => i.id !== id); closeModal(); commit(); toast('הפריט נמחק');
+};
+const splitRows = text => text.split(/\r?\n/).map(l => l.trim() ? l.split(l.includes('\t') ? '\t' : /[,;]/).map(c => c.trim()) : null).filter(Boolean);
+actions.importItems = () => {
+  ui.draft = { text: '' };
+  showModal(() => frame('ייבוא פריטים מאקסל', `<p class="sub">העתיקו שורות מאקסל והדביקו כאן. סדר העמודות: <b>מק״ט, תאור פריט, ברקוד, יח׳, משפחה, מלאי מינימום</b> (רק מק״ט ותאור חובה). פריט עם מק״ט קיים יעודכן.</p><textarea id="d-text" data-d="text" placeholder="1001	ברגים 4x40	7290000010014	קופסה	חומרי חיבור	20"></textarea>`, `<button class="primary" data-act="doImportItems">ייבא</button>`));
+};
+actions.doImportItems = () => {
+  let add = 0, upd = 0, skip = 0;
+  for (const c of splitRows(ui.draft.text)) {
+    if (!c[0] || !c[1] || /^(מק.?ט|sku|partname)$/i.test(c[0])) { skip++; continue; }
+    const ex = db.items.find(i => i.sku.toLowerCase() === c[0].toLowerCase());
+    if (ex) { ex.name = c[1]; if (c[2]) ex.barcode = c[2]; if (c[3]) ex.unit = c[3]; if (c[4]) ex.category = c[4]; if (c[5]) ex.minQty = n(c[5]); upd++; }
+    else { db.items.push({ id: uid(), active: true, sku: c[0], name: c[1], barcode: c[2] || '', unit: c[3] || 'יח׳', category: c[4] || '', minQty: n(c[5]) }); add++; }
+  }
+  if (!add && !upd) return fail('לא נמצאו שורות תקינות לייבוא');
+  closeModal(); commit(); toast(`נוספו ${add} פריטים, עודכנו ${upd}${skip ? `, דולגו ${skip} שורות` : ''}`);
+};
+
+/* ================= מחסנים ואיתורים ================= */
+views.warehouses = () => pageHead('מחסנים', `<button class="primary" data-act="bulkLocs">+ יצירת איתורים</button><button data-act="editLoc">+ איתור בודד</button>`, 'מבנה איתור: <b dir="ltr">מחסן.טור.ברזל.גובה.מיקום</b>, לדוגמה <span dir="ltr">1.01.01.20.1</span>. גבהים 10 ו-20 לליקוט, 30 ו-40 לאחסנה במשטחים.') +
+  searchBar('lc', 'חיפוש לפי מחסן, תאור או איתור', `<select data-filter="lcType"><option value="">כל סוגי האיתורים</option>${Object.entries(LOC_TYPES).map(([k, v]) => `<option value="${k}" ${ui.f.lcType === k ? 'selected' : ''}>${v}</option>`).join('')}</select>`) + `<div id="list">${lists.warehouses()}</div>`;
+lists.warehouses = () => {
+  const q = fq('lc'), agg = {};
+  stockRows().forEach(r => { const a = agg[r.locId] || (agg[r.locId] = { skus: 0, qty: 0 }); a.skus++; a.qty = r3(a.qty + r.qty); });
+  const all = sortedLocs().filter(l => (!ui.f.lcType || l.type === ui.f.lcType) && (!q || [l.warhs, l.code, db.warhs[l.warhs]].join(' ').toLowerCase().includes(q)));
+  return tbl(['מחסן', 'תאור מחסן', 'איתור', '#טור', '#ברזל', '#גובה', '#מיקום', 'סוג איתור', '#פריטים', '#יתרה', ''], all.slice(0, 500).map(l => { const p = parseLoc(l.code) || {};
+    return `<tr class="click" data-act="locCard" data-id="${l.id}"><td class="code">${esc(l.warhs)}</td><td>${esc(db.warhs[l.warhs])}</td><td class="code">${esc(l.code)}</td><td class="n">${p.aisle || '—'}</td><td class="n">${p.bay || '—'}</td><td class="n">${p.level || '—'}</td><td class="n">${p.pos || '—'}</td><td>${LOC_TYPES[l.type]}</td><td class="n">${(agg[l.id] || {}).skus || '—'}</td><td class="n">${agg[l.id] ? num(agg[l.id].qty) : '—'}</td><td class="act"><button class="sm" data-act="editLoc" data-id="${l.id}">עריכה</button></td></tr>`; }),
+    db.locations.length ? 'לא נמצאו איתורים' : 'עדיין לא הוגדרו איתורים. לחצו על ״יצירת איתורים״ כדי לבנות את המחסן.') +
+    (all.length > 500 ? `<p class="mut">מוצגים 500 איתורים מתוך ${num(all.length)}. השתמשו בחיפוש כדי לצמצם.</p>` : '');
+};
+const TYPE_OPTS = Object.entries(LOC_TYPES);
+const whList = () => `<datalist id="dl-wh">${Object.keys(db.warhs).sort(cmp).map(w => `<option value="${esc(w)}">${esc(db.warhs[w])}</option>`).join('')}</datalist>`;
+/* הקלדת איתור במבנה המלא ממלאת לבד את המחסן ואת סוג האיתור לפי הגובה */
+const whOnSet = (par, key) => {
+  if (par !== ui.draft) return;
+  if (key === 'code') { const p = parseLoc(par.code); if (p) { par.warhs = p.warhs; if (p.type) par.type = p.type; } }
+  if ((key === 'warhs' || key === 'code') && db.warhs[String(par.warhs).trim()] !== undefined) par.des = db.warhs[String(par.warhs).trim()];
+};
+const pruneWarhs = () => Object.keys(db.warhs).forEach(w => { if (!db.locations.some(l => l.warhs === w)) delete db.warhs[w]; });
+const firstWh = () => { const w = Object.keys(db.warhs).sort(cmp)[0]; return w ? { warhs: w, des: db.warhs[w] } : { warhs: '1', des: 'מחסן ראשי' }; };
+actions.editLoc = el => {
+  const l = el.dataset.id ? loc(el.dataset.id) : null;
+  ui.draft = l ? Object.assign({ des: db.warhs[l.warhs] || '' }, l) : Object.assign({ id: '', code: '', type: 'storage' }, firstWh());
+  ui.onSet = whOnSet;
+  showModal(() => { const p = parseLoc(ui.draft.code);
+    return frame(ui.draft.id ? 'עריכת איתור' : 'איתור חדש', `${whList()}<div class="grid"><label class="fld"><span>איתור *</span><input id="d-code" data-d="code" data-rr value="${esc(ui.draft.code)}" placeholder="1.01.01.20.1" dir="ltr" autocomplete="off"><div class="hint">${p ? `טור ${p.aisle} · ברזל ${p.bay} · גובה ${p.level} · מיקום ${p.pos}` : ''}</div></label>${fld('מחסן *', 'warhs', { list: 'dl-wh', rr: true })}${fld('תאור מחסן', 'des')}${selFld('סוג איתור', 'type', TYPE_OPTS)}</div>
+    <p class="mut">איתור במבנה <span dir="ltr">מחסן.טור.ברזל.גובה.מיקום</span> ממלא לבד את המחסן ואת הסוג (גובה 10/20 ליקוט, 30/40 אחסון). לאזורים מיוחדים כמו קבלה, החזרות או פסולים אפשר לתת כל שם ולבחור את הסוג ידנית.</p>`,
+    `<button class="primary" data-act="saveLoc">שמור</button>${ui.draft.id ? '<button class="danger" data-act="deleteLoc">מחק איתור</button>' : ''}`); });
+};
+actions.saveLoc = () => {
+  const d = ui.draft, warhs = d.warhs.trim(), code = d.code.trim();
+  if (!code) return fail('איתור הוא שדה חובה');
+  if (!warhs) return fail('מחסן הוא שדה חובה');
+  if (warhs.includes('/') || code.includes('/')) return fail('אין להשתמש בתו / בקוד מחסן או איתור');
+  const ex = findLoc(warhs, code); if (ex && ex.id !== d.id) return fail('האיתור כבר קיים במחסן הזה');
+  const data = { warhs, code, type: d.type };
+  if (d.id) Object.assign(loc(d.id), data); else db.locations.push(Object.assign({ id: uid() }, data));
+  db.warhs[warhs] = (d.des || '').trim(); pruneWarhs();
+  closeModal(); commit(); toast('נשמר');
+};
+actions.deleteLoc = () => {
+  const id = ui.draft.id;
+  if (stockRows().some(r => r.locId === id)) return fail('לא ניתן למחוק איתור שיש בו יתרת מלאי');
+  if (db.moves.some(m => m.locId === id)) return fail('לא ניתן למחוק איתור שיש לו תנועות מלאי');
+  if (!confirm('למחוק את האיתור?')) return;
+  db.locations = db.locations.filter(l => l.id !== id); pruneWarhs(); closeModal(); commit(); toast('האיתור נמחק');
+};
+/* בונה את רשימת האיתורים ליצירה: מחסן.טור.ברזל.גובה.מיקום */
+function bulkPlan(d) {
+  const warhs = String(d.warhs).trim(), a1 = Math.floor(n(d.aisleFrom)), a2 = Math.floor(n(d.aisleTo)), bays = Math.floor(n(d.bays)), pos = Math.floor(n(d.positions));
+  const lv = s => [...new Set(String(s).split(/[,\s]+/).filter(x => /^\d+$/.test(x)))];
+  const levels = lv(d.pickLevels).map(x => [x, 'pick']).concat(lv(d.storeLevels).filter(x => !lv(d.pickLevels).includes(x)).map(x => [x, 'storage']));
+  if (!warhs || /[.\/\s]/.test(warhs)) return { err: 'קוד המחסן חסר או מכיל נקודה, רווח או /' };
+  if (a1 < 1 || a2 < a1) return { err: 'טווח הטורים לא תקין' };
+  if (bays < 1 || pos < 1 || !levels.length) return { err: 'יש למלא ברזלים, גבהים ומיקומים' };
+  if ((a2 - a1 + 1) * bays * levels.length * pos > 10000) return { err: 'יותר מדי איתורים בפעולה אחת (מקסימום 10,000)' };
+  const p2 = x => String(x).padStart(2, '0'), out = [];
+  for (let a = a1; a <= a2; a++) for (let b = 1; b <= bays; b++) for (const [l, type] of levels) for (let p = 1; p <= pos; p++) out.push([`${warhs}.${p2(a)}.${p2(b)}.${l}.${p}`, type]);
+  return { warhs, list: out };
+}
+actions.bulkLocs = () => {
+  ui.draft = Object.assign({ aisleFrom: '1', aisleTo: '2', bays: '5', pickLevels: PICK_LEVELS.join(','), storeLevels: STORE_LEVELS.join(','), positions: '3' }, firstWh());
+  ui.onSet = whOnSet;
+  const f = (label, path, o) => fld(label, path, Object.assign({ rr: true }, o));
+  showModal(() => { const plan = bulkPlan(ui.draft);
+    return frame('יצירת איתורים', `<p class="sub">האיתורים נוצרים במבנה <b dir="ltr">מחסן.טור.ברזל.גובה.מיקום</b>. איתורים שכבר קיימים ידולגו, כך שאפשר להוסיף טורים בהמשך.</p>
+    ${whList()}<div class="grid">${f('מחסן *', 'warhs', { list: 'dl-wh' })}${fld('תאור מחסן', 'des')}${f('מטור', 'aisleFrom', { type: 'number' })}${f('עד טור', 'aisleTo', { type: 'number' })}${f('ברזלים בכל טור', 'bays', { type: 'number' })}${f('מיקומים בכל ברזל', 'positions', { type: 'number' })}${f('גבהים לליקוט', 'pickLevels')}${f('גבהים לאחסנה (משטחים)', 'storeLevels')}</div>
+    <div class="card" style="margin:0">${plan.err ? `<span class="neg">${plan.err}</span>` : `ייווצרו <b>${num(plan.list.length)}</b> איתורים: מ-<b dir="ltr">${esc(plan.list[0][0])}</b> עד <b dir="ltr">${esc(plan.list[plan.list.length - 1][0])}</b> · ${num(plan.list.filter(x => x[1] === 'pick').length)} לליקוט, ${num(plan.list.filter(x => x[1] === 'storage').length)} לאחסנה`}</div>`, `<button class="primary" data-act="doBulkLocs">צור איתורים</button>`); });
+};
+actions.doBulkLocs = () => {
+  const d = ui.draft, plan = bulkPlan(d); if (plan.err) return fail(plan.err);
+  const have = new Set(db.locations.filter(l => l.warhs === plan.warhs).map(l => l.code)); let add = 0;
+  plan.list.forEach(([code, type]) => { if (!have.has(code)) { db.locations.push({ id: uid(), warhs: plan.warhs, code, type }); add++; } });
+  db.warhs[plan.warhs] = (d.des || '').trim(); pruneWarhs();
+  closeModal(); commit(); toast(`נוצרו ${add} איתורים במחסן ${plan.warhs}`);
+};
+
+/* ================= לקוחות וספקים ================= */
+function partyDocs(kind, numStr) {
+  return kind === 'customers' ? db.orders.filter(o => o.custNum === numStr).length + db.returns.filter(r => r.type === 'customer' && r.partyNum === numStr).length
+    : db.receipts.filter(r => r.suppNum === numStr).length + db.returns.filter(r => r.type === 'supplier' && r.partyNum === numStr).length;
+}
+function partyView(kind) {
+  const k = PK[kind];
+  views[kind] = () => pageHead(k.many, `<button class="primary" data-act="editParty" data-kind="${kind}">+ ${k.one} חדש</button>`, `כרטיסי ${k.many}. ${k.one} חדש שמוקלד בתעודה נפתח כאן אוטומטית.`) +
+    searchBar(kind, `חיפוש לפי מספר או שם ${k.one}`) + `<div id="list">${lists[kind]()}</div>`;
+  lists[kind] = () => { const q = fq(kind);
+    return tbl([`מס׳ ${k.one}`, `שם ${k.one}`, 'טלפון', 'פרטים', '#תעודות', ''], db[kind].filter(p => !q || [p.num, p.name, p.phone].join(' ').toLowerCase().includes(q)).sort((a, b) => cmp(a.num, b.num)).slice(0, 500).map(p =>
+      `<tr class="click" data-act="editParty" data-kind="${kind}" data-id="${p.id}"><td class="code">${esc(p.num)}</td><td>${esc(p.name)}</td><td class="code">${esc(p.phone)}</td><td>${esc(p.notes)}</td><td class="n">${partyDocs(kind, p.num) || '—'}</td><td class="act"><button class="sm">עריכה</button></td></tr>`),
+      `אין ${k.many}. לחצו על ״${k.one} חדש״.`); };
+}
+partyView('customers'); partyView('suppliers');
+actions.editParty = el => {
+  const kind = el.dataset.kind, k = PK[kind], p = el.dataset.id ? db[kind].find(x => x.id === el.dataset.id) : null;
+  ui.draft = p ? Object.assign({ kind }, p) : { kind, id: '', num: '', name: '', phone: '', notes: '' };
+  showModal(() => frame(ui.draft.id ? `כרטיס ${k.one}` : `${k.one} חדש`, `<div class="grid">${fld(`מס׳ ${k.one}`, 'num', { ph: 'ריק = מספור אוטומטי' })}${fld(`שם ${k.one} *`, 'name')}${fld('טלפון', 'phone')}</div>${fld('פרטים', 'notes')}`,
+    `<button class="primary" data-act="saveParty">שמור</button>${ui.draft.id ? '<button class="danger" data-act="deleteParty">מחק</button>' : ''}`));
+};
+actions.saveParty = () => {
+  const d = ui.draft, kind = d.kind, name = d.name.trim(); let numStr = d.num.trim();
+  if (!name) return fail('שם הוא שדה חובה');
+  if (numStr && db[kind].some(p => p.id !== d.id && p.num.toLowerCase() === numStr.toLowerCase())) return fail('המספר כבר קיים');
+  if (!numStr) numStr = nextPartyNum(kind);
+  const old = d.id ? db[kind].find(p => p.id === d.id) : null;
+  if (old && (old.num !== numStr || old.name !== name)) {   /* עדכון התעודות הקיימות של הכרטיס */
+    if (kind === 'customers') db.orders.forEach(o => { if (o.custNum === old.num) { o.custNum = numStr; o.customer = name; } });
+    else db.receipts.forEach(r => { if (r.suppNum === old.num) { r.suppNum = numStr; r.supplier = name; } });
+    db.returns.forEach(r => { if (r.type === (kind === 'customers' ? 'customer' : 'supplier') && r.partyNum === old.num) { r.partyNum = numStr; r.party = name; } });
+  }
+  const data = { num: numStr, name, phone: d.phone.trim(), notes: d.notes.trim() };
+  if (old) Object.assign(old, data); else db[kind].push(Object.assign({ id: uid() }, data));
+  closeModal(); commit(); toast('נשמר');
+};
+actions.deleteParty = () => {
+  const d = ui.draft, old = db[d.kind].find(p => p.id === d.id);
+  if (partyDocs(d.kind, old.num)) return fail('לא ניתן למחוק כרטיס שיש לו תעודות');
+  if (!confirm('למחוק את הכרטיס?')) return;
+  db[d.kind] = db[d.kind].filter(p => p.id !== d.id); closeModal(); commit(); toast('נמחק');
+};
+
+/* ================= קבלות סחורה מספק ================= */
+views.grv = id => id ? receiptDetail(id) : pageHead('קבלות סחורה מספק', `<button class="primary" data-act="newReceipt">+ קבלת סחורה חדשה</button>`, 'קבלת סחורה מול הזמנת רכש ואחסון באיתורים') +
+  searchBar('rc', 'חיפוש לפי מס׳ תעודה, ספק או הזמנת רכש') + `<div id="list">${lists.grv()}</div>`;
+lists.grv = () => {
+  const q = fq('rc');
+  return tbl(['מס׳ תעודה', 'תאריך', 'מס׳ ספק', 'שם ספק', 'הזמנת רכש', '#שורות', '#התקבל / בהזמנה', 'סטטוס'], db.receipts.slice().reverse().filter(r => !q || [r.num, r.suppNum, r.supplier, r.ref].join(' ').toLowerCase().includes(q)).slice(0, 300).map(r =>
+    `<tr class="click" data-act="go" data-href="#/grv/${r.id}"><td class="code">${r.num}</td><td>${fmtDate(r.date)}</td><td class="code">${esc(r.suppNum)}</td><td>${esc(r.supplier)}</td><td>${esc(r.ref)}</td><td class="n">${r.lines.length}</td><td class="n">${num(sum(r.lines, l => l.received))} / ${num(sum(r.lines, l => l.expected))}</td><td>${badge('receipt', r.status)}</td></tr>`),
+    'אין קבלות סחורה. לחצו על ״קבלת סחורה חדשה״ כדי להתחיל.');
+};
+actions.newReceipt = () => {
+  if (!db.locations.length) return fail('יש להגדיר מחסנים לפני קבלת סחורה');
+  ui.blank = () => ({ itemText: '', itemId: '', qty: '' });
+  ui.draft = { party: '', ref: '', date: today(), notes: '', lines: [ui.blank()] };
+  showModal(() => frame('קבלת סחורה מספק', `<div class="grid">${partyFld('suppliers')}${fld('הזמנת רכש / תעודת ספק', 'ref')}${fld('תאריך', 'date', { type: 'date' })}</div>
+    ${linesTable(['מק״ט', 'כמות בהזמנה'], (ln, i, p) => `<td>${itemField(p, ln)}</td><td>${qtyFld(p + '.qty', ln.qty)}</td>`)}<div style="margin-top:14px">${fld('פרטים', 'notes')}</div>`, `<button class="primary" data-act="saveReceipt">פתח תעודה והמשך לקבלה</button>`));
+};
+actions.saveReceipt = () => {
+  const d = ui.draft, lines = cleanLines(d.lines); if (!lines) return;
+  const p = ensureParty('suppliers', d.party);
+  const r = { id: uid(), num: nextNum('GR'), suppNum: p.num, supplier: p.name, ref: d.ref.trim(), date: d.date || today(), notes: d.notes.trim(), status: 'open', lines: lines.map(l => ({ itemId: l.itemId, expected: n(l.qty), received: 0 })) };
+  db.receipts.push(r); closeModal(); save(); go('#/grv/' + r.id);
+};
+function receiptDetail(id) {
+  const r = db.receipts.find(x => x.id === id); if (!r) return notFound('grv');
+  const open = r.status === 'open' || r.status === 'partial';
+  const rows = r.lines.map((ln, i) => { const rem = Math.max(0, r3(ln.expected - ln.received)), def = defaultPutaway(ln.itemId);
+    return `<tr id="rc-row-${i}" class="${!open || (ln.expected > 0 && rem === 0) ? 'done' : ''}">${itemTd(ln.itemId)}<td class="n">${ln.expected ? num(ln.expected) : '—'}</td><td class="n ${ln.received > ln.expected && ln.expected ? 'neg' : ''}">${num(ln.received)}</td><td class="n">${num(rem)}</td>` +
+      (open ? `<td class="n no-print"><input class="qty" type="number" min="0" step="any" inputmode="decimal" id="rc-q-${i}" data-rem="${rem}"></td><td class="no-print"><input id="rc-l-${i}" list="dl-locs" value="${esc(def ? locCode(def) : '')}" placeholder="סרקו או הקלידו איתור" autocomplete="off" style="min-width:150px"></td>` : '') + '</tr>'; });
+  return `<a class="back no-print" href="#/grv">→ חזרה לקבלות סחורה מספק</a>` +
+    pageHead(`קבלת סחורה מספק ${r.num}`, open ? `<button class="primary" data-act="rcConfirm">אשר קבלה</button><button data-act="rcFill">מלא יתרות לקבלה</button><button data-act="rcAddLine">+ פריט שלא בהזמנה</button><button data-act="rcClose">הפוך לסופית</button><button data-act="print">הדפס</button>${r.lines.every(l => !l.received) ? '<button class="danger" data-act="rcDelete">מחק</button>' : ''}` : `<button data-act="print">הדפס</button>`,
+      `${badge('receipt', r.status)} · ספק: ${esc(r.suppNum)} ${esc(r.supplier) || '—'} · הזמנת רכש: ${esc(r.ref) || '—'} · ${fmtDate(r.date)}${r.notes ? ' · ' + esc(r.notes) : ''}`) +
+    (open ? `<div class="toolbar no-print"><input type="search" id="rc-scan" data-enter="rcScan" placeholder="סרקו ברקוד פריט כדי לקפוץ לשורה שלו" autocomplete="off"></div>` : '') +
+    tbl(['מק״ט', 'תאור פריט', '#כמות בהזמנה', '#התקבל', '#יתרה לקבלה'].concat(open ? ['#כמות לקבלה', 'איתור לאחסון'] : []), rows) +
+    (open ? `<p class="mut no-print">הזינו את הכמות שהתקבלה בפועל וסרקו או הקלידו את האיתור. אפשר לקבל בחלקים — התעודה נשארת פתוחה עד להשלמה.</p>` : '');
+}
+const curReceipt = () => db.receipts.find(x => x.id === ui.id);
+actions.rcFill = () => { curReceipt().lines.forEach((ln, i) => { const el = $('#rc-q-' + i); if (el && !el.value && n(el.dataset.rem) > 0) el.value = el.dataset.rem; }); };
+actions.rcScan = el => {
+  const it = resolveItem(el.value); el.value = '';
+  if (!it) return fail('המק״ט לא נמצא בטבלת הפריטים');
+  const r = curReceipt(); let i = r.lines.findIndex(l => l.itemId === it.id && l.received < l.expected); if (i < 0) i = r.lines.findIndex(l => l.itemId === it.id);
+  if (i < 0) return fail('הפריט לא מופיע בתעודה. אפשר להוסיף אותו כ״פריט שלא בהזמנה״.');
+  document.querySelectorAll('tr.hl').forEach(x => x.classList.remove('hl')); $('#rc-row-' + i).classList.add('hl'); $('#rc-q-' + i).focus();
+};
+actions.rcConfirm = () => {
+  const r = curReceipt();
+  const todo = r.lines.map((ln, i) => ({ ln, i, q: n($('#rc-q-' + i).value), l: locByCode($('#rc-l-' + i).value) })).filter(x => x.q > 0);
+  if (!todo.length) return fail('לא הוזנו כמויות לקבלה');
+  const bad = todo.find(x => !x.l); if (bad) { $('#rc-l-' + bad.i).focus(); return fail(`${(item(bad.ln.itemId) || {}).sku}: האיתור לא נמצא`); }
+  todo.forEach(x => { addStock(x.ln.itemId, x.l.id, x.q, MV.grv, r.num, r.supplier); x.ln.received = r3(x.ln.received + x.q); });
+  r.status = r.lines.every(l => l.received >= l.expected) ? 'done' : 'partial';
+  commit(); toast(r.status === 'done' ? 'הקבלה הושלמה, התעודה סופית והמלאי עודכן' : `התקבלו ${todo.length} שורות. התעודה נשארת פתוחה ליתרה.`);
+};
+actions.rcAddLine = () => {
+  ui.draft = { itemText: '', itemId: '', qty: '' };
+  showModal(() => frame('הוספת פריט שלא בהזמנה', `<div class="grid"><label class="fld"><span>מק״ט</span>${itemField('', ui.draft)}</label>${fld('כמות בהזמנה (אפשר להשאיר ריק)', 'qty', { type: 'number' })}</div>`, `<button class="primary" data-act="rcSaveLine">הוסף לתעודה</button>`));
+};
+actions.rcSaveLine = () => {
+  if (!ui.draft.itemId) return fail('יש לבחור פריט קיים מטבלת הפריטים');
+  curReceipt().lines.push({ itemId: ui.draft.itemId, expected: n(ui.draft.qty), received: 0 }); closeModal(); commit();
+};
+actions.rcClose = () => {
+  const r = curReceipt(), short = r.lines.some(l => l.received < l.expected);
+  if (!confirm(short ? 'יש שורות שלא התקבלו במלואן. להפוך את התעודה לסופית בחוסר?' : 'להפוך את התעודה לסופית?')) return;
+  r.status = short ? 'closed' : 'done'; commit();
+};
+actions.rcDelete = () => { if (!confirm('למחוק את התעודה?')) return; db.receipts = db.receipts.filter(x => x.id !== ui.id); save(); go('#/grv'); };
+actions.print = () => window.print();
+actions.go = el => go(el.dataset.href);
+
+/* ================= הזמנות לקוח וליקוט ================= */
+views.orders = id => id ? orderDetail(id) : pageHead('הזמנות לקוח', `<button class="primary" data-act="newOrder">+ הזמנת לקוח חדשה</button>`, 'הזמנה → שחרור לליקוט → תעודת משלוח ללקוח') +
+  searchBar('or', 'חיפוש לפי מס׳ הזמנה, לקוח או הזמנת הלקוח', `<select data-filter="orSt"><option value="">כל הסטטוסים</option>${Object.entries(ST.order).map(([k, v]) => `<option value="${k}" ${ui.f.orSt === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>`) + `<div id="list">${lists.orders()}</div>`;
+const openAlloc = ln => sum((ln.allocs || []).filter(a => !a.done), a => a.qty);
+const lineShort = ln => Math.max(0, r3(ln.qty - ln.picked - openAlloc(ln)));
+lists.orders = () => {
+  const q = fq('or');
+  return tbl(['מס׳ הזמנה', 'תאריך', 'מס׳ לקוח', 'שם לקוח', 'הזמנת הלקוח', '#שורות', '#לוקט / הוזמן', 'דחיפות', 'סטטוס'], db.orders.slice().reverse().filter(o => (!ui.f.orSt || o.status === ui.f.orSt) && (!q || [o.num, o.custNum, o.customer, o.ref].join(' ').toLowerCase().includes(q))).slice(0, 300).map(o =>
+    `<tr class="click" data-act="go" data-href="#/orders/${o.id}"><td class="code">${o.num}</td><td>${fmtDate(o.date)}</td><td class="code">${esc(o.custNum)}</td><td>${esc(o.customer)}</td><td>${esc(o.ref)}</td><td class="n">${o.lines.length}</td><td class="n">${num(sum(o.lines, l => l.picked))} / ${num(sum(o.lines, l => l.qty))}</td><td>${o.priority === 'urgent' ? URGENT : 'רגיל'}</td><td>${badge('order', o.status)}</td></tr>`),
+    'אין הזמנות לקוח. לחצו על ״הזמנת לקוח חדשה״ כדי להתחיל.');
+};
+actions.newOrder = () => {
+  ui.blank = () => ({ itemText: '', itemId: '', qty: '' });
+  ui.draft = { party: '', ref: '', date: today(), priority: 'normal', notes: '', lines: [ui.blank()] };
+  showModal(() => { const sm = summary();
+    return frame('הזמנת לקוח חדשה', `<div class="grid">${partyFld('customers')}${fld('הזמנת הלקוח (אסמכתא)', 'ref')}${fld('תאריך', 'date', { type: 'date' })}${selFld('דחיפות', 'priority', [['normal', 'רגיל'], ['urgent', 'דחוף']])}</div>
+      ${linesTable(['מק״ט', 'כמות'], (ln, i, p) => `<td>${itemField(p, ln, ` · זמין: ${num((sm.get(ln.itemId) || {}).avail || 0)}`)}</td><td>${qtyFld(p + '.qty', ln.qty)}</td>`)}<div style="margin-top:14px">${fld('פרטים', 'notes')}</div>`, `<button class="primary" data-act="saveOrder">פתח הזמנה</button>`); });
+};
+actions.saveOrder = () => {
+  const d = ui.draft, lines = cleanLines(d.lines); if (!lines) return;
+  const p = ensureParty('customers', d.party);
+  const o = { id: uid(), num: nextNum('SO'), custNum: p.num, customer: p.name, ref: d.ref.trim(), date: d.date || today(), priority: d.priority, notes: d.notes.trim(), status: 'new', lines: lines.map(l => ({ itemId: l.itemId, qty: n(l.qty), picked: 0, allocs: [] })) };
+  db.orders.push(o); closeModal(); save(); go('#/orders/' + o.id);
+};
+/* הקצאת מלאי לשורות ההזמנה: קודם מאיתורי ליקוט, אחר כך מאחסון, לפי סדר האיתורים */
+function allocate(o) {
+  const res = reservedMap(); let any = false;
+  for (const ln of o.lines) {
+    let need = lineShort(ln); if (need <= 0) continue;
+    const cands = stockRows().filter(r => r.itemId === ln.itemId && loc(r.locId) && PICKABLE.includes(loc(r.locId).type))
+      .filter(r => !ln.allocs.some(a => a.locId === r.locId && a.done && a.picked < a.qty))
+      .map(r => ({ locId: r.locId, avail: r3(r.qty - (res[sk(r.itemId, r.locId)] || 0)), rank: loc(r.locId).type === 'pick' ? 0 : 1 })).filter(c => c.avail > 0)
+      .sort((a, b) => a.rank - b.rank || cmp(locCode(a.locId), locCode(b.locId)));
+    for (const c of cands) {
+      if (need <= 0) break;
+      const q = Math.min(need, c.avail), ex = ln.allocs.find(a => a.locId === c.locId && !a.done);
+      if (ex) ex.qty = r3(ex.qty + q); else ln.allocs.push({ locId: c.locId, qty: q, picked: 0, done: false });
+      res[sk(ln.itemId, c.locId)] = r3((res[sk(ln.itemId, c.locId)] || 0) + q); need = r3(need - q); any = true;
+    }
+  }
+  return any;
+}
+function orderDetail(id) {
+  const o = db.orders.find(x => x.id === id); if (!o) return notFound('orders');
+  const sm = summary(), short = o.lines.some(l => lineShort(l) > 0), nothingPicked = o.lines.every(l => !l.picked), ship = db.shipments.find(s => s.id === o.shId);
+  let btns = '', body = '';
+  const lineRows = o.lines.map(ln => { const sh = lineShort(ln);
+    return `<tr>${itemTd(ln.itemId)}<td class="n">${num(ln.qty)}</td>` + (o.status === 'new' ? `<td class="n ${((sm.get(ln.itemId) || {}).avail || 0) < ln.qty ? 'neg' : ''}">${num((sm.get(ln.itemId) || {}).avail || 0)}</td>` : `<td class="n">${num(ln.picked)}</td><td class="n ${sh ? 'neg' : ''}">${sh && o.status === 'picking' ? num(sh) : (ln.picked < ln.qty && o.status !== 'picking' ? num(ln.qty - ln.picked) : '—')}</td>`) + '</tr>'; });
+  if (o.status === 'new') {
+    btns = `<button class="primary" data-act="orRelease">שחרר לליקוט</button><button class="danger" data-act="orDelete">מחק הזמנה</button>`;
+    body = tbl(['מק״ט', 'תאור פריט', '#כמות', '#זמין במלאי'], lineRows) + `<p class="mut">שחרור לליקוט מקצה מלאי להזמנה, משריין אותו, פותח תעודת משלוח בטיוטא ויוצר משימות ליקוט לפי איתורים.</p>`;
+  } else {
+    const tasks = []; o.lines.forEach((ln, li) => ln.allocs.forEach((a, ai) => tasks.push({ ln, li, a, ai })));
+    tasks.sort((x, y) => (x.a.done ? 1 : 0) - (y.a.done ? 1 : 0) || cmp(locCode(x.a.locId), locCode(y.a.locId)));
+    const picking = o.status === 'picking';
+    const taskRows = tasks.map(t => { const it = item(t.ln.itemId) || {};
+      return `<tr id="pk-row-${t.li}-${t.ai}" class="${t.a.done ? 'done' : ''}">${locTd(t.a.locId)}${itemTd(t.ln.itemId)}<td class="n"><b>${num(t.a.qty)}</b> <span class="mut">${esc(it.unit)}</span></td>` +
+        (t.a.done ? `<td class="n ${t.a.picked < t.a.qty ? 'neg' : ''}">${num(t.a.picked)}</td><td>${t.a.picked < t.a.qty ? '<span class="badge b-red">חסר</span>' : '<span class="badge b-green">לוקט</span>'}</td>`
+          : `<td class="n"><input class="qty pk-q" type="number" min="0" step="any" inputmode="decimal" id="pk-q-${t.li}-${t.ai}" data-li="${t.li}" data-ai="${t.ai}" value="${t.a.qty}"></td><td class="no-print"><button class="sm primary" data-act="pickOne" data-li="${t.li}" data-ai="${t.ai}">אשר</button></td>`) + '</tr>'; });
+    if (picking) btns = (tasks.some(t => !t.a.done) ? `<button class="primary" data-act="pickAll">אשר את כל השורות</button>` : '') + (short ? `<button data-act="orRealloc">הקצה חסרים מחדש</button>` : '') + `<button data-act="orFinish">סיים ליקוט בחוסר</button><button data-act="print">הדפס תעודת ליקוט</button>` + (nothingPicked ? `<button class="danger" data-act="orCancel">בטל הזמנה</button>` : '');
+    else if (o.status === 'picked') btns = `<button class="primary" data-act="orShip">הפוך תעודת משלוח לסופית</button><button data-act="print">הדפס</button>`;
+    else btns = `<button data-act="print">הדפס</button>`;
+    body = (picking ? `<div class="toolbar no-print"><input type="search" id="pk-scan" data-enter="pkScan" placeholder="סרקו ברקוד פריט או איתור כדי לקפוץ למשימה" autocomplete="off"></div>` : '') +
+      (o.status !== 'cancelled' ? `<h3>משימות ליקוט (לפי מסלול איתורים)</h3>` + tbl(['מחסן', 'איתור', 'מק״ט', 'תאור פריט', '#כמות לליקוט', '#לוקט בפועל', ''], taskRows, 'אין משימות ליקוט — לא הוקצה מלאי') : '') +
+      (picking && short ? `<div class="card" style="border-color:#efc4c0;background:var(--red-l)">חלק מהכמויות לא הוקצו כי אין מספיק מלאי זמין. אחרי קבלת סחורה או תיקון יתרה לחצו על ״הקצה חסרים מחדש״, או סיימו את הליקוט בחוסר.</div>` : '') +
+      `<h3>שורות ההזמנה</h3>` + tbl(['מק״ט', 'תאור פריט', '#כמות', '#לוקט', '#חסר'], lineRows);
+  }
+  return `<a class="back no-print" href="#/orders">→ חזרה להזמנות לקוח</a>` + pageHead(`הזמנת לקוח ${o.num}`, btns,
+    `${badge('order', o.status)}${o.priority === 'urgent' ? ' ' + URGENT : ''} · לקוח: ${esc(o.custNum)} ${esc(o.customer) || '—'} · הזמנת הלקוח: ${esc(o.ref) || '—'} · ${fmtDate(o.date)}${ship ? ` · תעודת משלוח: <span dir="ltr">${ship.num}</span> (${ST.ship[ship.status][0]})` : ''}${o.notes ? ' · ' + esc(o.notes) : ''}`) + body;
+}
+const curOrder = () => db.orders.find(x => x.id === ui.id);
+const checkPicked = o => { if (o.lines.every(l => l.picked >= l.qty)) o.status = 'picked'; };
+actions.orRelease = () => {
+  const o = curOrder();
+  if (!allocate(o)) return fail('אין מלאי זמין לאף אחת משורות ההזמנה');
+  o.status = 'picking'; ensureShipment(o); commit();
+  const short = o.lines.some(l => lineShort(l) > 0);
+  toast(short ? 'ההזמנה שוחררה, אך חלק מהכמויות חסרות במלאי' : 'ההזמנה שוחררה לליקוט', short);
+};
+actions.orRealloc = () => { const o = curOrder(); if (!allocate(o)) return fail('עדיין אין מלאי זמין לשורות החסרות'); commit(); toast('הוקצה מלאי נוסף'); };
+function doPick(o, li, ai, q) {
+  const ln = o.lines[li], a = ln.allocs[ai], it = item(ln.itemId) || {};
+  if (a.done) return true;
+  if (q < 0 || q > a.qty) return fail(`${it.sku}: הכמות חייבת להיות בין 0 ל-${num(a.qty)}`);
+  if (q > qtyAt(ln.itemId, a.locId)) return fail(`${it.sku}: אין מספיק יתרה באיתור ${locCode(a.locId)}`);
+  if (q > 0) addStock(ln.itemId, a.locId, -q, MV.ship, ensureShipment(o).num, o.customer);
+  a.picked = q; a.done = true; ln.picked = r3(ln.picked + q);
+  return true;
+}
+actions.pickOne = el => {
+  const o = curOrder(), li = +el.dataset.li, ai = +el.dataset.ai, v = $(`#pk-q-${li}-${ai}`).value;
+  if (String(v).trim() === '') return fail('יש להזין כמות שלוקטה');
+  if (!doPick(o, li, ai, n(v))) return;
+  checkPicked(o); commit(); if (o.status === 'picked') toast('הליקוט הושלם');
+};
+actions.pickAll = () => {
+  const o = curOrder(), inputs = [...document.querySelectorAll('.pk-q')];
+  if (inputs.some(i => String(i.value).trim() === '')) return fail('יש להזין כמות בכל השורות');
+  for (const i of inputs) if (!doPick(o, +i.dataset.li, +i.dataset.ai, n(i.value))) { commit(); return; }
+  checkPicked(o); commit(); toast(o.status === 'picked' ? 'הליקוט הושלם' : 'השורות אושרו. נותרו חוסרים בהזמנה.');
+};
+actions.pkScan = el => {
+  const t = el.value; el.value = '';
+  const o = curOrder(), it = resolveItem(t), l = it ? null : locByCode(t);
+  if (!it && !l) return fail('לא נמצא פריט או איתור מתאים');
+  let hit = null;
+  o.lines.forEach((ln, li) => ln.allocs.forEach((a, ai) => { if (!hit && !a.done && (it ? ln.itemId === it.id : a.locId === l.id)) hit = [li, ai]; }));
+  if (!hit) return fail(it ? 'אין משימת ליקוט פתוחה לפריט הזה בהזמנה' : 'אין משימת ליקוט פתוחה באיתור הזה');
+  document.querySelectorAll('tr.hl').forEach(x => x.classList.remove('hl'));
+  $(`#pk-row-${hit[0]}-${hit[1]}`).classList.add('hl'); const inp = $(`#pk-q-${hit[0]}-${hit[1]}`); inp.focus(); inp.select();
+};
+actions.orFinish = () => {
+  const o = curOrder(), open = o.lines.some(l => l.allocs.some(a => !a.done));
+  if (!confirm(open ? 'יש משימות ליקוט שעדיין לא אושרו — הן יבוטלו והמלאי ישוחרר. לסיים את הליקוט בחוסר?' : 'לסיים את הליקוט בחוסר?')) return;
+  o.lines.forEach(l => l.allocs.forEach(a => { if (!a.done) { a.done = true; a.picked = 0; } }));
+  if (o.lines.every(l => !l.picked)) { o.status = 'cancelled'; ensureShipment(o).status = 'cancelled'; commit(); return toast('לא לוקט דבר — ההזמנה ותעודת המשלוח בוטלו'); }
+  o.status = 'picked'; commit();
+};
+actions.orCancel = () => { if (!confirm('לבטל את ההזמנה ולשחרר את המלאי המשוריין?')) return; const o = curOrder(); o.lines.forEach(l => l.allocs = []); o.status = 'cancelled'; if (o.shId) ensureShipment(o).status = 'cancelled'; commit(); };
+actions.orDelete = () => { if (!confirm('למחוק את ההזמנה?')) return; db.orders = db.orders.filter(x => x.id !== ui.id); save(); go('#/orders'); };
+actions.orShip = () => { const o = curOrder(), s = ensureShipment(o); s.status = 'final'; s.date = today(); o.status = 'shipped'; commit(); toast(`תעודת משלוח ${s.num} סופית — ההזמנה סופקה`); };
+
+views.picktasks = () => pageHead('משימות ליקוט', '', 'כל משימות הליקוט הפתוחות מכל ההזמנות, דחופות קודם ואז לפי מסלול איתורים') + `<div id="list">${lists.picktasks()}</div>`;
+lists.picktasks = () => tbl(['מחסן', 'איתור', 'מק״ט', 'תאור פריט', '#כמות לליקוט', 'הזמנה', 'שם לקוח', 'דחיפות'],
+  openTasks().sort((x, y) => (x.o.priority === 'urgent' ? 0 : 1) - (y.o.priority === 'urgent' ? 0 : 1) || cmp(locCode(x.a.locId), locCode(y.a.locId))).map(t =>
+    `<tr class="click" data-act="go" data-href="#/orders/${t.o.id}">${locTd(t.a.locId)}${itemTd(t.ln.itemId)}<td class="n"><b>${num(t.a.qty)}</b></td><td class="code">${t.o.num}</td><td>${esc(t.o.customer)}</td><td>${t.o.priority === 'urgent' ? URGENT : 'רגיל'}</td></tr>`),
+  'אין משימות ליקוט פתוחות. משימות נוצרות כשמשחררים הזמנת לקוח לליקוט.');
+
+views.shipments = () => pageHead('משלוחים ללקוח', '', 'תעודת משלוח נפתחת אוטומטית בשחרור הזמנה לליקוט, והופכת לסופית בסיום') +
+  searchBar('sh', 'חיפוש לפי מס׳ תעודה, הזמנה או לקוח') + `<div id="list">${lists.shipments()}</div>`;
+lists.shipments = () => {
+  const q = fq('sh');
+  return tbl(['מס׳ תעודה', 'תאריך', 'מס׳ לקוח', 'שם לקוח', 'הזמנה', '#שורות', '#כמות', 'סטטוס'], db.shipments.slice().reverse().map(s => [s, db.orders.find(o => o.id === s.orderId)]).filter(([s, o]) => o && (!q || [s.num, o.num, o.custNum, o.customer].join(' ').toLowerCase().includes(q))).slice(0, 300).map(([s, o]) =>
+    `<tr class="click" data-act="go" data-href="#/orders/${o.id}"><td class="code">${s.num}</td><td>${fmtDate(s.date)}</td><td class="code">${esc(o.custNum)}</td><td>${esc(o.customer)}</td><td class="code">${o.num}</td><td class="n">${o.lines.filter(l => l.picked).length}</td><td class="n">${num(sum(o.lines, l => l.picked))}</td><td>${badge('ship', s.status)}${s.status === 'draft' && o.status === 'picked' ? ' <span class="badge b-amber">מוכנה לסגירה</span>' : ''}</td></tr>`),
+    'אין תעודות משלוח.');
+};
+
+/* ================= העברות בין מחסנים ================= */
+views.transfers = () => pageHead('העברות בין מחסנים', `<button class="primary" data-act="newTransfer">+ העברה חדשה</button>`, 'העברת מלאי ממחסן/איתור למחסן/איתור') +
+  searchBar('tr', 'חיפוש לפי מס׳ תעודה, פריט, מחסן או איתור') + `<div id="list">${lists.transfers()}</div>`;
+const docText = d => [d.num, d.partyNum, d.party, d.ref, d.notes].concat(d.lines.map(l => { const it = item(l.itemId) || {}; return [it.sku, it.name, locCode(l.fromLoc || l.locId), l.toLoc ? locCode(l.toLoc) : ''].join(' '); })).join(' ').toLowerCase();
+lists.transfers = () => {
+  const q = fq('tr');
+  return tbl(['מס׳ תעודה', 'תאריך', 'ממחסן/איתור', 'למחסן/איתור', 'פריטים', '#שורות', '#כמות', 'פרטים', 'סטטוס'], db.transfers.slice().reverse().filter(t => !q || docText(t).includes(q)).slice(0, 300).map(t => { const l = t.lines[0], it = item(l.itemId) || {};
+    return `<tr class="click" data-act="viewDoc" data-kind="transfers" data-id="${t.id}"><td class="code">${t.num}</td><td>${fmtDate(t.date)}</td><td class="code">${esc(locCode(l.fromLoc))}</td><td class="code">${esc(locCode(l.toLoc))}</td><td>${esc(it.sku)} ${esc(it.name)}${t.lines.length > 1 ? ` ועוד ${t.lines.length - 1}` : ''}</td><td class="n">${t.lines.length}</td><td class="n">${num(sum(t.lines, x => x.qty))}</td><td>${esc(t.notes)}</td><td>${FINAL}</td></tr>`; }),
+    'אין העברות. לחצו על ״העברה חדשה״.');
+};
+actions.newTransfer = el => {
+  const it = el.dataset.item ? item(el.dataset.item) : null;
+  ui.blank = () => ({ itemText: '', itemId: '', fromLoc: '', toLoc: '', toLocText: '', qty: '' });
+  ui.draft = { date: today(), notes: '', lines: [Object.assign(ui.blank(), it ? { itemText: it.sku, itemId: it.id, fromLoc: el.dataset.loc || '' } : {})] };
+  showModal(() => { const res = reservedMap();
+    return frame('העברה בין מחסנים', linesTable(['מק״ט', 'מאיתור', 'לאיתור', 'כמות'], (ln, i, p) => {
+      const from = fromOpts(ln.itemId, res);
+      if (!from.some(x => x[0] === ln.fromLoc)) ln.fromLoc = from.length ? from[0][0] : '';
+      return `<td>${itemField(p, ln)}</td><td>${from.length ? selectHtml(p + '.fromLoc', from, ln.fromLoc) : `<div class="hint ${ln.itemId ? 'bad' : ''}">${ln.itemId ? 'אין יתרה פנויה להעברה' : 'בחרו פריט'}</div>`}</td><td>${locField(p, 'toLocText', ln)}</td><td>${qtyFld(p + '.qty', ln.qty)}</td>`;
+    }) + `<div class="grid" style="margin-top:14px">${fld('תאריך', 'date', { type: 'date' })}${fld('פרטים', 'notes')}</div>`, `<button class="primary" data-act="saveTransfer">בצע העברה</button>`); });
+};
+/* בדיקה שיש מספיק יתרה פנויה באיתור המקור עבור כל שורות התעודה יחד */
+function checkAvail(lines, fromKey) {
+  const res = reservedMap(), need = {};
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i], k = sk(l.itemId, l[fromKey]);
+    if (!l[fromKey]) return fail(`שורה ${i + 1}: יש לבחור מחסן ואיתור מקור`);
+    need[k] = r3((need[k] || 0) + n(l.qty));
+    if (need[k] > r3(qtyAt(l.itemId, l[fromKey]) - (res[k] || 0))) return fail(`שורה ${i + 1}: אין מספיק יתרה פנויה של ${item(l.itemId).sku} באיתור ${locCode(l[fromKey])}`);
+  }
+  return true;
+}
+actions.saveTransfer = () => {
+  const d = ui.draft, lines = cleanLines(d.lines); if (!lines) return;
+  for (let i = 0; i < lines.length; i++) { if (!lines[i].toLoc) return fail(`שורה ${i + 1}: יש להזין איתור יעד קיים`); if (lines[i].toLoc === lines[i].fromLoc) return fail(`שורה ${i + 1}: המקור והיעד זהים`); }
+  if (!checkAvail(lines, 'fromLoc')) return;
+  const t = { id: uid(), num: nextNum('WT'), date: d.date || today(), notes: d.notes.trim(), lines: lines.map(l => ({ itemId: l.itemId, fromLoc: l.fromLoc, toLoc: l.toLoc, qty: n(l.qty) })) };
+  t.lines.forEach(l => { addStock(l.itemId, l.fromLoc, -l.qty, MV.tr, t.num, 'אל ' + locCode(l.toLoc)); addStock(l.itemId, l.toLoc, l.qty, MV.tr, t.num, 'מ-' + locCode(l.fromLoc)); });
+  db.transfers.push(t); closeModal(); commit(); toast(`העברה ${t.num} בוצעה`);
+};
+
+/* ================= החזרות מלקוח / לספק ================= */
+const CONDS = { ok: 'תקין', check: 'לבדיקה', damaged: 'פגום' };
+const RT = { customer: { route: 'creturns', kind: 'customers', title: 'החזרות מלקוח', one: 'החזרה מלקוח', sub: 'סחורה שחזרה מלקוח נכנסת למלאי לפי מצבה' },
+  supplier: { route: 'sreturns', kind: 'suppliers', title: 'החזרות לספק', one: 'החזרה לספק', sub: 'סחורה שמוחזרת לספק יוצאת מהמלאי' } };
+Object.keys(RT).forEach(type => { const c = RT[type], k = PK[c.kind];
+  views[c.route] = () => pageHead(c.title, `<button class="primary" data-act="newReturn" data-type="${type}">+ ${c.one} חדשה</button>`, c.sub) +
+    searchBar(c.route, `חיפוש לפי מס׳ תעודה, ${k.one}, אסמכתא או פריט`) + `<div id="list">${lists[c.route]()}</div>`;
+  lists[c.route] = () => { const q = fq(c.route);
+    return tbl(['מס׳ תעודה', 'תאריך', `מס׳ ${k.one}`, `שם ${k.one}`, 'אסמכתא', '#שורות', '#כמות', 'סטטוס'], db.returns.filter(r => r.type === type).reverse().filter(r => !q || docText(r).includes(q)).slice(0, 300).map(r =>
+      `<tr class="click" data-act="viewDoc" data-kind="returns" data-id="${r.id}"><td class="code">${r.num}</td><td>${fmtDate(r.date)}</td><td class="code">${esc(r.partyNum)}</td><td>${esc(r.party)}</td><td>${esc(r.ref)}</td><td class="n">${r.lines.length}</td><td class="n">${num(sum(r.lines, l => l.qty))}</td><td>${FINAL}</td></tr>`),
+      `אין ${c.title}.`); };
+});
+function returnLoc(ln) {
+  if (ln.cond === 'damaged') return firstLocOfType('damaged') || firstLocOfType('returns');
+  if (ln.cond === 'check') return firstLocOfType('returns');
+  return ln.itemId ? defaultPutaway(ln.itemId) : '';
+}
+actions.newReturn = el => {
+  if (!db.locations.length) return fail('יש להגדיר מחסנים לפני רישום החזרות');
+  const type = el.dataset.type;
+  ui.blank = () => ({ itemText: '', itemId: '', qty: '', cond: 'ok', reason: '', locId: '', locText: '', fromLoc: '' });
+  ui.draft = { type, party: '', ref: '', date: today(), notes: '', lines: [ui.blank()] };
+  /* שינוי מצב הסחורה או הפריט מחזיר את האיתור לברירת המחדל */
+  ui.onSet = (par, key, prev) => { if (key === 'cond' || (key === 'itemText' && prev !== par.itemId)) { par.locId = ''; par.locText = ''; } };
+  showModal(() => { const d = ui.draft, cust = d.type === 'customer', res = reservedMap();
+    return frame(RT[d.type].one, `<div class="grid">${partyFld(RT[d.type].kind)}${fld(cust ? 'אסמכתא (תעודת משלוח / חשבונית)' : 'אסמכתא', 'ref')}${fld('תאריך', 'date', { type: 'date' })}</div>` +
+      (cust ? linesTable(['מק״ט', 'כמות', 'מצב הסחורה', 'לאיתור', 'סיבת ההחזרה'], (ln, i, p) => {
+        if (!ln.locText) { ln.locId = returnLoc(ln); ln.locText = ln.locId ? locCode(ln.locId) : ''; }
+        return `<td>${itemField(p, ln)}</td><td>${qtyFld(p + '.qty', ln.qty)}</td><td>${selectHtml(p + '.cond', Object.entries(CONDS), ln.cond, { rr: true })}</td><td>${locField(p, 'locText', ln)}</td><td><input id="d-${p}.reason" data-d="${p}.reason" value="${esc(ln.reason)}"></td>`; })
+        : linesTable(['מק״ט', 'מאיתור', 'כמות', 'סיבת ההחזרה'], (ln, i, p) => {
+          const from = fromOpts(ln.itemId, res);
+          if (!from.some(x => x[0] === ln.fromLoc)) ln.fromLoc = from.length ? from[0][0] : '';
+          return `<td>${itemField(p, ln)}</td><td>${from.length ? selectHtml(p + '.fromLoc', from, ln.fromLoc) : `<div class="hint ${ln.itemId ? 'bad' : ''}">${ln.itemId ? 'אין יתרה פנויה' : 'בחרו פריט'}</div>`}</td><td>${qtyFld(p + '.qty', ln.qty)}</td><td><input id="d-${p}.reason" data-d="${p}.reason" value="${esc(ln.reason)}"></td>`; })) +
+      `<div style="margin-top:14px">${fld('פרטים', 'notes')}</div>`, `<button class="primary" data-act="saveReturn">אשר החזרה</button>`); });
+};
+actions.saveReturn = () => {
+  const d = ui.draft, cust = d.type === 'customer', lines = cleanLines(d.lines); if (!lines) return;
+  if (cust) { for (let i = 0; i < lines.length; i++) if (!lines[i].locId) return fail(`שורה ${i + 1}: יש להזין איתור קיים`); }
+  else if (!checkAvail(lines, 'fromLoc')) return;
+  const p = ensureParty(RT[d.type].kind, d.party);
+  const r = { id: uid(), num: nextNum(cust ? 'CR' : 'VR'), type: d.type, partyNum: p.num, party: p.name, ref: d.ref.trim(), date: d.date || today(), notes: d.notes.trim(),
+    lines: lines.map(l => cust ? { itemId: l.itemId, qty: n(l.qty), cond: l.cond, locId: l.locId, reason: l.reason.trim() } : { itemId: l.itemId, qty: n(l.qty), fromLoc: l.fromLoc, reason: l.reason.trim() }) };
+  r.lines.forEach(l => cust ? addStock(l.itemId, l.locId, l.qty, MV.cret, r.num, [r.party, CONDS[l.cond], l.reason].filter(Boolean).join(' · ')) : addStock(l.itemId, l.fromLoc, -l.qty, MV.sret, r.num, [r.party, l.reason].filter(Boolean).join(' · ')));
+  db.returns.push(r); closeModal(); commit(); toast(`${RT[d.type].one} ${r.num} נרשמה והמלאי עודכן`);
+};
+
+/* ================= ספירות מלאי ================= */
+views.counts = () => pageHead('ספירות מלאי', `<button class="primary" data-act="newCount">+ ספירה חדשה</button>`, 'ספירת איתור ועדכון היתרה לפי הכמות שנספרה') +
+  `<div id="list">${lists.counts()}</div>`;
+lists.counts = () => tbl(['מס׳ תעודה', 'תאריך', 'מחסן', 'איתור', '#שורות שנספרו', '#שורות עם הפרש', '#הפרש נטו', 'פרטים', 'סטטוס'], db.counts.slice().reverse().slice(0, 300).map(c => { const diff = c.lines.filter(l => l.counted !== l.system), net = r3(sum(c.lines, l => l.counted - l.system));
+  return `<tr class="click" data-act="viewDoc" data-kind="counts" data-id="${c.id}"><td class="code">${c.num}</td><td>${fmtDate(c.date)}</td>${locTd(c.locId)}<td class="n">${c.lines.length}</td><td class="n">${diff.length || '—'}</td><td class="n ${net > 0 ? 'pos' : net < 0 ? 'neg' : ''}" dir="ltr">${net > 0 ? '+' : ''}${num(net)}</td><td>${esc(c.notes)}</td><td>${FINAL}</td></tr>`; }),
+  'אין ספירות. לחצו על ״ספירה חדשה״.');
+function loadCountLines() {
+  const d = ui.draft;
+  d.lines = stockRows().filter(r => r.locId === d.locId).sort((a, b) => cmp(item(a.itemId).sku, item(b.itemId).sku)).map(r => ({ itemId: r.itemId, itemText: item(r.itemId).sku, system: r.qty, counted: '', fixed: true }));
+}
+actions.newCount = el => {
+  if (!db.locations.length) return fail('יש להגדיר מחסנים לפני ספירה');
+  ui.blank = () => ({ itemText: '', itemId: '', system: 0, counted: '', fixed: false });
+  const lid = el.dataset.loc || '';
+  ui.draft = { locId: lid, locText: lid ? locCode(lid) : '', loaded: lid, date: today(), notes: '', lines: [], keepEmpty: true };
+  if (lid) loadCountLines();
+  ui.onSet = (par, key) => { if (par === ui.draft && key === 'locText' && par.locId !== par.loaded) { par.loaded = par.locId; loadCountLines(); } };
+  showModal(() => { const d = ui.draft;
+    return frame('ספירת מלאי', `<div class="grid"><label class="fld"><span>איתור לספירה</span>${locField('', 'locText', d)}</label>${fld('תאריך', 'date', { type: 'date' })}${fld('פרטים', 'notes')}</div>` +
+      (d.locId ? `<div class="tw"><table class="lines"><thead><tr><th>פריט</th><th class="n">יתרה במערכת</th><th class="n">כמות שנספרה</th><th></th></tr></thead><tbody>${d.lines.map((ln, i) => { const it = item(ln.itemId), p = 'lines.' + i;
+        return `<tr><td>${ln.fixed ? `<span class="code">${esc(it.sku)}</span> — ${esc(it.name)}` : itemField(p, ln)}</td><td class="n">${ln.fixed ? num(ln.system) : (ln.itemId ? num(qtyAt(ln.itemId, d.locId)) : '—')}</td><td class="n">${qtyFld(p + '.counted', ln.counted)}</td><td>${ln.fixed ? '' : `<button class="x" data-act="delLine" data-i="${i}">×</button>`}</td></tr>`; }).join('') || '<tr><td colspan="4" class="mut">אין יתרות באיתור לפי המערכת</td></tr>'}</tbody></table></div>
+        <button data-act="addLine">+ פריט שנמצא באיתור ולא רשום בו</button><p class="mut">שורות שלא תוזן בהן כמות לא ייספרו ולא ישתנו. כדי לאפס פריט יש להזין 0.</p>` : `<p class="mut">סרקו או הקלידו איתור כדי לראות את היתרות הרשומות בו.</p>`), d.locId ? `<button class="primary" data-act="saveCount">אשר ספירה ועדכן יתרות</button>` : ''); });
+};
+actions.saveCount = () => {
+  const d = ui.draft, counted = d.lines.filter(l => String(l.counted).trim() !== '');
+  if (!counted.length) return fail('לא הוזנה אף כמות שנספרה');
+  for (const l of counted) { if (!l.itemId || !item(l.itemId)) return fail('יש שורה עם מק״ט שלא נמצא בטבלת הפריטים'); if (n(l.counted) < 0) return fail('כמות שנספרה לא יכולה להיות שלילית'); }
+  const c = { id: uid(), num: nextNum('IC'), date: d.date || today(), locId: d.locId, notes: d.notes.trim(), lines: [] };
+  counted.forEach(l => { const sys = qtyAt(l.itemId, d.locId), cq = n(l.counted), delta = r3(cq - sys); if (delta !== 0) addStock(l.itemId, d.locId, delta, MV.count, c.num, d.notes); c.lines.push({ itemId: l.itemId, system: sys, counted: cq }); });
+  db.counts.push(c); closeModal(); commit();
+  const diffs = c.lines.filter(l => l.counted !== l.system).length; toast(diffs ? `הספירה נשמרה. עודכנו ${diffs} הפרשים.` : 'הספירה נשמרה — אין הפרשים');
+};
+actions.viewDoc = el => {
+  const kind = el.dataset.kind, d = db[kind].find(x => x.id === el.dataset.id); ui.draft = null; if (!d) return;
+  let title, meta, table;
+  if (kind === 'transfers') { title = `העברה בין מחסנים ${d.num}`; meta = fmtDate(d.date);
+    table = tbl(['מק״ט', 'תאור פריט', 'ממחסן', 'מאיתור', 'למחסן', 'לאיתור', '#כמות'], d.lines.map(l => `<tr>${itemTd(l.itemId)}${locTd(l.fromLoc)}${locTd(l.toLoc)}<td class="n">${num(l.qty)}</td></tr>`));
+  } else if (kind === 'returns') { const cust = d.type === 'customer', k = PK[RT[d.type].kind]; title = `${RT[d.type].one} ${d.num}`; meta = `${k.one}: ${esc(d.partyNum)} ${esc(d.party) || '—'} · אסמכתא: ${esc(d.ref) || '—'} · ${fmtDate(d.date)}`;
+    table = cust ? tbl(['מק״ט', 'תאור פריט', '#כמות', 'מצב', 'מחסן', 'איתור', 'סיבה'], d.lines.map(l => `<tr>${itemTd(l.itemId)}<td class="n">${num(l.qty)}</td><td>${CONDS[l.cond] || ''}</td>${locTd(l.locId)}<td>${esc(l.reason)}</td></tr>`))
+      : tbl(['מק״ט', 'תאור פריט', '#כמות', 'מחסן', 'איתור', 'סיבה'], d.lines.map(l => `<tr>${itemTd(l.itemId)}<td class="n">${num(l.qty)}</td>${locTd(l.fromLoc)}<td>${esc(l.reason)}</td></tr>`));
+  } else { title = `ספירת מלאי ${d.num}`; meta = `מחסן/איתור: ${esc(locCode(d.locId))} · ${fmtDate(d.date)}`;
+    table = tbl(['מק״ט', 'תאור פריט', '#יתרה במערכת', '#נספר', '#הפרש'], d.lines.map(l => { const df = r3(l.counted - l.system); return `<tr>${itemTd(l.itemId)}<td class="n">${num(l.system)}</td><td class="n">${num(l.counted)}</td><td class="n ${df > 0 ? 'pos' : df < 0 ? 'neg' : ''}" dir="ltr">${df > 0 ? '+' : ''}${num(df)}</td></tr>`; })); }
+  showModal(() => frame(title, `<p class="mut">${FINAL} · ${meta}${d.notes ? ' · ' + esc(d.notes) : ''}</p>${table}`, '', 'סגור'));
+};
+
+/* ================= תנועות מלאי ================= */
+views.moves = () => pageHead('תנועות מלאי', `<button data-act="movesCsv">ייצוא לאקסל</button>`, 'כרטסת מלאי: כל כניסה, יציאה והעברה, עם התעודה שיצרה אותה') +
+  searchBar('mv', 'חיפוש לפי פריט, מחסן, איתור, תעודה או פרטים', `<select data-filter="mvType"><option value="">כל סוגי התנועות</option>${[...new Set(db.moves.map(m => m.type))].map(t => `<option ${ui.f.mvType === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+    <label class="chk">מתאריך <input type="date" data-filter="mvFrom" value="${esc(ui.f.mvFrom || '')}"></label><label class="chk">עד <input type="date" data-filter="mvTo" value="${esc(ui.f.mvTo || '')}"></label>`) + `<div id="list">${lists.moves()}</div>`;
+function filteredMoves() {
+  const q = fq('mv'), from = ui.f.mvFrom ? new Date(ui.f.mvFrom + 'T00:00:00').getTime() : 0, to = ui.f.mvTo ? new Date(ui.f.mvTo + 'T23:59:59').getTime() : Infinity;
+  return db.moves.filter(m => { if (ui.f.mvType && m.type !== ui.f.mvType) return false; if (m.ts < from || m.ts > to) return false; if (!q) return true;
+    const it = item(m.itemId) || {}; return [it.sku, it.name, it.barcode, locCode(m.locId), m.doc, m.note, m.type].join(' ').toLowerCase().includes(q); }).reverse();
+}
+lists.moves = () => { const all = filteredMoves();
+  return tbl(MOVE_HEADS, all.slice(0, 500).map(moveRow), 'אין תנועות להצגה') + (all.length > 500 ? `<p class="mut">מוצגות 500 התנועות האחרונות מתוך ${num(all.length)}. הייצוא לאקסל כולל את כולן.</p>` : ''); };
+actions.movesCsv = () => {
+  const rows = [['תאריך', 'סוג תנועה', 'מק״ט', 'תאור פריט', 'מחסן', 'איתור', 'כמות', 'תעודה', 'פרטים', 'משתמש']];
+  filteredMoves().forEach(m => { const it = item(m.itemId) || {}, l = loc(m.locId) || {}; rows.push([fmtTs(m.ts), m.type, it.sku, it.name, l.warhs, l.code, m.qty, m.doc, m.note, m.user]); });
+  download(`תנועות-מלאי-${today()}.csv`, csv(rows), 'text/csv;charset=utf-8');
+};
+
+/* ================= הגדרות וגיבוי ================= */
+views.settings = () => pageHead('הגדרות וגיבוי') + `
+  <div class="card"><h3>פרטי החברה</h3><div class="grid"><label class="fld"><span>שם החברה</span><input data-set="name" value="${esc(db.settings.name)}" ${me.role === 'admin' ? '' : 'disabled'}></label><label class="fld"><span>מחובר כעת</span><input disabled value="${esc(me.username)} · ${ROLES[me.role]}"></label></div></div>
+  <div class="card"><h3>גיבוי ושחזור</h3><p class="sub" style="margin-bottom:12px">הנתונים נשמרים בענן ומשותפים לכל המשתמשים. מומלץ שמנהל יוריד קובץ גיבוי מדי פעם. שחזור מגיבוי מחליף את הנתונים אצל כולם. הפעולות בעמוד הזה מותרות למנהל בלבד.</p>
+    <div class="btns"><button class="primary" data-act="exportBackup">הורד קובץ גיבוי</button><button data-act="pickImport">שחזר מקובץ גיבוי</button></div></div>
+  <div class="card"><h3>ייבוא נתונים מאקסל</h3><div class="btns"><button data-act="importItems">ייבוא פריטים</button><button data-act="importStock">ייבוא יתרות פתיחה</button></div></div>
+  <div class="card"><h3>נתוני דוגמה ואיפוס</h3><div class="btns"><button data-act="loadDemo">טען נתוני דוגמה</button><button class="danger" data-act="wipe">מחק את כל הנתונים</button></div></div>
+  <p class="mut">סה״כ במערכת: ${num(db.items.length)} פריטים · ${num(Object.keys(db.warhs).length)} מחסנים · ${num(db.locations.length)} איתורים · ${num(db.moves.length)} תנועות מלאי</p>`;
+actions.exportBackup = () => download(`גיבוי-מחסן-${today()}.json`, JSON.stringify(db), 'application/json');
+actions.pickImport = () => $('#imp-file').click();
+actions.importStock = () => {
+  ui.draft = { text: '' };
+  showModal(() => frame('ייבוא יתרות פתיחה', `<p class="sub">הדביקו שורות מאקסל בסדר: <b>מק״ט, איתור, יתרה</b>. היתרה שתוזן תקבע את המלאי באיתור (לא תתווסף לקיים). איתור חדש במבנה <span dir="ltr">1.01.01.20.1</span> ייפתח אוטומטית עם המחסן והסוג המתאימים; מק״ט שלא קיים בטבלת הפריטים ידולג.</p><textarea id="d-text" data-d="text" placeholder="1001	1.01.01.10.1	120"></textarea>`, `<button class="primary" data-act="doImportStock">ייבא</button>`));
+};
+actions.doImportStock = () => {
+  let ok = 0, skip = 0;
+  for (const c of splitRows(ui.draft.text)) {
+    /* שלוש עמודות: מק״ט, איתור, יתרה. ארבע עמודות: מק״ט, מחסן, איתור, יתרה */
+    const it = resolveItem(c[0]), four = c.length >= 4, q = four ? c[3] : c[2];
+    let l = four ? findLoc(c[1], c[2] || '0') : locByCode(c[1]);
+    const code = four ? (c[2] || '0') : (c[1] || ''), p = parseLoc(code), w = four ? c[1] : (p ? p.warhs : '');
+    if (!it || (!l && (!w || !code || w.includes('/') || code.includes('/'))) || q === undefined || q === '' || !isFinite(parseFloat(q)) || n(q) < 0) { skip++; continue; }
+    if (!l) { l = { id: uid(), warhs: w, code, type: (p && p.type) || 'storage' }; db.locations.push(l); if (db.warhs[w] === undefined) db.warhs[w] = ''; _idx = null; }
+    const delta = r3(n(q) - qtyAt(it.id, l.id)); if (delta !== 0) addStock(it.id, l.id, delta, MV.open, '', 'ייבוא');
+    ok++;
+  }
+  if (!ok) return fail('לא נמצאו שורות תקינות. בדקו שהמק״טים קיימים ושהאיתורים במבנה הנכון.');
+  closeModal(); commit(); toast(`יובאו ${ok} שורות יתרה${skip ? `, דולגו ${skip}` : ''}`);
+};
+actions.wipe = () => {
+  if (!confirm('פעולה זו תמחק את כל הפריטים, המחסנים, היתרות והתעודות. להמשיך?')) return;
+  if (!confirm('אין דרך לשחזר בלי קובץ גיבוי. למחוק בכל זאת?')) return;
+  db = emptyDb(); commit(); toast('כל הנתונים נמחקו');
+};
+actions.loadDemo = () => {
+  if ((db.items.length || db.locations.length) && !confirm('נתוני הדוגמה יחליפו את כל הנתונים הקיימים. להמשיך?')) return;
+  db = emptyDb(); db.settings.name = 'חברת הדגמה בע״מ';
+  db.warhs = { 1: 'מחסן ראשי' };
+  const L = {}, I = {};
+  /* מחסן 1: שני טורים, שני ברזלים בכל טור, גבהים 10-40, שלושה מיקומים בכל ברזל */
+  bulkPlan({ warhs: '1', aisleFrom: 1, aisleTo: 2, bays: 2, positions: 3, pickLevels: '10,20', storeLevels: '30,40' }).list
+    .concat([['קבלה', 'receiving'], ['החזרות', 'returns'], ['פסולים', 'damaged']])
+    .forEach(([code, type]) => { const l = { id: uid(), warhs: '1', code, type }; db.locations.push(l); L[code] = l.id; });
+  [['1001', 'ברגים 4x40 (100 יח׳)', '7290000010014', 'קופסה', 'חומרי חיבור', 20], ['1002', 'דיבלים 8 מ״מ (50 יח׳)', '7290000010021', 'קופסה', 'חומרי חיבור', 20], ['2001', 'מקדחה נטענת 18V', '7290000020013', 'יח׳', 'כלי עבודה', 5], ['2002', 'מברגה חשמלית', '7290000020020', 'יח׳', 'כלי עבודה', 5],
+    ['3001', 'צבע לבן 5 ליטר', '7290000030012', 'פח', 'צבעים', 10], ['3002', 'מברשת צבע 2 אינץ׳', '7290000030029', 'יח׳', 'צבעים', 15], ['4001', 'כפפות עבודה L', '7290000040011', 'זוג', 'מיגון', 30], ['4002', 'משקפי מגן', '7290000040028', 'יח׳', 'מיגון', 10]]
+    .forEach(([sku, name, barcode, unit, category, minQty]) => { const i = { id: uid(), sku, name, barcode, unit, category, minQty, active: true }; db.items.push(i); I[sku] = i.id; });
+  _idx = null;
+  [['1001', '1.01.01.10.1', 40], ['1001', '1.01.01.30.1', 120], ['1002', '1.01.01.10.2', 35], ['2001', '1.01.02.10.1', 8], ['2001', '1.01.02.30.1', 12], ['2002', '1.01.02.10.2', 3], ['3001', '1.01.02.20.1', 6], ['3002', '1.01.02.20.2', 40], ['4001', '1.02.01.10.1', 60], ['4001', '1.02.01.30.1', 200], ['4002', '1.02.01.40.1', 25], ['3002', 'פסולים', 2]]
+    .forEach(([s, l, q]) => addStock(I[s], L[l], q, MV.open, '', 'נתוני דוגמה'));
+  const sup = ensureParty('suppliers', 'ספק הדגמה בע״מ'), c1 = ensureParty('customers', 'בנייה ושיפוצים כהן'), c2 = ensureParty('customers', 'צבעי העיר');
+  db.receipts.push({ id: uid(), num: nextNum('GR'), suppNum: sup.num, supplier: sup.name, ref: 'PO26000781', date: today(), notes: '', status: 'open', lines: [{ itemId: I['3001'], expected: 24, received: 0 }, { itemId: I['2002'], expected: 10, received: 0 }] });
+  db.orders.push({ id: uid(), num: nextNum('SO'), custNum: c1.num, customer: c1.name, ref: '50231', date: today(), priority: 'urgent', notes: '', status: 'new', lines: [{ itemId: I['1001'], qty: 50, picked: 0, allocs: [] }, { itemId: I['2001'], qty: 2, picked: 0, allocs: [] }, { itemId: I['4001'], qty: 10, picked: 0, allocs: [] }] });
+  db.orders.push({ id: uid(), num: nextNum('SO'), custNum: c2.num, customer: c2.name, ref: '50232', date: today(), priority: 'normal', notes: '', status: 'new', lines: [{ itemId: I['3001'], qty: 8, picked: 0, allocs: [] }, { itemId: I['3002'], qty: 12, picked: 0, allocs: [] }] });
+  save(); go('#/dashboard'); toast('נתוני הדוגמה נטענו');
+};
+
+/* ================= משתמשים ================= */
+views.users = () => { fetchUsers(); return pageHead('משתמשים', `<button class="primary" data-act="editUser">+ משתמש חדש</button>`, 'מנהל: כל הפעולות, כולל משתמשים, גיבוי ומחיקות. מחסנאי: כל פעולות המלאי והתעודות. צפייה בלבד: רואה הכול ולא משנה דבר.') + `<div id="list">${lists.users()}</div>`; };
+lists.users = () => tbl(['שם משתמש', 'שם מלא', 'הרשאה', 'סטטוס', ''], (ui.users || []).map(u =>
+  `<tr class="click ${u.active ? '' : 'done'}" data-act="editUser" data-id="${u.id}"><td class="code">${esc(u.username)}</td><td>${esc(u.name)}${u.id === me.id ? ' <span class="mut">(אני)</span>' : ''}</td><td>${ROLES[u.role]}</td><td>${u.active ? '<span class="badge b-green">פעיל</span>' : '<span class="badge b-gray">לא פעיל</span>'}</td><td class="act"><button class="sm">עריכה</button></td></tr>`), ui.users ? 'אין משתמשים' : 'טוען…');
+async function fetchUsers() {
+  try { ui.users = await rpc('wms_users_list', { p_token: token }); if (ui.route === 'users') refreshList(); } catch (err) { toast(errText(err), true); }
+}
+actions.editUser = el => {
+  const u = el.dataset.id ? (ui.users || []).find(x => x.id === el.dataset.id) : null;
+  ui.draft = u ? Object.assign({ password: '' }, u) : { id: '', username: '', name: '', role: 'worker', active: true, password: '' };
+  showModal(() => frame(ui.draft.id ? 'עריכת משתמש' : 'משתמש חדש', `<div class="grid">${fld('שם משתמש *', 'username')}${fld('שם מלא', 'name')}${selFld('הרשאה', 'role', Object.entries(ROLES))}${fld(ui.draft.id ? 'סיסמה חדשה (ריק = בלי שינוי)' : 'סיסמה * (6 תווים לפחות)', 'password')}</div>
+    ${ui.draft.id ? `<label class="chk"><input type="checkbox" data-d="active" ${ui.draft.active ? 'checked' : ''}> משתמש פעיל</label>` : ''}
+    <p class="mut">מסרו למשתמש את שם המשתמש והסיסמה; הוא יכול להחליף את הסיסמה בעצמו אחרי הכניסה. משתמש לא פעיל לא יכול להיכנס.</p>`, `<button class="primary" data-act="saveUser">שמור</button>`));
+};
+actions.saveUser = async () => {
+  const d = ui.draft;
+  try {
+    await rpc('wms_user_save', { p_token: token, p_id: d.id || null, p_username: d.username, p_name: d.name, p_role: d.role, p_active: d.active !== false, p_password: d.password || null });
+    closeModal(); toast('המשתמש נשמר'); fetchUsers();
+  } catch (err) { toast(errText(err), true); }
+};
+actions.changePass = () => {
+  ui.draft = { old: '', pass: '', pass2: '' };
+  showModal(() => frame('החלפת סיסמה', `<div class="grid">${fld('סיסמה נוכחית', 'old', { type: 'password' })}${fld('סיסמה חדשה (6 תווים לפחות)', 'pass', { type: 'password' })}${fld('סיסמה חדשה שוב', 'pass2', { type: 'password' })}</div>`, `<button class="primary" data-act="savePass">החלף סיסמה</button>`));
+};
+actions.savePass = async () => {
+  const d = ui.draft; if (d.pass !== d.pass2) return fail('שתי הסיסמאות החדשות לא זהות');
+  try { await rpc('wms_change_password', { p_token: token, p_old: d.old, p_new: d.pass }); closeModal(); toast('הסיסמה הוחלפה'); } catch (err) { toast(errText(err), true); }
+};
+actions.logout = async () => { const t = token; logoutLocal(); try { await rpc('wms_logout', { p_token: t }); } catch (e) { /* החיבור המקומי כבר נוקה */ } };
+
+/* ================= אירועים ================= */
+const VIEW_ACTS = new Set(['go', 'itemCard', 'locCard', 'viewDoc', 'closeModal', 'print', 'invCsv', 'movesCsv', 'logout', 'changePass', 'savePass']);
+const ADMIN_ACTS = new Set(['wipe', 'loadDemo', 'pickImport', 'exportBackup', 'editUser', 'saveUser']);
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || !me) return;
+  const act = el.dataset.act, fn = actions[act]; if (!fn) return;
+  e.preventDefault();
+  if (me.role === 'viewer' && !VIEW_ACTS.has(act)) return fail('למשתמש צפייה אין הרשאה לבצע פעולות');
+  if (ADMIN_ACTS.has(act) && me.role !== 'admin') return fail('הפעולה מותרת למנהל בלבד');
+  fn(el, e);
+});
+document.addEventListener('input', e => {
+  const t = e.target; if (!t.dataset) return;
+  if (t.dataset.filter) { ui.f[t.dataset.filter] = t.type === 'checkbox' ? t.checked : t.value; refreshList(); }
+  else if (t.dataset.d !== undefined && ui.draft) bindSet(t, false);
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t.dataset) return;
+  if (t.id === 'imp-file') return importBackup(t);
+  if (t.dataset.set) { if (me.role === 'admin') { db.settings[t.dataset.set] = t.value.trim(); commit(); } return; }
+  if (t.dataset.d !== undefined && ui.draft && 'rr' in t.dataset) { bindSet(t, true); setTimeout(rerenderModal, 0); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && ui.modal) return closeModal();
+  if (e.key === 'Enter' && e.target.dataset && e.target.dataset.enter) { e.preventDefault(); actions[e.target.dataset.enter](e.target, e); }
+});
+function importBackup(input) {
+  const file = input.files[0]; input.value = ''; if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const data = JSON.parse(rd.result);
+      if (!data || !Array.isArray(data.items) || !Array.isArray(data.locations) || typeof data.stock !== 'object') throw new Error('bad');
+      if (!confirm(`הקובץ מכיל ${data.items.length} פריטים ו-${data.locations.length} איתורים. השחזור יחליף את כל הנתונים הקיימים. להמשיך?`)) return;
+      db = data; migrate(); commit(); toast('הנתונים שוחזרו מהגיבוי');
+    } catch (err) { toast('הקובץ אינו קובץ גיבוי תקין של המערכת', true); }
+  };
+  rd.readAsText(file);
+}
+window.addEventListener('hashchange', render);
+boot();
+</script>
+</body>
+</html>
