@@ -2,7 +2,13 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111a2e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מחסן">
 <title>ניהול מחסן</title>
 <style>
   :root {
@@ -112,14 +118,39 @@
   .auth-card { background: var(--card); border-radius: 14px; padding: 26px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
   .auth-card .logo { color: var(--nav); } .auth-card form { display: flex; flex-direction: column; gap: 12px; }
 
+  #menu-btn, #nav-back, .nav-foot { display: none; }
+  /* טלפון: התפריט נפתח מהצד, חלונות במסך מלא, שדות וכפתורים גדולים למגע */
   @media (max-width: 820px) {
-    #app { flex-direction: column; }
-    #nav { width: 100%; height: auto; position: static; }
-    .brand { display: flex; gap: 10px; align-items: baseline; padding: 10px 14px; }
-    #nav-links { flex-direction: row; overflow-x: auto; padding: 6px 8px; scrollbar-width: thin; scrollbar-color: #3a4763 transparent; }
-    #nav-links a { white-space: nowrap; gap: 6px; } #nav-links .grp { display: none; }
-    #topbar { padding: 8px 12px; } #main { padding: 14px 12px 60px; }
-    #user-chip { display: none; }
+    body { font-size: 16px; }
+    #app { display: block; }
+    #nav { position: fixed; top: 0; bottom: 0; right: 0; width: 280px; max-width: 84vw; height: auto; z-index: 40; transform: translateX(105%); transition: transform .2s; display: flex; flex-direction: column; }
+    body.nav-open #nav { transform: none; }
+    body.nav-open #nav-back { display: block; position: fixed; inset: 0; background: rgba(10, 16, 30, .5); z-index: 39; }
+    #nav-links { flex: 1; overflow-y: auto; } #nav-links a { padding: 11px 12px; }
+    .nav-foot { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-top: 1px solid #25304a; color: #8e9bb3; font-size: .85rem; }
+    .nav-foot button { background: #1c2740; border-color: #2c3957; color: #dfe5ef; }
+    #menu-btn { display: inline-flex; font-size: 1.4rem; line-height: 1; padding: 6px 12px; }
+    #topbar { padding: 8px 10px; gap: 8px; } #topbar .top-only, #user-chip { display: none; }
+    #quick { min-width: 0; } #sync { font-size: .75rem; white-space: normal; max-width: 90px; }
+    #main { padding: 14px 10px 70px; }
+    h1 { font-size: 1.3rem; }
+    input, select, textarea { font-size: 16px; padding: 10px; }
+    button { padding: 10px 14px; } button.sm { padding: 8px 12px; font-size: .9rem; }
+    .head .btns { width: 100%; } .head .btns button { flex: 1 1 auto; }
+    .toolbar input[type=search] { max-width: none; flex-basis: 100%; }
+    .tiles { grid-template-columns: 1fr 1fr; gap: 8px; } .tile { padding: 10px 12px; } .tile .tv { font-size: 1.4rem; }
+    .cols { grid-template-columns: 1fr; }
+    th, td { padding: 8px 8px; font-size: .9rem; }
+    input.qty { width: 84px; }
+    .overlay { padding: 0; } .modal { max-width: none; height: 100%; max-height: 100%; border-radius: 0; }
+    .mb { padding: 14px; flex: 1; } .mf button { flex: 1 1 auto; }
+    /* שורות של תעודה מוצגות ככרטיסים במקום טבלה רחבה */
+    table.lines, table.lines tbody { display: block; } table.lines thead { display: none; }
+    table.lines tr { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+    table.lines td { display: block; padding: 0; border: 0; flex: 1 1 140px; min-width: 0; }
+    table.lines td:first-child { flex-basis: 100%; } table.lines td:last-child { flex: 0 0 auto; }
+    table.lines input:not(.qty), table.lines select { min-width: 0; } table.lines input.qty { width: 100%; }
+    #toast { bottom: 14px; width: max-content; }
   }
   @media print {
     .no-print, #nav, #topbar, #modal-root, #toast { display: none !important; }
@@ -147,14 +178,17 @@
   <aside id="nav">
     <div class="brand"><div class="logo">WMS</div><div id="wh-name"></div></div>
     <nav id="nav-links"></nav>
+    <div class="nav-foot"><span id="nav-user"></span><button data-act="changePass">החלפת סיסמה</button><button data-act="logout">יציאה</button></div>
   </aside>
+  <div id="nav-back" data-act="toggleNav"></div>
   <div id="content">
     <div id="topbar">
-      <input id="quick" type="search" data-enter="quickFind" placeholder="איתור מהיר: סרקו או הקלידו מק״ט / ברקוד / איתור ולחצו Enter" autocomplete="off">
+      <button id="menu-btn" data-act="toggleNav" aria-label="תפריט">☰</button>
+      <input id="quick" type="search" data-enter="quickFind" placeholder="איתור: מק״ט / ברקוד / איתור" autocomplete="off">
       <span id="user-chip"></span>
       <span id="sync"></span>
-      <button class="sm" data-act="changePass">החלפת סיסמה</button>
-      <button class="sm" data-act="logout">יציאה</button>
+      <button class="sm top-only" data-act="changePass">החלפת סיסמה</button>
+      <button class="sm top-only" data-act="logout">יציאה</button>
     </div>
     <main id="main"></main>
   </div>
@@ -498,7 +532,7 @@ function render() {
   const cnt = { grv: db.receipts.filter(x => x.status === 'open' || x.status === 'partial').length, orders: db.orders.filter(x => x.status === 'new' || x.status === 'picking').length, picktasks: openTasks().length, shipments: db.orders.filter(x => x.status === 'picked').length };
   $('#nav-links').innerHTML = NAV.filter(x => x[0] !== 'users' || me.role === 'admin').map(x => typeof x === 'string' ? `<div class="grp">${x}</div>` : `<a href="#/${x[0]}" class="${x[0] === route ? 'on' : ''}"><span>${x[1]}</span>${cnt[x[0]] ? `<span class="cnt">${cnt[x[0]]}</span>` : ''}</a>`).join('');
   $('#wh-name').textContent = db.settings.name || '';
-  $('#user-chip').textContent = `${me.name || me.username} · ${ROLES[me.role]}`;
+  $('#user-chip').textContent = $('#nav-user').textContent = `${me.name || me.username} · ${ROLES[me.role]}`;
   document.title = 'ניהול מחסן — ' + (db.settings.name || '');
   $('#dl-items').innerHTML = db.items.filter(i => i.active !== false).map(i => `<option value="${esc(i.sku)}">${esc(i.name)}</option>`).join('');
   $('#dl-locs').innerHTML = sortedLocs().map(l => `<option value="${esc(locLabel(l))}">${LOC_TYPES[l.type] || ''}</option>`).join('');
@@ -556,7 +590,7 @@ function locField(path, key, obj) {
 const fld = (label, path, o = {}) => `<label class="fld"><span>${label}</span><input id="d-${path}" data-d="${path}" ${o.rr ? 'data-rr' : ''} type="${o.type || 'text'}" value="${esc(getPath(ui.draft, path))}" ${o.list ? `list="${o.list}"` : ''} ${o.type === 'number' ? 'min="0" step="any" inputmode="decimal"' : ''} ${o.ph ? `placeholder="${o.ph}"` : ''} autocomplete="off"></label>`;
 const selectHtml = (path, opts, cur, o = {}) => `<select id="d-${path}" data-d="${path}" ${o.rr ? 'data-rr' : ''}>${o.placeholder ? `<option value="">${o.placeholder}</option>` : ''}${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 const selFld = (label, path, opts, o = {}) => `<label class="fld"><span>${label}</span>${selectHtml(path, opts, getPath(ui.draft, path), o)}</label>`;
-const qtyFld = (path, val) => `<input id="d-${path}" data-d="${path}" type="number" min="0" step="any" inputmode="decimal" class="qty" value="${esc(val)}">`;
+const qtyFld = (path, val) => `<input id="d-${path}" data-d="${path}" type="number" min="0" step="any" inputmode="decimal" class="qty" placeholder="כמות" value="${esc(val)}">`;
 function itemField(path, ln, extraHint = '') {
   const it = item(ln.itemId), p = path ? path + '.' : '';
   return `<input id="d-${p}itemText" list="dl-items" data-d="${p}itemText" data-rr value="${esc(ln.itemText || '')}" placeholder="מק״ט / ברקוד" autocomplete="off">
@@ -1139,11 +1173,11 @@ actions.newReturn = el => {
     return frame(RT[d.type].one, `<div class="grid">${partyFld(RT[d.type].kind)}${fld(cust ? 'אסמכתא (תעודת משלוח / חשבונית)' : 'אסמכתא', 'ref')}${fld('תאריך', 'date', { type: 'date' })}</div>` +
       (cust ? linesTable(['מק״ט', 'כמות', 'מצב הסחורה', 'לאיתור', 'סיבת ההחזרה'], (ln, i, p) => {
         if (!ln.locText) { ln.locId = returnLoc(ln); ln.locText = ln.locId ? locCode(ln.locId) : ''; }
-        return `<td>${itemField(p, ln)}</td><td>${qtyFld(p + '.qty', ln.qty)}</td><td>${selectHtml(p + '.cond', Object.entries(CONDS), ln.cond, { rr: true })}</td><td>${locField(p, 'locText', ln)}</td><td><input id="d-${p}.reason" data-d="${p}.reason" value="${esc(ln.reason)}"></td>`; })
+        return `<td>${itemField(p, ln)}</td><td>${qtyFld(p + '.qty', ln.qty)}</td><td>${selectHtml(p + '.cond', Object.entries(CONDS), ln.cond, { rr: true })}</td><td>${locField(p, 'locText', ln)}</td><td><input id="d-${p}.reason" data-d="${p}.reason" placeholder="סיבת ההחזרה" value="${esc(ln.reason)}"></td>`; })
         : linesTable(['מק״ט', 'מאיתור', 'כמות', 'סיבת ההחזרה'], (ln, i, p) => {
           const from = fromOpts(ln.itemId, res);
           if (!from.some(x => x[0] === ln.fromLoc)) ln.fromLoc = from.length ? from[0][0] : '';
-          return `<td>${itemField(p, ln)}</td><td>${from.length ? selectHtml(p + '.fromLoc', from, ln.fromLoc) : `<div class="hint ${ln.itemId ? 'bad' : ''}">${ln.itemId ? 'אין יתרה פנויה' : 'בחרו פריט'}</div>`}</td><td>${qtyFld(p + '.qty', ln.qty)}</td><td><input id="d-${p}.reason" data-d="${p}.reason" value="${esc(ln.reason)}"></td>`; })) +
+          return `<td>${itemField(p, ln)}</td><td>${from.length ? selectHtml(p + '.fromLoc', from, ln.fromLoc) : `<div class="hint ${ln.itemId ? 'bad' : ''}">${ln.itemId ? 'אין יתרה פנויה' : 'בחרו פריט'}</div>`}</td><td>${qtyFld(p + '.qty', ln.qty)}</td><td><input id="d-${p}.reason" data-d="${p}.reason" placeholder="סיבת ההחזרה" value="${esc(ln.reason)}"></td>`; })) +
       `<div style="margin-top:14px">${fld('פרטים', 'notes')}</div>`, `<button class="primary" data-act="saveReturn">אשר החזרה</button>`); });
 };
 actions.saveReturn = () => {
@@ -1307,7 +1341,8 @@ actions.savePass = async () => {
 actions.logout = async () => { const t = token; logoutLocal(); try { await rpc('wms_logout', { p_token: t }); } catch (e) { /* החיבור המקומי כבר נוקה */ } };
 
 /* ================= אירועים ================= */
-const VIEW_ACTS = new Set(['go', 'itemCard', 'locCard', 'viewDoc', 'closeModal', 'print', 'invCsv', 'movesCsv', 'logout', 'changePass', 'savePass']);
+actions.toggleNav = () => document.body.classList.toggle('nav-open');
+const VIEW_ACTS = new Set(['toggleNav', 'go','itemCard', 'locCard', 'viewDoc', 'closeModal', 'print', 'invCsv', 'movesCsv', 'logout', 'changePass', 'savePass']);
 const ADMIN_ACTS = new Set(['wipe', 'loadDemo', 'pickImport', 'exportBackup', 'editUser', 'saveUser']);
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !me) return;
@@ -1345,7 +1380,10 @@ function importBackup(input) {
   };
   rd.readAsText(file);
 }
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', () => { document.body.classList.remove('nav-open'); render(); });
+$('#nav-links').addEventListener('click', () => document.body.classList.remove('nav-open'));
+/* התקנה כאפליקציה: נדרש רק כשהדף מוגש מהאינטרנט */
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 boot();
 </script>
 </body>
