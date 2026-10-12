@@ -113,6 +113,9 @@
   #toast.show { opacity: 1; } #toast.err { background: var(--red); }
 
   [hidden] { display: none !important; }
+  #env-bar { background: #c2620a; color: #fff; text-align: center; font-weight: 700; padding: 6px 10px; font-size: .9rem; }
+  body.env-test #topbar { border-bottom: 3px solid #c2620a; }
+  body.env-test .env-btn { background: #c2620a; border-color: #c2620a; color: #fff; }
   #sync { font-size: .82rem; color: var(--mut); white-space: nowrap; } #sync.bad { color: var(--red); font-weight: 600; }
   #auth { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--nav); }
   .auth-card { background: var(--card); border-radius: 14px; padding: 26px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
@@ -194,15 +197,17 @@
   <aside id="nav">
     <div class="brand"><div class="logo">WMS</div><div id="wh-name"></div></div>
     <nav id="nav-links"></nav>
-    <div class="nav-foot"><span id="nav-user"></span><button data-act="changePass">החלפת סיסמה</button><button data-act="logout">יציאה</button></div>
+    <div class="nav-foot"><span id="nav-user"></span><button data-act="switchEnv" class="env-btn"></button><button data-act="changePass">החלפת סיסמה</button><button data-act="logout">יציאה</button></div>
   </aside>
   <div id="nav-back" data-act="toggleNav"></div>
   <div id="content">
+    <div id="env-bar" class="no-print" hidden>סביבת טסט — הנתונים כאן אינם אמיתיים</div>
     <div id="topbar">
       <button id="menu-btn" data-act="toggleNav" aria-label="תפריט">☰</button>
       <input id="quick" type="search" data-enter="quickFind" placeholder="איתור: מק״ט / ברקוד / איתור" autocomplete="off">
       <span id="user-chip"></span>
       <span id="sync"></span>
+      <button class="sm top-only env-btn" data-act="switchEnv"></button>
       <button class="sm top-only" data-act="changePass">החלפת סיסמה</button>
       <button class="sm top-only" data-act="logout">יציאה</button>
     </div>
@@ -378,6 +383,15 @@ const COLLS = ['items', 'locations', 'customers', 'suppliers', 'receipts', 'orde
 const METAS = ['warhs', 'seq', 'settings'];
 const ROLES = { admin: 'מנהל', worker: 'מחסנאי', viewer: 'צפייה בלבד' };
 let me = null, token = null, lastRev = 0, chain = Promise.resolve();
+/* שתי סביבות נפרדות לגמרי בשרת: prod = עבודה אמיתית, test = ניסויים. הבחירה נשמרת במכשיר */
+let env = 'prod';
+try { if (localStorage.getItem('wms-env') === 'test') env = 'test'; } catch (e) { /* אין אחסון מקומי */ }
+const ENVS = { prod: 'רגיל', test: 'טסט' };
+function showEnv() {
+  document.body.classList.toggle('env-test', env === 'test');
+  $('#env-bar').hidden = env !== 'test';
+  document.querySelectorAll('.env-btn').forEach(b => b.textContent = env === 'test' ? 'מעבר לסביבה הרגילה' : 'מעבר לטסט');
+}
 /* base = הנתונים כפי שהשרת מכיר אותם; ההפרש בינם לבין db הוא מה שעוד לא נשלח */
 let base = new Map(), revs = new Map(), baseStock = {};
 try { token = localStorage.getItem('wms-token'); } catch (e) { /* אין אחסון מקומי */ }
@@ -391,7 +405,7 @@ async function rpc(fn, args) {
 }
 function setSync(msg, bad) { const el = $('#sync'); el.textContent = msg || ''; el.className = bad ? 'bad' : ''; }
 const ERR = { BAD_LOGIN: 'שם משתמש או סיסמה שגויים', LOCKED: 'יותר מדי ניסיונות שגויים. נסו שוב בעוד 10 דקות.', INACTIVE: 'המשתמש לא פעיל. פנו למנהל.', WEAK_PASSWORD: 'הסיסמה חייבת להיות באורך 6 תווים לפחות',
-  BAD_USERNAME: 'שם משתמש חייב להיות 2 עד 30 תווים, בלי רווחים', USERNAME_TAKEN: 'שם המשתמש כבר תפוס', LAST_ADMIN: 'חייב להישאר לפחות מנהל פעיל אחד', ADMIN_ONLY: 'הפעולה מותרת למנהל בלבד', SETUP_DONE: 'כבר קיים מנהל במערכת — יש להיכנס עם שם משתמש וסיסמה',
+  BAD_ENV: 'סביבה לא מוכרת', BAD_USERNAME: 'שם משתמש חייב להיות 2 עד 30 תווים, בלי רווחים', USERNAME_TAKEN: 'שם המשתמש כבר תפוס', LAST_ADMIN: 'חייב להישאר לפחות מנהל פעיל אחד', ADMIN_ONLY: 'הפעולה מותרת למנהל בלבד', SETUP_DONE: 'כבר קיים מנהל במערכת — יש להיכנס עם שם משתמש וסיסמה',
   READONLY: 'למשתמש צפייה אין הרשאה לשנות נתונים', CONFLICT: 'משתמש אחר עדכן את אותם נתונים באותו רגע. הפעולה לא נשמרה — נסו שוב.', NEGATIVE: 'הפעולה לא נשמרה: המלאי באיתור כבר נוצל על ידי משתמש אחר.' };
 const errText = err => { const m = String((err && err.message) || err || ''), k = Object.keys(ERR).find(x => m.startsWith(x)); return k ? ERR[k] : (err && err.server ? 'שגיאת שרת: ' + m : 'אין חיבור לשרת'); };
 
@@ -409,7 +423,7 @@ async function push() {
   const d = diff(); if (!d.ents.length && !d.stock.length) return;
   setSync('שומר…');
   try {
-    const r = await rpc('wms_apply', { p_token: token, p_ops: { ents: d.ents, stock: d.stock } });
+    const r = await rpc('wms_apply', { p_token: token, p_ops: { ents: d.ents, stock: d.stock }, p_env: env });
     d.ents.forEach(e => { const k = e.c + '|' + e.i; revs.set(k, r.rev); if (e.d === null) base.delete(k); else base.set(k, d.strs.get(k)); });
     d.stock.forEach(s => { const q = r3((baseStock[s.k] || 0) + s.d); if (q) baseStock[s.k] = q; else delete baseStock[s.k]; });
     setSync('');
@@ -448,7 +462,7 @@ function applyPull(r) {
   return changed;
 }
 async function loadAll() {
-  const r = await rpc('wms_pull', { p_token: token, p_since: 0 });
+  const r = await rpc('wms_pull', { p_token: token, p_since: 0, p_env: env });
   db = emptyDb(); base = new Map(); revs = new Map(); baseStock = {}; lastRev = 0;
   applyPull(r);
 }
@@ -463,7 +477,7 @@ async function tick() {
   try {
     await (chain = chain.then(push));
     if (!me) return;
-    const r = await rpc('wms_pull', { p_token: token, p_since: lastRev });
+    const r = await rpc('wms_pull', { p_token: token, p_since: lastRev, p_env: env });
     if (applyPull(r)) softRender();
     if ($('#sync').textContent === 'אין חיבור') setSync('');
   } catch (err) {
@@ -502,7 +516,7 @@ $('#auth-form').addEventListener('submit', async e => {
 });
 async function enter() {
   await loadAll();
-  $('#auth').hidden = true; $('#app').hidden = false; setSync(''); render();
+  $('#auth').hidden = true; $('#app').hidden = false; setSync(''); showEnv(); render();
   offerLocalUpload();
 }
 async function boot() {
@@ -519,7 +533,7 @@ async function boot() {
 function logoutLocal(msg) { me = null; token = null; storeToken(); db = emptyDb(); base = new Map(); revs = new Map(); baseStock = {}; lastRev = 0; closeModal(); showAuth('login', msg || ''); }
 /* מנהל שנכנס למסד ריק ויש בדפדפן שלו נתונים מהגרסה המקומית: מציעים להעלות אותם */
 function offerLocalUpload() {
-  if (me.role !== 'admin' || db.items.length || db.locations.length) return;
+  if (env !== 'test' || me.role !== 'admin' || db.items.length || db.locations.length) return;
   let old = null; try { if (!localStorage.getItem('wms-uploaded')) old = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* אין נתונים ישנים */ }
   if (!old || !Array.isArray(old.items) || !(old.items.length || (old.locations || []).length)) return;
   if (!confirm(`בדפדפן הזה שמורים נתונים מהגרסה המקומית (${old.items.length} פריטים, ${(old.locations || []).length} איתורים). להעלות אותם למערכת המשותפת?`)) return;
@@ -548,7 +562,7 @@ function render() {
   const cnt = { grv: db.receipts.filter(x => x.status === 'open' || x.status === 'partial').length, orders: db.orders.filter(x => x.status === 'new' || x.status === 'picking').length, picktasks: openTasks().length, shipments: db.orders.filter(x => x.status === 'picked').length };
   $('#nav-links').innerHTML = NAV.filter(x => x[0] !== 'users' || me.role === 'admin').map(x => typeof x === 'string' ? `<div class="grp">${x}</div>` : `<a href="#/${x[0]}" class="${x[0] === route ? 'on' : ''}"><span>${x[1]}</span>${cnt[x[0]] ? `<span class="cnt">${cnt[x[0]]}</span>` : ''}</a>`).join('');
   $('#wh-name').textContent = db.settings.name || '';
-  $('#user-chip').textContent = $('#nav-user').textContent = `${me.name || me.username} · ${ROLES[me.role]}`;
+  $('#user-chip').textContent = $('#nav-user').textContent = `${me.name || me.username} · ${ROLES[me.role]}${env === 'test' ? ' · טסט' : ''}`;
   document.title = 'ניהול מחסן — ' + (db.settings.name || '');
   $('#dl-items').innerHTML = db.items.filter(i => i.active !== false).map(i => `<option value="${esc(i.sku)}">${esc(i.name)}</option>`).join('');
   $('#dl-locs').innerHTML = sortedLocs().map(l => `<option value="${esc(locLabel(l))}">${LOC_TYPES[l.type] || ''}</option>`).join('');
@@ -640,7 +654,7 @@ views.dashboard = () => {
   if (!db.items.length && !db.locations.length) return `<div class="card"><h1>ברוכים הבאים למערכת ניהול המחסן</h1>
     <p class="sub">המערכת עדיין ריקה. כך מתחילים:</p>
     <ol class="steps"><li>מגדירים <a href="#/warehouses">מחסנים ואיתורים</a>.</li><li>מקימים <a href="#/items">פריטים</a> — ידנית או בהדבקה מאקסל.</li><li>מזינים יתרות פתיחה דרך <a href="#/grv">קבלת סחורה מספק</a> או ייבוא ב<a href="#/settings">הגדרות</a>.</li><li>מתחילים לעבוד: הזמנות לקוח וליקוט, משלוחים, העברות בין מחסנים, החזרות וספירות.</li></ol>
-    <div class="btns"><button class="primary" data-act="loadDemo">טען נתוני דוגמה כדי להתנסות</button><button data-act="go" data-href="#/warehouses">התחל מהגדרת מחסנים</button></div></div>`;
+    <div class="btns">${env === 'test' ? `<button class="primary" data-act="loadDemo">טען נתוני דוגמה כדי להתנסות</button>` : `<button class="primary" data-act="switchEnv">מעבר לטסט כדי להתנסות</button>`}<button data-act="go" data-href="#/warehouses">התחל מהגדרת מחסנים</button></div></div>`;
   const sm = summary(); let units = 0; sm.forEach(s => units = r3(units + s.total));
   const low = db.items.filter(i => i.active !== false && n(i.minQty) > 0 && ((sm.get(i.id) || {}).avail || 0) < n(i.minQty));
   const oOpen = db.orders.filter(o => o.status === 'new' || o.status === 'picking'), oShip = db.orders.filter(o => o.status === 'picked');
@@ -1275,7 +1289,7 @@ views.settings = () => pageHead('הגדרות וגיבוי') + `
   <div class="card"><h3>גיבוי ושחזור</h3><p class="sub" style="margin-bottom:12px">הנתונים נשמרים בענן ומשותפים לכל המשתמשים. מומלץ שמנהל יוריד קובץ גיבוי מדי פעם. שחזור מגיבוי מחליף את הנתונים אצל כולם. הפעולות בעמוד הזה מותרות למנהל בלבד.</p>
     <div class="btns"><button class="primary" data-act="exportBackup">הורד קובץ גיבוי</button><button data-act="pickImport">שחזר מקובץ גיבוי</button></div></div>
   <div class="card"><h3>ייבוא נתונים מאקסל</h3><div class="btns"><button data-act="importItems">ייבוא פריטים</button><button data-act="importStock">ייבוא יתרות פתיחה</button></div></div>
-  <div class="card"><h3>נתוני דוגמה ואיפוס</h3><div class="btns"><button data-act="loadDemo">טען נתוני דוגמה</button><button class="danger" data-act="wipe">מחק את כל הנתונים</button></div></div>
+  ${env === 'test' ? `<div class="card"><h3>נתוני דוגמה ואיפוס (טסט בלבד)</h3><div class="btns"><button data-act="loadDemo">טען נתוני דוגמה</button><button data-act="copyEnv">העתק את הנתונים האמיתיים לטסט</button><button class="danger" data-act="wipe">מחק את כל נתוני הטסט</button></div></div>` : `<div class="card"><h3>סביבת טסט</h3><p class="sub" style="margin-bottom:12px">ניסויים עושים בסביבת הטסט, שם אפשר לטעון נתוני דוגמה ולמחוק בלי לפגוע במלאי האמיתי.</p><div class="btns"><button data-act="switchEnv">מעבר לטסט</button><button data-act="copyEnv">העתק את הנתונים האמיתיים לטסט</button></div></div>`}
   <p class="mut">סה״כ במערכת: ${num(db.items.length)} פריטים · ${num(Object.keys(db.warhs).length)} מחסנים · ${num(db.locations.length)} איתורים · ${num(db.moves.length)} תנועות מלאי</p>`;
 actions.exportBackup = () => download(`גיבוי-מחסן-${today()}.json`, JSON.stringify(db), 'application/json');
 actions.pickImport = () => $('#imp-file').click();
@@ -1299,11 +1313,13 @@ actions.doImportStock = () => {
   closeModal(); commit(); toast(`יובאו ${ok} שורות יתרה${skip ? `, דולגו ${skip}` : ''}`);
 };
 actions.wipe = () => {
+  if (env !== 'test') return fail('מחיקת כל הנתונים אפשרית רק בסביבת הטסט');
   if (!confirm('פעולה זו תמחק את כל הפריטים, המחסנים, היתרות והתעודות. להמשיך?')) return;
   if (!confirm('אין דרך לשחזר בלי קובץ גיבוי. למחוק בכל זאת?')) return;
   db = emptyDb(); commit(); toast('כל הנתונים נמחקו');
 };
 actions.loadDemo = () => {
+  if (env !== 'test') return fail('נתוני דוגמה נטענים רק בסביבת הטסט');
   if ((db.items.length || db.locations.length) && !confirm('נתוני הדוגמה יחליפו את כל הנתונים הקיימים. להמשיך?')) return;
   db = emptyDb(); db.settings.name = 'חברת הדגמה בע״מ';
   db.warhs = { 1: 'מחסן ראשי' };
@@ -1354,12 +1370,27 @@ actions.savePass = async () => {
   const d = ui.draft; if (d.pass !== d.pass2) return fail('שתי הסיסמאות החדשות לא זהות');
   try { await rpc('wms_change_password', { p_token: token, p_old: d.old, p_new: d.pass }); closeModal(); toast('הסיסמה הוחלפה'); } catch (err) { toast(errText(err), true); }
 };
+actions.switchEnv = async () => {
+  const to = env === 'test' ? 'prod' : 'test';
+  if (!confirm(to === 'test' ? 'לעבור לסביבת הטסט? מה שתעשו שם לא ישפיע על המלאי האמיתי.' : 'לחזור לסביבה הרגילה? מכאן כל פעולה היא על המלאי האמיתי.')) return;
+  document.body.classList.remove('nav-open'); closeModal(); setSync('מחליף סביבה…');
+  await chain;                                   /* קודם מסיימים לשמור את מה שנעשה בסביבה הנוכחית */
+  const prev = env; env = to;
+  try { await loadAll(); try { localStorage.setItem('wms-env', env); } catch (e) { /* לא קריטי */ } setSync(''); }
+  catch (err) { env = prev; try { await loadAll(); } catch (e) { /* יתעדכן בסנכרון הבא */ } toast(errText(err), true); setSync(''); }
+  showEnv(); go('#/dashboard');
+};
+actions.copyEnv = async () => {
+  if (!confirm('להעתיק את כל הנתונים האמיתיים לסביבת הטסט? מה שיש עכשיו בטסט יימחק.')) return;
+  try { await chain; await rpc('wms_copy_env', { p_token: token }); if (env === 'test') { await loadAll(); render(); } toast('הנתונים האמיתיים הועתקו לטסט'); }
+  catch (err) { toast(errText(err), true); }
+};
 actions.logout = async () => { const t = token; logoutLocal(); try { await rpc('wms_logout', { p_token: t }); } catch (e) { /* החיבור המקומי כבר נוקה */ } };
 
 /* ================= אירועים ================= */
 actions.toggleNav = () => document.body.classList.toggle('nav-open');
-const VIEW_ACTS = new Set(['toggleNav', 'go','itemCard', 'locCard', 'viewDoc', 'closeModal', 'print', 'invCsv', 'movesCsv', 'logout', 'changePass', 'savePass']);
-const ADMIN_ACTS = new Set(['wipe', 'loadDemo', 'pickImport', 'exportBackup', 'editUser', 'saveUser']);
+const VIEW_ACTS = new Set(['toggleNav', 'switchEnv', 'go','itemCard', 'locCard', 'viewDoc', 'closeModal', 'print', 'invCsv', 'movesCsv', 'logout', 'changePass', 'savePass']);
+const ADMIN_ACTS = new Set(['copyEnv', 'wipe', 'loadDemo', 'pickImport', 'exportBackup', 'editUser', 'saveUser']);
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !me) return;
   const act = el.dataset.act, fn = actions[act]; if (!fn) return;
