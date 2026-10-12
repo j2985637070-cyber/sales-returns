@@ -435,83 +435,6 @@
     .sev-chip.active em { color: rgba(255,255,255,0.75); }
     .bar-none { background: #868e96; }
 
-    .insights .card-head { gap: 10px; }
-    .insights-scope { color: var(--muted); font-size: 0.82rem; font-weight: 600; margin-inline-end: auto; }
-    .insights-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-      gap: 22px;
-    }
-    @media (max-width: 900px) { .insights-grid { grid-template-columns: 1fr; } }
-    .ins-panel { min-width: 0; }
-    .ins-title {
-      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-      font-size: 0.86rem; font-weight: 800; color: var(--navy);
-      margin-bottom: 12px;
-    }
-    .ins-empty {
-      color: var(--muted); font-size: 0.85rem; font-weight: 600;
-      padding: 28px 10px; text-align: center;
-      border: 1px dashed #cfd7e8; border-radius: 12px;
-    }
-    .mc-legend { display: inline-flex; gap: 12px; font-size: 0.76rem; font-weight: 700; color: var(--muted); }
-    .mc-legend span { display: inline-flex; align-items: center; gap: 5px; }
-    .mc-legend i { width: 10px; height: 10px; border-radius: 3px; }
-    .mc-sent { background: #3b5bdb; }
-    .mc-ret { background: #e8590c; }
-    .mc-plot { display: flex; gap: 8px; direction: ltr; }
-    .mc-y {
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding-bottom: 22px;
-      font-size: 0.7rem; font-weight: 600; color: var(--muted);
-      font-variant-numeric: tabular-nums; text-align: right;
-    }
-    .mc-y span { line-height: 1; transform: translateY(-50%); }
-    .mc-y span:last-child { transform: translateY(50%); }
-    .mc-area { position: relative; flex: 1; height: 190px; min-width: 0; }
-    .mc-grid {
-      position: absolute; inset: 0 0 22px 0;
-      display: flex; flex-direction: column; justify-content: space-between;
-      pointer-events: none;
-    }
-    .mc-grid i { border-top: 1px dashed #e3e9f3; }
-    .mc-grid i:last-child { border-top: 1px solid #c5d0e4; }
-    .mc-cols { position: relative; display: flex; height: 100%; }
-    .mc-col { flex: 1; min-width: 0; display: flex; flex-direction: column; border-radius: 8px; }
-    .mc-col:hover { background: rgba(59,91,219,0.07); }
-    .mc-bars { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
-    .mc-bar { width: 38%; max-width: 16px; border-radius: 4px 4px 0 0; }
-    .mc-x {
-      height: 22px; line-height: 22px; text-align: center;
-      font-size: 0.68rem; font-weight: 600; color: var(--muted);
-      font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden;
-    }
-    .chart-tip {
-      position: fixed; z-index: 450; pointer-events: none;
-      background: var(--navy); color: #fff;
-      border-radius: 10px; padding: 8px 12px;
-      font-size: 0.78rem; font-weight: 600; line-height: 1.6;
-      box-shadow: 0 8px 24px rgba(20,40,80,0.25);
-      white-space: nowrap;
-    }
-    .chart-tip b { display: block; font-weight: 800; }
-    .chart-tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-inline-end: 6px; }
-    .top-row {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px;
-      width: 100%;
-      background: none; border: none; border-radius: 10px;
-      padding: 7px 8px;
-      font: inherit; text-align: right; color: var(--text);
-      cursor: pointer;
-    }
-    .top-row:hover { background: var(--accent-light); }
-    .top-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
-    .top-name { font-size: 0.83rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .top-name b { font-weight: 800; color: var(--navy); direction: ltr; unicode-bidi: isolate; margin-left: 8px; }
-    .top-val { font-size: 0.8rem; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .top-val em { font-style: normal; font-weight: 600; color: var(--muted); }
-    .top-bar { grid-column: 1 / -1; height: 6px; background: #edf1f7; border-radius: 99px; overflow: hidden; }
-    .top-bar > span { display: block; height: 100%; border-radius: 99px; background: #e8590c; }
     .filters input, .filters select {
       font-family: inherit;
       font-size: 0.9rem;
@@ -790,6 +713,14 @@
       border: 1px solid #d7def8;
     }
     .scope-banner span { color: var(--accent); }
+    /* the documents window opens on top of the lists that link to it */
+    #docModal { z-index: 320; }
+    #overReturnModal .modal-box { width: min(920px, 100%); }
+    #overReturnBody th[data-osort] { cursor: pointer; user-select: none; white-space: nowrap; }
+    #overReturnBody th[data-osort]:hover { background: #e9eef8; }
+    #overReturnBody th .sort { color: var(--accent); margin-inline-start: 4px; }
+    #overReturnBody td.num, #overReturnBody th.num { text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+    .over-id { display: block; color: var(--muted); font-size: 0.74rem; font-weight: 600; direction: ltr; text-align: right; }
     .cust-pct-bar { gap: 8px; flex-shrink: 0; }
     .cust-pct-bar .extra-search { margin-bottom: 0; flex: 1; min-width: 0; }
     #custPctBody th[data-csort] { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -1400,15 +1331,6 @@
       </div>
     </div>
 
-    <div class="card no-print insights" id="insightsCard" hidden>
-      <div class="card-head">
-        <h2>תובנות</h2>
-        <span class="insights-scope" id="insightsScope"></span>
-        <button type="button" class="btn btn-ghost btn-sm" id="btnToggleInsights">הסתר</button>
-      </div>
-      <div class="card-body insights-grid" id="insightsBody"></div>
-    </div>
-
     <div class="card report-card" id="reportCard">
       <div class="card-head no-print">
         <div class="report-head-title">
@@ -1437,7 +1359,6 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="chart-tip" id="chartTip" hidden></div>
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
     <p id="loadingMsg">טוען...</p>
@@ -1484,6 +1405,7 @@
             <h2>בחירת לקוח לדוח</h2>
             <div class="picker-actions">
               <button type="button" class="btn btn-ghost btn-sm" id="btnCustPct" data-icon="percent">אחוזי החזרה לכל לקוח</button>
+              <button type="button" class="btn btn-danger btn-sm" id="btnOverReturn" data-icon="return"><span id="btnOverReturnLabel">החזרות מעל 100%</span></button>
               <button type="button" class="btn btn-ghost btn-sm" id="btnCustAll">כל הלקוחות</button>
               <button type="button" class="btn btn-ghost btn-sm" id="btnCustMulti">בחירה מרובה</button>
             </div>
@@ -1524,6 +1446,22 @@
         <button type="button" class="btn btn-success btn-sm" id="custPctExport">ייצוא לאקסל</button>
       </div>
       <div class="modal-body" id="custPctBody"></div>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="overReturnModal">
+    <div class="modal-box wide over-box" role="dialog" aria-modal="true" aria-labelledby="overReturnTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="overReturnTitle">החזרות מעל 100%</h3>
+          <p id="overReturnSub"></p>
+        </div>
+        <button type="button" class="modal-close" id="overReturnClose" aria-label="סגור">×</button>
+      </div>
+      <div class="doc-detail-bar cust-pct-bar">
+        <input type="search" class="extra-search" id="overReturnSearch" placeholder="חיפוש לקוח, מק״ט או תיאור...">
+        <button type="button" class="btn btn-success btn-sm" id="overReturnExport">ייצוא לאקסל</button>
+      </div>
+      <div class="modal-body" id="overReturnBody"></div>
     </div>
   </div>
   <div class="modal-backdrop no-print" id="highReturnModal">
@@ -1586,7 +1524,6 @@
       bothCustQ: '',
       bothCustOpen: false,
       sev: '',
-      insightsOpen: true,
       ready: false
     };
 
@@ -1679,7 +1616,6 @@
         view: state.view,
         sortKey: state.sortKey,
         sortDir: state.sortDir,
-        insightsOpen: state.insightsOpen,
         filters: {
           sev: state.sev,
           search: document.getElementById('searchBox').value,
@@ -1712,7 +1648,6 @@
       document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.view === state.view);
       });
-      state.insightsOpen = data.insightsOpen !== false;
       const f = data.filters || {};
       state.sev = f.sev || '';
       if (f.search != null) document.getElementById('searchBox').value = f.search;
@@ -2551,14 +2486,36 @@
       })).filter(row => !state.hiddenSkus.has(row.sku.toLowerCase()));
     }
 
+    // A store's "כללי" and "הזמנות מיוחדות" numbers are one customer: shipments and returns
+    // of both are compared together. Every other customer is a unit of its own number.
+    function custUnit(id) {
+      id = id || '';
+      const known = CUSTOMERS[id];
+      if (known) return { key: 'store:' + known.store, name: 'חנות ' + known.store, ids: idsForStore(known.store) };
+      return { key: 'id:' + id, name: customerInfo(id).name, ids: [id] };
+    }
+
+    function custUnitKey(id) {
+      const known = CUSTOMERS[id || ''];
+      return known ? 'store:' + known.store : 'id:' + (id || '');
+    }
+
+    // true when the customer, or the other number of the same store, is in the report
+    function unitMatches(id) {
+      if (!state.selectedIds) return true;
+      const known = CUSTOMERS[id || ''];
+      if (!known) return state.selectedIds.has(id || '');
+      return idsForStore(known.store).some(sid => state.selectedIds.has(sid));
+    }
+
     const HIGH_RETURN_PCT = 90;
 
     function highReturnDocs() {
       const returned = new Map();
       state.returns.forEach(f => f.items.forEach(item => {
-        if (!customerMatches(item.customerId)) return;
+        if (!unitMatches(item.customerId)) return;
         if (!dateInRange(item.date, 'returns')) return;
-        const key = (item.customerId || '') + '\n' + String(item.sku || '').toLowerCase();
+        const key = custUnitKey(item.customerId) + '\n' + String(item.sku || '').toLowerCase();
         returned.set(key, (returned.get(key) || 0) + (Number(item.qty) || 0));
       }));
 
@@ -2594,7 +2551,7 @@
         const lines = [];
         bucket.lines.forEach(line => {
           if (line.sent <= 0) return;
-          const ret = returned.get((bucket.customerId || '') + '\n' + line.sku.toLowerCase()) || 0;
+          const ret = returned.get(custUnitKey(bucket.customerId) + '\n' + line.sku.toLowerCase()) || 0;
           const used = Math.min(ret, line.sent);
           sent += line.sent;
           covered += used;
@@ -2613,7 +2570,7 @@
           doc: bucket.doc,
           date: bucket.date,
           customerId: bucket.customerId,
-          customerName: customerInfo(bucket.customerId).name,
+          customerName: custUnit(bucket.customerId).name,
           sent,
           returned: covered,
           pct,
@@ -2983,91 +2940,6 @@
         '</div>';
     }
 
-    function monthlySeries(skuSet) {
-      const map = new Map();
-      const add = (item, kind) => {
-        if (!customerMatches(item.customerId)) return;
-        if (!dateInRange(item.date, kind)) return;
-        if (!skuSet.has(String(item.sku || '').toLowerCase())) return;
-        const key = Math.floor(dateKey(item.date) / 100);
-        if (!key) return;
-        let month = map.get(key);
-        if (!month) {
-          month = { key, sent: 0, returned: 0 };
-          map.set(key, month);
-        }
-        if (kind === 'shipped') month.sent += Number(item.qty) || 0;
-        else month.returned += Number(item.qty) || 0;
-      };
-      state.shipped.forEach(f => f.items.forEach(item => add(item, 'shipped')));
-      state.returns.forEach(f => f.items.forEach(item => add(item, 'returns')));
-      return Array.from(map.values()).sort((a, b) => a.key - b.key);
-    }
-
-    function niceMax(value) {
-      const pow = Math.pow(10, Math.floor(Math.log10(Math.max(1, value))));
-      const step = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(m => m * pow >= value) || 10;
-      return step * pow;
-    }
-
-    function monthlyChartHtml(series) {
-      const legend = '<span class="mc-legend"><span><i class="mc-sent"></i>נשלח</span><span><i class="mc-ret"></i>חזר</span></span>';
-      const MAX_MONTHS = 12;
-      const shown = series.slice(-MAX_MONTHS);
-      const title = '<div class="ins-title"><span>נשלח מול חזר לפי חודש' +
-        (series.length > MAX_MONTHS ? ' · ' + MAX_MONTHS + ' החודשים האחרונים' : '') + '</span>' + legend + '</div>';
-      if (!shown.length) {
-        return title + '<div class="ins-empty">אין תאריכים בקבצים, ולכן אי אפשר להציג מגמה חודשית.</div>';
-      }
-      const top = niceMax(Math.max(1, ...shown.map(m => Math.max(m.sent, m.returned))));
-      const height = (v) => v > 0 ? Math.max(1.5, Math.min(100, v / top * 100)) : 0;
-      const cols = shown.map(m => {
-        const label = String(m.key).slice(4, 6) + '/' + String(m.key).slice(2, 4);
-        return '<div class="mc-col" data-m="' + label + '" data-s="' + m.sent + '" data-r="' + m.returned + '">' +
-          '<div class="mc-bars">' +
-          '<span class="mc-bar mc-sent" style="height:' + height(m.sent) + '%"></span>' +
-          '<span class="mc-bar mc-ret" style="height:' + height(m.returned) + '%"></span>' +
-          '</div><div class="mc-x">' + label + '</div></div>';
-      }).join('');
-      return title + '<div class="mc-plot">' +
-        '<div class="mc-y"><span>' + fmtNum(top) + '</span><span>' + fmtNum(top / 2) + '</span><span>0</span></div>' +
-        '<div class="mc-area"><div class="mc-grid"><i></i><i></i><i></i></div><div class="mc-cols">' + cols + '</div></div>' +
-        '</div>';
-    }
-
-    function topReturnsHtml(rows) {
-      const title = '<div class="ins-title"><span>המק״טים שחזרו הכי הרבה</span></div>';
-      const top = rows.filter(r => r.returned > 0).sort((a, b) => b.returned - a.returned).slice(0, 5);
-      if (!top.length) return title + '<div class="ins-empty">אין החזרות בנתונים המוצגים.</div>';
-      const max = top[0].returned;
-      return title + top.map(r =>
-        '<button type="button" class="top-row" data-top-sku="' + escapeHtml(r.sku) + '" title="הצג את המק״ט בדוח">' +
-        '<span class="top-name"><b>' + escapeHtml(r.sku) + '</b>' + escapeHtml(r.desc || '') + '</span>' +
-        '<span class="top-val">' + fmtNum(r.returned) + ' <em>· ' + (r.sent > 0 ? fmtPct(r.pct) : 'אין שליחה') + '</em></span>' +
-        '<span class="top-bar"><span style="width:' + Math.max(2, r.returned / max * 100) + '%"></span></span>' +
-        '</button>'
-      ).join('');
-    }
-
-    function renderInsights(people) {
-      const card = document.getElementById('insightsCard');
-      const body = document.getElementById('insightsBody');
-      const focus = people ? people.find(p => p.key === state.focusStoreId) : null;
-      card.hidden = false;
-      body.hidden = !state.insightsOpen;
-      document.getElementById('btnToggleInsights').textContent = state.insightsOpen ? 'הסתר' : 'הצג';
-      document.getElementById('insightsScope').textContent = focus ? focus.name : reportScopeLabel();
-      if (!state.insightsOpen) return;
-      const build = () => {
-        const rows = applyFilters(buildReport());
-        const skuSet = new Set(rows.map(r => r.sku.toLowerCase()));
-        body.innerHTML = '<div class="ins-panel">' + monthlyChartHtml(monthlySeries(skuSet)) + '</div>' +
-          '<div class="ins-panel">' + topReturnsHtml(rows) + '</div>';
-      };
-      if (focus) withCustomers(focus.ids, build);
-      else build();
-    }
-
     function totalsOf(rows) {
       const sent = rows.reduce((s, r) => s + r.sent, 0);
       const returned = rows.reduce((s, r) => s + r.returned, 0);
@@ -3084,6 +2956,7 @@
       renderCustomerPicker();
       updateReportScope();
       updateHighReturnButton();
+      updateOverReturnButton();
 
       const all = buildReport();
       const hasFiles = state.shipped.length + state.returns.length > 0;
@@ -3100,7 +2973,6 @@
         document.getElementById('reportArea').innerHTML = empty
           ? '<div class="empty-state">' + empty + '</div>'
           : emptyStateHtml();
-        document.getElementById('insightsCard').hidden = true;
         renderSevChips([], false);
         document.getElementById('statusText').textContent = state.hiddenSkus.size
           ? state.hiddenSkus.size + ' שורות נמחקו'
@@ -3167,7 +3039,6 @@
         html = renderSkuTable(sorted, viewTotals);
       }
 
-      renderInsights(people);
       document.getElementById('reportArea').innerHTML = html;
       document.getElementById('statusText').textContent = (people ? people.length + ' חנויות · ' : '') +
         filtered.length + ' מק״טים מוצגים' +
@@ -3276,7 +3147,9 @@
 
     function renderDocLines(doc) {
       const ctx = docModalCtx;
-      const lines = collectDocLines(ctx.kind, doc);
+      const lines = ctx.ids
+        ? withCustomers(ctx.ids, () => collectDocLines(ctx.kind, doc))
+        : collectDocLines(ctx.kind, doc);
       const date = ((ctx.rows.find(r => r.doc === doc) || {}).date) || (lines.find(l => l.date) || {}).date || '';
       const modal = document.getElementById('docModal');
       modal.querySelector('.modal-box').classList.add('wide');
@@ -3293,7 +3166,8 @@
     }
 
     function openDocModal(title, subtitle, rows, kind) {
-      docModalCtx = { title, subtitle, rows, kind };
+      // remember whose documents these are, so opening one shows the same customers' lines
+      docModalCtx = { title, subtitle, rows, kind, ids: state.selectedIds ? Array.from(state.selectedIds) : null };
       renderDocList();
     }
 
@@ -3393,11 +3267,12 @@
       const add = (item, kind) => {
         if (!dateInRange(item.date, kind)) return;
         if (state.hiddenSkus.has(String(item.sku || '').toLowerCase())) return;
-        const id = item.customerId || '';
-        let row = map.get(id);
+        const key = custUnitKey(item.customerId);
+        let row = map.get(key);
         if (!row) {
-          row = { id, name: customerInfo(id).name, sent: 0, returned: 0 };
-          map.set(id, row);
+          const unit = custUnit(item.customerId);
+          row = { id: unit.ids.join(' · '), ids: unit.ids, name: unit.name, sent: 0, returned: 0 };
+          map.set(key, row);
         }
         if (kind === 'shipped') row.sent += Number(item.qty) || 0;
         else row.returned += Number(item.qty) || 0;
@@ -3435,7 +3310,7 @@
         '<th class="num" data-csort="pct">% החזרה' + mark('pct') + '</th>' +
         '</tr></thead><tbody>' +
         rows.map(r =>
-          '<tr><td><button type="button" class="doc-open" data-pick-cust="' + escapeHtml(r.id || '__none__') + '" title="הצג דוח ללקוח">' + escapeHtml(r.name) + '</button></td>' +
+          '<tr><td><button type="button" class="doc-open" data-pick-cust="' + escapeHtml(r.ids.join(',') || '__none__') + '" title="הצג דוח ללקוח">' + escapeHtml(r.name) + '</button></td>' +
           '<td class="doc-no">' + escapeHtml(r.id || '—') + '</td>' +
           '<td class="num">' + fmtNum(r.sent) + '</td>' +
           '<td class="num">' + fmtNum(r.returned) + '</td>' +
@@ -3475,6 +3350,126 @@
         markRtl(wb);
         downloadWorkbook(wb, 'אחוזי-החזרה-לפי-לקוח-' + new Date().toISOString().slice(0, 10) + '.xlsx')
           .then(() => toast('הטבלה ירדה לאקסל', 'ok'), saveFailed);
+      } catch (e) {
+        toast('ייצוא האקסל נכשל', 'err');
+      }
+    }
+
+    const overReturn = { sortKey: 'excess', sortDir: 'desc' };
+
+    // Customer + SKU pairs where more came back than was shipped: most likely a keying mistake
+    function overReturnAll() {
+      const map = new Map();
+      const add = (item, kind) => {
+        if (!dateInRange(item.date, kind)) return;
+        const skuKey = String(item.sku || '').toLowerCase();
+        if (!skuKey || state.hiddenSkus.has(skuKey)) return;
+        const key = custUnitKey(item.customerId) + '\n' + skuKey;
+        let row = map.get(key);
+        if (!row) {
+          const unit = custUnit(item.customerId);
+          row = { name: unit.name, id: unit.ids.join(' · '), ids: unit.ids, sku: item.sku, desc: '', sent: 0, returned: 0 };
+          map.set(key, row);
+        }
+        row.desc = pickText(row.desc, item.desc, true);
+        if (kind === 'shipped') row.sent += Number(item.qty) || 0;
+        else row.returned += Number(item.qty) || 0;
+      };
+      state.shipped.forEach(f => f.items.forEach(item => add(item, 'shipped')));
+      state.returns.forEach(f => f.items.forEach(item => add(item, 'returns')));
+      const rows = [];
+      map.forEach(row => {
+        if (row.returned <= 0 || row.returned <= row.sent + 1e-9) return;
+        const pct = calcPct(row.sent, row.returned);
+        rows.push({
+          ...row,
+          excess: row.returned - row.sent,
+          pct,
+          // "returned with nothing shipped" sorts above every real percentage
+          pctSort: pct === null ? Number.MAX_VALUE : pct
+        });
+      });
+      return rows;
+    }
+
+    function overReturnRows() {
+      const q = (document.getElementById('overReturnSearch').value || '').trim().toLowerCase();
+      const all = overReturnAll();
+      const shown = q
+        ? all.filter(row => (row.name + ' ' + row.id + ' ' + row.sku + ' ' + row.desc).toLowerCase().includes(q))
+        : all;
+      return sortRows(shown, overReturn.sortKey, overReturn.sortDir);
+    }
+
+    function updateOverReturnButton() {
+      const hasFiles = state.shipped.length + state.returns.length > 0;
+      const n = hasFiles ? overReturnAll().length : 0;
+      const label = document.getElementById('btnOverReturnLabel');
+      label.textContent = 'החזרות מעל 100%' + (n ? ' · ' + n : '');
+    }
+
+    function renderOverReturn() {
+      const rows = overReturnRows();
+      const mark = (key) => overReturn.sortKey === key
+        ? '<span class="sort">' + (overReturn.sortDir === 'asc' ? '▲' : '▼') + '</span>' : '';
+      const customers = new Set(rows.map(r => r.id)).size;
+      document.getElementById('overReturnSub').textContent = rows.length + ' מקרים אצל ' + customers + ' לקוחות' +
+        (hasDateFilter() ? ' · לפי סינון התאריכים הפעיל' : '') + ' · לחיצה על הכמות שחזרה מציגה את תעודות ההחזרה';
+      const body = document.getElementById('overReturnBody');
+      if (!rows.length) {
+        body.innerHTML = '<div class="modal-empty">לא נמצאו מק״טים שחזרו יותר ממה שנשלח.</div>';
+        return;
+      }
+      body.innerHTML = '<table><thead><tr>' +
+        '<th data-osort="name">לקוח' + mark('name') + '</th>' +
+        '<th data-osort="sku">מק״ט' + mark('sku') + '</th>' +
+        '<th data-osort="desc">תאור מוצר' + mark('desc') + '</th>' +
+        '<th class="num" data-osort="sent">נשלח' + mark('sent') + '</th>' +
+        '<th class="num" data-osort="returned">חזר' + mark('returned') + '</th>' +
+        '<th class="num" data-osort="excess">עודף' + mark('excess') + '</th>' +
+        '<th class="num" data-osort="pctSort">% החזרה' + mark('pctSort') + '</th>' +
+        '</tr></thead><tbody>' +
+        rows.map(r =>
+          '<tr><td>' + escapeHtml(r.name) + '<span class="over-id">' + escapeHtml(r.id) + '</span></td>' +
+          '<td class="doc-no">' + escapeHtml(r.sku) + '</td>' +
+          '<td>' + escapeHtml(r.desc || '—') + '</td>' +
+          '<td class="num">' + fmtNum(r.sent) + '</td>' +
+          '<td class="num"><button type="button" class="sent-link return-link" data-over-docs="' + escapeHtml(r.ids.join(',') || '__none__') +
+            '" data-sku="' + escapeHtml(r.sku) + '" title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
+          '<td class="num"><span class="net-cell net-neg">+' + fmtNum(r.excess) + '</span></td>' +
+          '<td class="num pct-crit">' + (r.pct === null ? 'אין שליחה' : fmtPct(r.pct)) + '</td></tr>'
+        ).join('') +
+        '</tbody></table>';
+    }
+
+    function openOverReturnModal() {
+      document.getElementById('overReturnSearch').value = '';
+      renderOverReturn();
+      document.getElementById('overReturnModal').classList.add('show');
+    }
+
+    function closeOverReturnModal() {
+      document.getElementById('overReturnModal').classList.remove('show');
+    }
+
+    function exportOverReturn() {
+      const rows = overReturnRows();
+      if (!rows.length) { toast('אין נתונים לייצוא', 'err'); return; }
+      try {
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheetFromRows(rows.map(r => ({
+          'לקוח': r.name,
+          'מס. לקוח': r.ids.join(', '),
+          'מק״ט': r.sku,
+          'תאור מוצר': r.desc,
+          'נשלח': r.sent,
+          'חזר': r.returned,
+          'עודף': r.excess,
+          'אחוז החזרה': r.pct === null ? 'אין שליחה' : Math.round(r.pct * 10) / 10
+        }))), 'החזרות מעל 100%');
+        markRtl(wb);
+        downloadWorkbook(wb, 'החזרות-מעל-100-אחוז-' + new Date().toISOString().slice(0, 10) + '.xlsx')
+          .then(() => toast('הרשימה ירדה לאקסל', 'ok'), saveFailed);
       } catch (e) {
         toast('ייצוא האקסל נכשל', 'err');
       }
@@ -4444,41 +4439,6 @@ renderTable();
       state.sev = state.sev === chip.dataset.sev ? '' : chip.dataset.sev;
       renderAll();
     });
-    document.getElementById('btnToggleInsights').addEventListener('click', () => {
-      state.insightsOpen = !state.insightsOpen;
-      renderAll();
-    });
-
-    const chartTip = document.getElementById('chartTip');
-    document.getElementById('insightsBody').addEventListener('mousemove', (e) => {
-      const col = e.target.closest('.mc-col');
-      if (!col) { chartTip.hidden = true; return; }
-      const sent = Number(col.dataset.s) || 0;
-      const returned = Number(col.dataset.r) || 0;
-      chartTip.innerHTML = '<b>' + escapeHtml(col.dataset.m) + '</b>' +
-        '<div><i class="mc-sent"></i>נשלח ' + fmtNum(sent) + '</div>' +
-        '<div><i class="mc-ret"></i>חזר ' + fmtNum(returned) + '</div>' +
-        '<div>אחוז החזרה ' + fmtPct(calcPct(sent, returned)) + '</div>';
-      chartTip.hidden = false;
-      const box = chartTip.getBoundingClientRect();
-      let left = e.clientX + 14;
-      if (left + box.width > window.innerWidth - 8) left = e.clientX - box.width - 14;
-      chartTip.style.left = Math.max(8, left) + 'px';
-      chartTip.style.top = Math.max(8, e.clientY - box.height - 10) + 'px';
-    });
-    document.getElementById('insightsBody').addEventListener('mouseleave', () => { chartTip.hidden = true; });
-    document.getElementById('insightsBody').addEventListener('click', (e) => {
-      const row = e.target.closest('[data-top-sku]');
-      if (!row) return;
-      document.getElementById('searchBox').value = row.dataset.topSku;
-      if (state.view !== 'sku') {
-        state.view = 'sku';
-        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === 'sku'));
-      }
-      renderAll();
-      document.getElementById('reportCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
     document.addEventListener('keydown', (e) => {
       if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
       if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
@@ -4521,14 +4481,40 @@ renderTable();
       }
       const pick = e.target.closest('[data-pick-cust]');
       if (!pick) return;
-      const id = pick.dataset.pickCust === '__none__' ? '' : pick.dataset.pickCust;
-      state.selectedIds = new Set([id]);
-      state.combineStores = false;
+      const ids = pick.dataset.pickCust === '__none__' ? [''] : pick.dataset.pickCust.split(',');
+      state.selectedIds = new Set(ids);
+      // a store opens as one merged report of its two customer numbers
+      state.combineStores = ids.length > 1;
       state.mergedStores.clear();
       closeCustPctModal();
       closeImportModal();
       renderAll();
-      toast('מוצג הדוח של ' + customerInfo(id).name, 'ok');
+      toast('מוצג הדוח של ' + custUnit(ids[0]).name, 'ok');
+    });
+
+    document.getElementById('btnOverReturn').addEventListener('click', openOverReturnModal);
+    document.getElementById('overReturnClose').addEventListener('click', closeOverReturnModal);
+    document.getElementById('overReturnModal').addEventListener('click', (e) => {
+      if (e.target.id === 'overReturnModal') closeOverReturnModal();
+    });
+    document.getElementById('overReturnSearch').addEventListener('input', renderOverReturn);
+    document.getElementById('overReturnExport').addEventListener('click', exportOverReturn);
+    document.getElementById('overReturnBody').addEventListener('click', (e) => {
+      const th = e.target.closest('th[data-osort]');
+      if (th) {
+        const key = th.dataset.osort;
+        if (overReturn.sortKey === key) overReturn.sortDir = overReturn.sortDir === 'asc' ? 'desc' : 'asc';
+        else {
+          overReturn.sortKey = key;
+          overReturn.sortDir = (key === 'name' || key === 'sku' || key === 'desc') ? 'asc' : 'desc';
+        }
+        renderOverReturn();
+        return;
+      }
+      const docs = e.target.closest('[data-over-docs]');
+      if (!docs) return;
+      const ids = docs.dataset.overDocs === '__none__' ? [''] : docs.dataset.overDocs.split(',');
+      withCustomers(ids, () => showDocs('returns', docs.dataset.sku, ''));
     });
     document.getElementById('btnCustMulti').addEventListener('click', () => {
       state.multiCust = !state.multiCust;
@@ -4677,6 +4663,11 @@ renderTable();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
+      if (document.getElementById('overReturnModal').classList.contains('show')) {
+        if (document.getElementById('docModal').classList.contains('show')) closeDocModal();
+        else closeOverReturnModal();
+        return;
+      }
       if (document.getElementById('custPctModal').classList.contains('show')) {
         closeCustPctModal();
         return;
