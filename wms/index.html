@@ -150,6 +150,22 @@
     table.lines td { display: block; padding: 0; border: 0; flex: 1 1 140px; min-width: 0; }
     table.lines td:first-child { flex-basis: 100%; } table.lines td:last-child { flex: 0 0 auto; }
     table.lines input:not(.qty), table.lines select { min-width: 0; } table.lines input.qty { width: 100%; }
+    /* משימות ליקוט ושורות קבלה: כרטיס לכל שורה, כדי שהכמות וכפתור האישור יהיו מול העיניים */
+    table.cards, table.cards tbody { display: block; } table.cards thead { display: none; }
+    table.cards tr { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 12px; border-bottom: 1px solid var(--line); align-items: center; }
+    table.cards tr.done { background: #fafbfc; } table.cards tr.hl { background: #fff7d6; }
+    table.cards td { display: block; padding: 0; border: 0; background: none !important; text-align: start; }
+    table.cards td::before { color: var(--mut); font-family: "Segoe UI", Arial, sans-serif; font-weight: 400; font-size: .85rem; }
+    table.pick td:nth-child(1) { display: none; }
+    table.pick td:nth-child(2) { flex-basis: 100%; font-size: 1.25rem; font-weight: 700; }
+    table.pick td:nth-child(4) { flex: 1 1 60%; }
+    table.pick td:nth-child(5)::before { content: 'ללקט: '; } table.pick td:nth-child(6)::before { content: 'לוקט: '; }
+    table.pick td:nth-child(5) { flex-basis: 100%; font-size: 1.05rem; }
+    table.pick td:nth-child(7) { flex: 1; } table.pick td:nth-child(7) button { width: 100%; padding: 10px; font-size: 1rem; }
+    table.rcv td:nth-child(2) { flex: 1 1 60%; }
+    table.rcv td:nth-child(3)::before { content: 'בהזמנה: '; } table.rcv td:nth-child(4)::before { content: 'התקבל: '; } table.rcv td:nth-child(5)::before { content: 'יתרה: '; }
+    table.rcv td:nth-child(6)::before { content: 'לקבל: '; } table.rcv td:nth-child(7)::before { content: 'איתור: '; }
+    table.rcv td:nth-child(6), table.rcv td:nth-child(7) { flex-basis: 100%; } table.rcv td:nth-child(7) input { width: 70%; }
     #toast { bottom: 14px; width: max-content; }
   }
   @media print {
@@ -546,7 +562,7 @@ const fq = key => String(ui.f[key] || '').trim().toLowerCase();
 
 const pageHead = (title, btns = '', sub = '') => `<div class="head"><div><h1>${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ''}</div><div class="btns no-print">${btns}</div></div>`;
 /* כותרת עמודה שמתחילה ב-# מיושרת למרכז (עמודה מספרית) */
-const tbl = (heads, rows, empty = 'אין נתונים להצגה') => rows.length ? `<div class="tw"><table><thead><tr>${heads.map(h => `<th${h.startsWith('#') ? ' class="n"' : ''}>${h.replace(/^#/, '')}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="empty">${empty}</div>`;
+const tbl = (heads, rows, empty = 'אין נתונים להצגה', cls = '') => rows.length ? `<div class="tw"><table class="${cls}"><thead><tr>${heads.map(h => `<th${h.startsWith('#') ? ' class="n"' : ''}>${h.replace(/^#/, '')}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="empty">${empty}</div>`;
 const searchBar = (key, ph, extra = '') => `<div class="toolbar no-print"><input type="search" id="f-${key}" data-filter="${key}" value="${esc(ui.f[key] || '')}" placeholder="${ph}" autocomplete="off">${extra}</div>`;
 const notFound = back => `<div class="empty">התעודה לא נמצאה. <a href="#/${back}">חזרה לרשימה</a></div>`;
 const itemTd = id => { const it = item(id) || {}; return `<td class="code">${esc(it.sku)}</td><td>${esc(it.name)}</td>`; };
@@ -929,7 +945,7 @@ function receiptDetail(id) {
     pageHead(`קבלת סחורה מספק ${r.num}`, open ? `<button class="primary" data-act="rcConfirm">אשר קבלה</button><button data-act="rcFill">מלא יתרות לקבלה</button><button data-act="rcAddLine">+ פריט שלא בהזמנה</button><button data-act="rcClose">הפוך לסופית</button><button data-act="print">הדפס</button>${r.lines.every(l => !l.received) ? '<button class="danger" data-act="rcDelete">מחק</button>' : ''}` : `<button data-act="print">הדפס</button>`,
       `${badge('receipt', r.status)} · ספק: ${esc(r.suppNum)} ${esc(r.supplier) || '—'} · הזמנת רכש: ${esc(r.ref) || '—'} · ${fmtDate(r.date)}${r.notes ? ' · ' + esc(r.notes) : ''}`) +
     (open ? `<div class="toolbar no-print"><input type="search" id="rc-scan" data-enter="rcScan" placeholder="סרקו ברקוד פריט כדי לקפוץ לשורה שלו" autocomplete="off"></div>` : '') +
-    tbl(['מק״ט', 'תאור פריט', '#כמות בהזמנה', '#התקבל', '#יתרה לקבלה'].concat(open ? ['#כמות לקבלה', 'איתור לאחסון'] : []), rows) +
+    tbl(['מק״ט', 'תאור פריט', '#כמות בהזמנה', '#התקבל', '#יתרה לקבלה'].concat(open ? ['#כמות לקבלה', 'איתור לאחסון'] : []), rows, undefined, 'cards rcv') +
     (open ? `<p class="mut no-print">הזינו את הכמות שהתקבלה בפועל וסרקו או הקלידו את האיתור. אפשר לקבל בחלקים — התעודה נשארת פתוחה עד להשלמה.</p>` : '');
 }
 const curReceipt = () => db.receipts.find(x => x.id === ui.id);
@@ -1030,7 +1046,7 @@ function orderDetail(id) {
     else if (o.status === 'picked') btns = `<button class="primary" data-act="orShip">הפוך תעודת משלוח לסופית</button><button data-act="print">הדפס</button>`;
     else btns = `<button data-act="print">הדפס</button>`;
     body = (picking ? `<div class="toolbar no-print"><input type="search" id="pk-scan" data-enter="pkScan" placeholder="סרקו ברקוד פריט או איתור כדי לקפוץ למשימה" autocomplete="off"></div>` : '') +
-      (o.status !== 'cancelled' ? `<h3>משימות ליקוט (לפי מסלול איתורים)</h3>` + tbl(['מחסן', 'איתור', 'מק״ט', 'תאור פריט', '#כמות לליקוט', '#לוקט בפועל', ''], taskRows, 'אין משימות ליקוט — לא הוקצה מלאי') : '') +
+      (o.status !== 'cancelled' ? `<h3>משימות ליקוט (לפי מסלול איתורים)</h3>` + tbl(['מחסן', 'איתור', 'מק״ט', 'תאור פריט', '#כמות לליקוט', '#לוקט בפועל', ''], taskRows, 'אין משימות ליקוט — לא הוקצה מלאי', 'cards pick') : '') +
       (picking && short ? `<div class="card" style="border-color:#efc4c0;background:var(--red-l)">חלק מהכמויות לא הוקצו כי אין מספיק מלאי זמין. אחרי קבלת סחורה או תיקון יתרה לחצו על ״הקצה חסרים מחדש״, או סיימו את הליקוט בחוסר.</div>` : '') +
       `<h3>שורות ההזמנה</h3>` + tbl(['מק״ט', 'תאור פריט', '#כמות', '#לוקט', '#חסר'], lineRows);
   }
