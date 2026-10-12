@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>מכירות מול החזרות</title>
+  <meta name="theme-color" content="#17324f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -81,6 +84,62 @@
       border-radius: 20px;
       box-shadow: var(--shadow-sm);
     }
+    body:not(.is-admin) .admin-only { display: none !important; }
+    .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .user-chip {
+      display: inline-flex; flex-direction: column; align-items: flex-start;
+      padding: 4px 12px; line-height: 1.25;
+      border-inline-start: 2px solid var(--border);
+    }
+    .user-chip b { font-size: 0.9rem; font-weight: 800; color: var(--navy); }
+    .user-chip span { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+    .auth-screen {
+      min-height: calc(100vh - 54px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .auth-card {
+      width: min(400px, 100%);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 30px 26px 24px;
+      display: flex; flex-direction: column; gap: 14px;
+      text-align: center;
+    }
+    .auth-card .ob-mark { margin: 0 auto 2px; }
+    .auth-card h1 { font-size: 1.45rem; font-weight: 800; color: var(--navy); }
+    .auth-card > p { color: var(--muted); font-size: 0.88rem; font-weight: 500; margin-top: -8px; }
+    .field { display: flex; flex-direction: column; gap: 5px; text-align: right; }
+    .field label { font-size: 0.8rem; font-weight: 700; color: var(--navy); }
+    .field input, .field select {
+      font-family: inherit; font-size: 0.95rem; font-weight: 500; color: var(--text);
+      padding: 10px 12px; min-height: 44px;
+      border: 1px solid #d3dae8; border-radius: var(--radius-sm);
+      background: #fff; outline: none; width: 100%;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .field small { color: var(--muted); font-size: 0.74rem; font-weight: 500; }
+    .form-error {
+      color: var(--danger); background: var(--danger-light);
+      border: 1px solid #f5b8b8; border-radius: var(--radius-sm);
+      padding: 8px 12px; font-size: 0.84rem; font-weight: 700; text-align: right;
+    }
+    .auth-card .btn { min-height: 46px; font-size: 0.95rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 18px; }
+    @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-grid .wide { grid-column: 1 / -1; }
+    .form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .check-line { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 700; color: var(--navy); cursor: pointer; }
+    .check-line input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .users-head { padding: 12px 18px 0; font-size: 0.86rem; font-weight: 800; color: var(--navy); }
+    .role-pill {
+      display: inline-block; padding: 2px 10px; border-radius: 999px;
+      font-size: 0.74rem; font-weight: 800;
+      background: var(--accent-light); color: var(--accent);
+    }
+    .role-pill.admin { background: var(--navy); color: #fff; }
+    .role-pill.off { background: #eef2f8; color: var(--muted); }
     .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
     .brand-mark {
       flex-shrink: 0;
@@ -1265,7 +1324,31 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="auth-screen no-print" id="authScreen">
+    <form class="auth-card" id="authForm" autocomplete="on">
+      <div class="ob-mark" data-icon="chart"></div>
+      <h1>מכירות מול החזרות</h1>
+      <p id="authIntro">מתחבר...</p>
+      <div class="field" id="authNameField" hidden>
+        <label for="authName">שם מלא</label>
+        <input type="text" id="authName" autocomplete="name">
+      </div>
+      <div class="field" id="authUserField" hidden>
+        <label for="authUser">שם משתמש</label>
+        <input type="text" id="authUser" autocomplete="username" autocapitalize="none" spellcheck="false">
+      </div>
+      <div class="field" id="authPassField" hidden>
+        <label for="authPass">סיסמה</label>
+        <input type="password" id="authPass" autocomplete="current-password">
+        <small id="authPassHint" hidden>לפחות 6 תווים</small>
+      </div>
+      <div class="form-error" id="authError" hidden></div>
+      <button type="submit" class="btn btn-primary" id="authSubmit" hidden>כניסה</button>
+      <button type="button" class="btn btn-ghost" id="authRetry" hidden>נסו שוב</button>
+    </form>
+  </div>
+
+  <div class="container" id="appRoot" hidden>
     <header class="dash-header no-print">
       <div class="brand">
         <span class="brand-mark" data-icon="chart"></span>
@@ -1274,10 +1357,18 @@
           <p>השוואה בין מה שנשלח לחנות לבין מה שחזר</p>
         </div>
       </div>
-      <button type="button" class="btn btn-primary manage-btn" id="btnManageFiles" data-icon="folder">
-        ניהול והעלאת קבצים
-        <span class="manage-count" id="manageFileCount" hidden>0</span>
-      </button>
+      <div class="head-actions">
+        <button type="button" class="btn btn-primary manage-btn" id="btnManageFiles" data-icon="folder">
+          <span id="manageLabel">ניהול והעלאת קבצים</span>
+          <span class="manage-count" id="manageFileCount" hidden>0</span>
+        </button>
+        <button type="button" class="btn btn-ghost" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">רענון נתונים</button>
+        <button type="button" class="btn btn-ghost" id="btnInstall" hidden>התקנה כאפליקציה</button>
+        <button type="button" class="btn btn-ghost admin-only" id="btnUsers">משתמשים</button>
+        <button type="button" class="btn btn-ghost" id="btnPassword">החלפת סיסמה</button>
+        <button type="button" class="btn btn-ghost" id="btnLogout">יציאה</button>
+        <span class="user-chip"><b id="userName"></b><span id="userRole"></span></span>
+      </div>
     </header>
 
     <div class="no-print" id="statsRow" hidden></div>
@@ -1368,12 +1459,12 @@
       <div class="modal-head">
         <div>
           <h3 id="importModalTitle">ניהול והעלאת קבצים</h3>
-          <p>גררו קבצי אקסל, או לחצו לבחירה. אחר כך בחרו לקוח לדוח.</p>
+          <p id="importModalSub">גררו קבצי אקסל, או לחצו לבחירה. אחר כך בחרו לקוח לדוח.</p>
         </div>
         <button type="button" class="modal-close" id="importModalClose" aria-label="סגור">×</button>
       </div>
       <div class="modal-body">
-        <div class="import-grid">
+        <div class="import-grid admin-only">
           <div class="drop-zone" id="dropShipped" data-kind="shipped">
             <input type="file" id="fileShipped" accept=".xlsx,.xls,.xlsm,.csv" multiple>
             <span class="dz-icon" data-icon="upload"></span>
@@ -1391,8 +1482,8 @@
             <div class="file-list" id="listReturns"></div>
           </div>
         </div>
-        <div class="hint">
-          העמודות מזוהות אוטומטית: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות</b> / <b>כמות שהוחזרה</b>,
+        <div class="hint admin-only">
+          הקבצים נשמרים בשרת, וכל המשתמשים רואים אותם. העמודות מזוהות אוטומטית: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות</b> / <b>כמות שהוחזרה</b>,
           <b>תאור משפחה</b>, <b>תעודה</b>, <b>תאריך</b>, <b>מס. לקוח</b> ו־<b>שם לקוח</b>.
           בהחזרות אפשר גם קובץ ישן (מספר ושם בראש הקובץ לכל השורות) וגם אקסל עם הרבה עמודות
           שבו כל שורה היא החזרה: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות שהוחזרה</b>, <b>תעודה</b>,
@@ -1415,9 +1506,79 @@
         </div>
       </div>
       <div class="import-foot">
-        <button type="button" class="btn btn-danger" id="btnClear">נקה הכל</button>
+        <button type="button" class="btn btn-danger admin-only" id="btnClear">נקה הכל</button>
         <button type="button" class="btn btn-primary" id="importModalDone">סגור והצג דוח</button>
       </div>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="usersModal">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="usersTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="usersTitle">משתמשים</h3>
+          <p>רק מי שמופיע כאן ופעיל יכול להיכנס. רק מנהל יכול להעלות קבצים.</p>
+        </div>
+        <button type="button" class="modal-close" id="usersClose" aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="usersList"></div>
+        <div class="users-head" id="userFormTitle">משתמש חדש</div>
+        <form class="form-grid" id="userForm" autocomplete="off">
+          <div class="field">
+            <label for="ufUsername">שם משתמש</label>
+            <input type="text" id="ufUsername" autocomplete="off" autocapitalize="none" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="ufName">שם מלא</label>
+            <input type="text" id="ufName" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="ufPassword">סיסמה</label>
+            <input type="password" id="ufPassword" autocomplete="new-password">
+            <small id="ufPasswordHint">לפחות 6 תווים</small>
+          </div>
+          <div class="field">
+            <label for="ufRole">הרשאה</label>
+            <select id="ufRole">
+              <option value="user">משתמש (צפייה בדוחות)</option>
+              <option value="admin">מנהל (גם העלאת קבצים ומשתמשים)</option>
+            </select>
+          </div>
+          <label class="check-line wide"><input type="checkbox" id="ufActive" checked> משתמש פעיל (יכול להיכנס)</label>
+          <div class="form-error wide" id="userFormError" hidden></div>
+          <div class="form-actions wide">
+            <button type="submit" class="btn btn-primary" id="ufSave">הוספת משתמש</button>
+            <button type="button" class="btn btn-ghost" id="ufCancel" hidden>ביטול עריכה</button>
+            <button type="button" class="btn btn-danger" id="ufDelete" hidden>מחיקת המשתמש</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="passwordModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="passwordTitle">החלפת סיסמה</h3>
+          <p>אחרי ההחלפה, מכשירים אחרים שמחוברים בשם שלך ינותקו.</p>
+        </div>
+        <button type="button" class="modal-close" id="passwordClose" aria-label="סגור">×</button>
+      </div>
+      <form class="form-grid" id="passwordForm" autocomplete="off">
+        <div class="field wide">
+          <label for="pwOld">הסיסמה הנוכחית</label>
+          <input type="password" id="pwOld" autocomplete="current-password">
+        </div>
+        <div class="field wide">
+          <label for="pwNew">סיסמה חדשה</label>
+          <input type="password" id="pwNew" autocomplete="new-password">
+          <small>לפחות 6 תווים</small>
+        </div>
+        <div class="form-error wide" id="passwordError" hidden></div>
+        <div class="form-actions wide">
+          <button type="submit" class="btn btn-primary">שמירת הסיסמה</button>
+        </div>
+      </form>
     </div>
   </div>
   <div class="modal-backdrop no-print" id="docModal">
@@ -1575,156 +1736,261 @@
       toast._t = setTimeout(() => { el.className = 'toast'; }, action ? 6000 : 2800);
     }
 
-    let dbPromise = null;
-    function getDb() {
-      if (!dbPromise) {
-        const openPromise = new Promise((resolve, reject) => {
-          try {
-            const req = indexedDB.open(DB_NAME, 1);
-            req.onupgradeneeded = () => {
-              if (!req.result.objectStoreNames.contains(DB_STORE)) {
-                req.result.createObjectStore(DB_STORE);
-              }
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-            req.onblocked = () => reject(new Error('IndexedDB blocked'));
-          } catch (e) {
-            reject(e);
-          }
-        });
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('IndexedDB timeout')), 2000));
-        dbPromise = Promise.race([openPromise, timeout]).catch(err => {
-          dbPromise = null;
-          throw err;
-        });
-      }
-      return dbPromise;
+    // ---------- server (Supabase): sign-in, users, and the uploaded files ----------
+    const SUPA_URL = 'https://iwatwpcemndhjysghzil.supabase.co';
+    const SUPA_KEY = 'sb_publishable_4boIKxcwLdps6bgEtCDMAw_IcK7Ekev';   // public key; permissions are enforced on the server
+    const TOKEN_KEY = 'svr-token';
+    const CHUNK_ROWS = 1500;
+    let token = null;
+    let me = null;
+    try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
+
+    function storeToken() {
+      try {
+        if (token) localStorage.setItem(TOKEN_KEY, token);
+        else localStorage.removeItem(TOKEN_KEY);
+      } catch (e) {}
     }
 
-    function snapshotState() {
+    function isAdmin() {
+      return !!me && me.role === 'admin';
+    }
+
+    async function rpc(fn, args) {
+      let res;
+      try {
+        res = await fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+          method: 'POST',
+          headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify(args || {})
+        });
+      } catch (e) {
+        throw { code: 'NETWORK' };
+      }
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (e) {}
+      if (!res.ok) {
+        throw { code: String((data && data.message) || 'SERVER').split(' ')[0], status: res.status };
+      }
+      return data;
+    }
+
+    // A signed-in call. A dead session sends the user back to the sign-in screen.
+    async function call(fn, args) {
+      try {
+        return await rpc(fn, Object.assign({ p_token: token }, args || {}));
+      } catch (err) {
+        if (err.code === 'AUTH') sessionExpired();
+        throw err;
+      }
+    }
+
+    const ERR_TEXT = {
+      NETWORK: 'אין חיבור לשרת. בדקו את האינטרנט ונסו שוב',
+      BAD_LOGIN: 'שם המשתמש או הסיסמה שגויים',
+      LOCKED: 'יותר מדי ניסיונות שגויים. נסו שוב בעוד 10 דקות',
+      INACTIVE: 'המשתמש הזה לא פעיל. פנו למנהל',
+      AUTH: 'החיבור פג. התחברו שוב',
+      ADMIN_ONLY: 'הפעולה הזו מותרת למנהל בלבד',
+      WEAK_PASSWORD: 'הסיסמה צריכה להיות באורך 6 תווים לפחות',
+      BAD_USERNAME: 'שם המשתמש צריך להיות 2 עד 30 תווים, בלי רווחים',
+      USERNAME_TAKEN: 'שם המשתמש הזה כבר תפוס',
+      LAST_ADMIN: 'חייב להישאר לפחות מנהל פעיל אחד',
+      SELF_DELETE: 'אי אפשר למחוק את המשתמש שאיתו אתם מחוברים',
+      SETUP_DONE: 'כבר הוגדר מנהל למערכת. רעננו את הדף והתחברו',
+      NOT_FOUND: 'הפריט לא נמצא. רעננו את הנתונים'
+    };
+
+    function errText(err) {
+      return ERR_TEXT[err && err.code] || 'משהו השתבש בשרת. נסו שוב';
+    }
+
+    function packItem(it) {
+      return [String(it.sku), it.desc || '', Number(it.qty) || 0, it.family || '', it.customerId || '', it.customerName || '', it.doc || '', it.date || ''];
+    }
+
+    function unpackItem(a) {
       return {
-        savedAt: Date.now(),
-        shipped: state.shipped,
-        returns: state.returns,
-        hiddenSkus: Array.from(state.hiddenSkus),
-        selectedIds: state.selectedIds ? Array.from(state.selectedIds) : null,
-        multiCust: state.multiCust,
-        combineStores: state.combineStores,
-        mergedStores: Array.from(state.mergedStores),
-        focusStoreId: state.focusStoreId,
-        view: state.view,
-        sortKey: state.sortKey,
-        sortDir: state.sortDir,
-        filters: {
-          sev: state.sev,
-          search: document.getElementById('searchBox').value,
-          family: document.getElementById('familyFilter').value,
-          onlyReturns: document.getElementById('onlyReturns').checked,
-          minPct: document.getElementById('minPct').value,
-          dateFrom: document.getElementById('shipDateFrom').value,
-          dateTo: document.getElementById('shipDateTo').value,
-          shipDateFrom: document.getElementById('shipDateFrom').value,
-          shipDateTo: document.getElementById('shipDateTo').value,
-          returnDateFrom: document.getElementById('returnDateFrom').value,
-          returnDateTo: document.getElementById('returnDateTo').value
-        }
+        sku: String(a[0]), desc: a[1] || '', qty: Number(a[2]) || 0, family: a[3] || '',
+        customerId: a[4] || '', customerName: a[5] || '', doc: a[6] || '', date: a[7] || ''
       };
     }
 
-    function applySnapshot(data) {
-      if (!data || typeof data !== 'object') return;
-      state.shipped = Array.isArray(data.shipped) ? data.shipped : [];
-      state.returns = Array.isArray(data.returns) ? data.returns : [];
-      state.hiddenSkus = new Set(Array.isArray(data.hiddenSkus) ? data.hiddenSkus : []);
-      state.selectedIds = Array.isArray(data.selectedIds) ? new Set(data.selectedIds) : null;
-      state.multiCust = !!data.multiCust;
-      state.combineStores = !!data.combineStores;
-      state.mergedStores = new Set(Array.isArray(data.mergedStores) ? data.mergedStores : []);
-      state.focusStoreId = data.focusStoreId || '';
-      if (data.view === 'family' || data.view === 'sku') state.view = data.view;
-      if (data.sortKey) state.sortKey = data.sortKey;
-      if (data.sortDir === 'asc' || data.sortDir === 'desc') state.sortDir = data.sortDir;
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.view === state.view);
-      });
-      const f = data.filters || {};
-      state.sev = f.sev || '';
-      if (f.search != null) document.getElementById('searchBox').value = f.search;
-      if (f.family != null) state.pendingFamily = f.family;
-      document.getElementById('onlyReturns').checked = !!f.onlyReturns;
-      if (f.minPct != null) document.getElementById('minPct').value = f.minPct;
-      const shipFrom = f.shipDateFrom != null ? f.shipDateFrom : f.dateFrom;
-      const shipTo = f.shipDateTo != null ? f.shipDateTo : f.dateTo;
-      if (shipFrom != null) document.getElementById('shipDateFrom').value = shipFrom;
-      if (shipTo != null) document.getElementById('shipDateTo').value = shipTo;
-      if (f.returnDateFrom != null) document.getElementById('returnDateFrom').value = f.returnDateFrom;
-      if (f.returnDateTo != null) document.getElementById('returnDateTo').value = f.returnDateTo;
+    let authMode = 'loading';
+
+    function setAuthError(message) {
+      const el = document.getElementById('authError');
+      el.hidden = !message;
+      el.textContent = message || '';
     }
 
-    function scheduleSave() {
-      if (!state.ready) return;
-      clearTimeout(scheduleSave._t);
-      scheduleSave._t = setTimeout(saveNow, 800);
+    function showAuth(mode, message) {
+      authMode = mode;
+      document.querySelectorAll('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
+      document.body.classList.remove('modal-open');
+      document.getElementById('appRoot').hidden = true;
+      document.getElementById('authScreen').hidden = false;
+      const form = mode === 'login' || mode === 'setup';
+      const show = (id, on) => { document.getElementById(id).hidden = !on; };
+      show('authNameField', mode === 'setup');
+      show('authUserField', form);
+      show('authPassField', form);
+      show('authPassHint', mode === 'setup');
+      show('authSubmit', form);
+      show('authRetry', mode === 'error');
+      document.getElementById('authPass').value = '';
+      document.getElementById('authPass').autocomplete = mode === 'setup' ? 'new-password' : 'current-password';
+      document.getElementById('authSubmit').textContent = mode === 'setup' ? 'יצירת מנהל וכניסה' : 'כניסה';
+      document.getElementById('authIntro').textContent =
+        mode === 'loading' ? 'מתחבר...' :
+        mode === 'setup' ? 'כניסה ראשונה: בחרו שם משתמש וסיסמה למנהל המערכת' :
+        mode === 'login' ? 'הכניסו שם משתמש וסיסמה' : 'לא הצלחנו להתחבר';
+      setAuthError(message || '');
     }
 
-    function saveToLocalStorage(snap) {
+    function clearLocalData() {
+      state.shipped = [];
+      state.returns = [];
+      state.hiddenSkus.clear();
+      state.selectedIds = null;
+      state.combineStores = false;
+      state.mergedStores.clear();
+      state.multiCust = false;
+      resetFilters();
+    }
+
+    function sessionExpired() {
+      if (!me && authMode === 'login') return;
+      token = null;
+      me = null;
+      storeToken();
+      clearLocalData();
+      showAuth('login', ERR_TEXT.AUTH);
+    }
+
+    function applyRole() {
+      const admin = isAdmin();
+      document.body.classList.toggle('is-admin', admin);
+      document.getElementById('userName').textContent = me.name || me.username;
+      document.getElementById('userRole').textContent = admin ? 'מנהל' : 'משתמש';
+      const title = admin ? 'ניהול והעלאת קבצים' : 'בחירת לקוח ודוחות';
+      document.getElementById('manageLabel').textContent = title;
+      document.getElementById('importModalTitle').textContent = title;
+      document.getElementById('importModalSub').textContent = admin
+        ? 'גררו קבצי אקסל, או לחצו לבחירה. אחר כך בחרו לקוח לדוח.'
+        : 'בחרו לקוח לדוח, או פתחו את הרשימות המרוכזות.';
+    }
+
+    async function enterApp() {
+      document.getElementById('authScreen').hidden = true;
+      document.getElementById('appRoot').hidden = false;
+      applyRole();
+      renderAll();
       try {
-        localStorage.setItem(LS_KEY, JSON.stringify(snap));
-      } catch (e) {
-        // quota exceeded — drop the stale copy so it can't win over IndexedDB on load
-        try { localStorage.removeItem(LS_KEY); } catch (e2) {}
-      }
-    }
-
-    async function saveNow() {
-      const snap = snapshotState();
-      saveToLocalStorage(snap);
-      try {
-        const db = await getDb();
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(DB_STORE, 'readwrite');
-          tx.objectStore(DB_STORE).put(snap, 'state');
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
-        });
-        const el = document.getElementById('statusText');
-        const prev = el.dataset.mainText || el.textContent;
-        el.dataset.mainText = prev;
-        el.textContent = prev + ' · נשמר ✓';
-        clearTimeout(saveNow._t);
-        saveNow._t = setTimeout(() => {
-          el.textContent = el.dataset.mainText || '';
-          delete el.dataset.mainText;
-        }, 1800);
+        await syncData(true);
       } catch (err) {
-        let hasCopy = false;
-        try { hasCopy = !!localStorage.getItem(LS_KEY); } catch (e) {}
-        if (!hasCopy) toast('לא הצלחנו לשמור את הנתונים בדפדפן', 'err');
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
       }
     }
 
-    function loadNow() {
-      let fromLs = null;
+    async function boot() {
+      showAuth('loading');
+      try { localStorage.removeItem(LS_KEY); } catch (e) {}
+      try { indexedDB.deleteDatabase(DB_NAME); } catch (e) {}
       try {
-        const raw = localStorage.getItem(LS_KEY);
-        if (raw) fromLs = JSON.parse(raw);
-      } catch (e) {}
+        if (token) {
+          try {
+            me = await rpc('svr_me', { p_token: token });
+          } catch (err) {
+            if (err.code !== 'AUTH') throw err;
+            token = null;
+            storeToken();
+          }
+        }
+        if (me) {
+          await enterApp();
+          return;
+        }
+        const status = await rpc('svr_status');
+        showAuth(status && status.has_users ? 'login' : 'setup');
+      } catch (err) {
+        showAuth('error', err.status === 404 ? 'מסד הנתונים של הכלי עדיין לא הוגדר בשרת.' : errText(err));
+      }
+    }
 
-      // Read IndexedDB too (with timeout) and keep whichever copy is newer
-      return Promise.race([
-        getDb().then(db => new Promise((resolve, reject) => {
-          const tx = db.transaction(DB_STORE, 'readonly');
-          const req = tx.objectStore(DB_STORE).get('state');
-          req.onsuccess = () => resolve(req.result || null);
-          req.onerror = () => reject(req.error);
-        })),
-        new Promise(resolve => setTimeout(() => resolve(null), 1500))
-      ]).catch(() => null).then(fromDb => {
-        if (!fromLs) return fromDb;
-        if (!fromDb) return fromLs;
-        return (fromDb.savedAt || 0) > (fromLs.savedAt || 0) ? fromDb : fromLs;
-      });
+    let syncing = null;
+    let lastSync = 0;
+
+    // Brings the list of uploaded files from the server and downloads the ones not loaded yet
+    function syncData(showOverlay) {
+      if (!syncing) syncing = doSync(showOverlay).finally(() => { syncing = null; });
+      return syncing;
+    }
+
+    async function doSync(showOverlay) {
+      const overlay = document.getElementById('loadingOverlay');
+      const msg = document.getElementById('loadingMsg');
+      let shown = false;
+      try {
+        const list = await call('svr_files_list') || [];
+        const have = new Map();
+        state.shipped.concat(state.returns).forEach(f => have.set(f.id, f));
+        const tasks = [];
+        const entries = list.map(meta => {
+          const old = have.get(meta.id);
+          if (old) return { meta, file: old };
+          const parts = new Array(meta.chunks);
+          for (let seq = 0; seq < meta.chunks; seq++) tasks.push({ parts, id: meta.id, seq });
+          return { meta, parts };
+        });
+        const total = tasks.length;
+        if (total && showOverlay) {
+          msg.textContent = 'טוען נתונים מהשרת...';
+          overlay.classList.add('show');
+          shown = true;
+        }
+        let done = 0;
+        const worker = async () => {
+          while (tasks.length) {
+            const task = tasks.shift();
+            task.parts[task.seq] = await call('svr_file_chunk', { p_file: task.id, p_seq: task.seq }) || [];
+            done++;
+            msg.textContent = 'טוען נתונים מהשרת... ' + Math.round(done / total * 100) + '%';
+          }
+        };
+        await Promise.all([worker(), worker(), worker(), worker()]);
+        const next = { shipped: [], returns: [] };
+        entries.forEach(entry => {
+          const meta = entry.meta;
+          const file = entry.file || {
+            id: meta.id, name: meta.name, size: meta.size, warning: meta.warning || '',
+            items: [].concat(...entry.parts).map(unpackItem)
+          };
+          (next[meta.kind] || next.shipped).push(file);
+        });
+        const ids = (s) => s.shipped.concat(s.returns).map(f => f.id).join(',');
+        const changed = ids(next) !== ids(state);
+        state.shipped = next.shipped;
+        state.returns = next.returns;
+        lastSync = Date.now();
+        if (changed) renderAll();
+        return changed;
+      } finally {
+        if (shown) overlay.classList.remove('show');
+      }
+    }
+
+    async function uploadFile(kind, file, parsed, onProgress) {
+      const id = await call('svr_file_begin', { p_kind: kind, p_name: file.name, p_size: file.size, p_warning: parsed.warning || '' });
+      const total = Math.max(1, Math.ceil(parsed.items.length / CHUNK_ROWS));
+      for (let i = 0; i < total; i++) {
+        const rows = parsed.items.slice(i * CHUNK_ROWS, (i + 1) * CHUNK_ROWS).map(packItem);
+        await call('svr_file_append', { p_file: id, p_seq: i, p_items: rows });
+        onProgress(Math.round((i + 1) / total * 100));
+      }
+      await call('svr_file_commit', { p_file: id });
+      return id;
     }
 
     function normalizeHeader(h) {
@@ -2714,7 +2980,7 @@
             '<span class="name" title="' + escapeHtml(f.name) + '">' + escapeHtml(shortName) + '</span>' +
             '<span class="meta">' + escapeHtml(meta) + '</span>' +
           '</div>' +
-          '<button type="button" data-kind="' + kind + '" data-id="' + f.id + '" aria-label="הסר">×</button>' +
+          (isAdmin() ? '<button type="button" data-kind="' + kind + '" data-id="' + f.id + '" aria-label="הסר" title="הסרת הקובץ לכל המשתמשים">×</button>' : '') +
           '</div>';
       }).join('');
     }
@@ -2927,6 +3193,14 @@
     }
 
     function emptyStateHtml() {
+      if (!isAdmin()) {
+        return '<div class="empty-state onboarding">' +
+          '<div class="ob-mark">' + icon('chart') + '</div>' +
+          '<h3>עדיין אין נתונים</h3>' +
+          '<p>המנהל עוד לא העלה קבצים. כשיועלו, הם יופיעו כאן.</p>' +
+          '<button type="button" class="btn btn-primary" data-refresh>רענון נתונים</button>' +
+          '</div>';
+      }
       return '<div class="empty-state onboarding">' +
         '<div class="ob-mark">' + icon('chart') + '</div>' +
         '<h3>מתחילים בשלושה צעדים</h3>' +
@@ -2936,7 +3210,7 @@
         '<li><b>3</b><span>בוחרים לקוח ומקבלים דוח מסכם</span></li>' +
         '</ol>' +
         '<button type="button" class="btn btn-primary" data-open-import>' + icon('folder') + 'ניהול והעלאת קבצים</button>' +
-        '<p class="ob-note">אפשר גם לגרור קבצים לכל מקום בעמוד. הנתונים נשמרים בדפדפן הזה בלבד.</p>' +
+        '<p class="ob-note">אפשר גם לגרור קבצים לכל מקום בעמוד. הקבצים נשמרים בשרת, וכל המשתמשים רואים אותם.</p>' +
         '</div>';
     }
 
@@ -2977,7 +3251,6 @@
         document.getElementById('statusText').textContent = state.hiddenSkus.size
           ? state.hiddenSkus.size + ' שורות נמחקו'
           : '';
-        scheduleSave();
         return;
       }
 
@@ -3043,7 +3316,6 @@
       document.getElementById('statusText').textContent = (people ? people.length + ' חנויות · ' : '') +
         filtered.length + ' מק״טים מוצגים' +
         (state.hiddenSkus.size ? ' · ' + state.hiddenSkus.size + ' נמחקו' : '');
-      scheduleSave();
     }
 
     function collectDocs(kind, filter) {
@@ -3511,7 +3783,7 @@
 
     async function addFiles(kind, fileList) {
       const files = Array.from(fileList || []);
-      if (!files.length) return;
+      if (!files.length || !isAdmin()) return;
       if (typeof XLSX === 'undefined') {
         toast('ספריית האקסל לא נטענה — בדקו חיבור לאינטרנט ורעננו', 'err');
         return;
@@ -3542,8 +3814,12 @@
               toast(file.name + ': לא נמצאו שורות עם מק״ט', 'err');
               continue;
             }
+            msg.textContent = 'מעלה לשרת: ' + file.name;
+            const id = await uploadFile(kind, file, parsed, (pct) => {
+              msg.textContent = 'מעלה לשרת ' + pct + '%: ' + file.name;
+            });
             state[kind].push({
-              id: uid(),
+              id,
               name: file.name,
               size: file.size,
               items: parsed.items,
@@ -3551,13 +3827,14 @@
             });
             ok++;
           } catch (err) {
-            toast('שגיאה בקובץ ' + file.name, 'err');
+            if (err && err.code === 'AUTH') break;
+            toast(err && err.code ? errText(err) + ' (' + file.name + ')' : 'שגיאה בקובץ ' + file.name, 'err');
           }
         }
       } finally {
         overlay.classList.remove('show');
       }
-      if (ok) toast('נטענו ' + ok + ' קבצים בהצלחה', 'ok');
+      if (ok) toast('הועלו ' + ok + ' קבצים לשרת', 'ok');
       renderAll();
     }
 
@@ -4317,19 +4594,33 @@ renderTable();
     setupDropZone('dropShipped', 'fileShipped', 'shipped');
     setupDropZone('dropReturns', 'fileReturns', 'returns');
 
-    document.getElementById('listShipped').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      state.shipped = state.shipped.filter(f => f.id !== btn.dataset.id);
-      renderAll();
-    });
-    document.getElementById('listReturns').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      state.returns = state.returns.filter(f => f.id !== btn.dataset.id);
-      renderAll();
+    // Removing a file removes it for every user, so it takes a second click to confirm
+    ['shipped', 'returns'].forEach(kind => {
+      document.getElementById(kind === 'shipped' ? 'listShipped' : 'listReturns').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const btn = e.target.closest('button');
+        if (!btn || !isAdmin()) return;
+        if (!btn.dataset.armed) {
+          btn.dataset.armed = '1';
+          btn.textContent = '✓';
+          toast('לחצו שוב על ✓ כדי להסיר את הקובץ לכל המשתמשים');
+          setTimeout(() => {
+            delete btn.dataset.armed;
+            btn.textContent = '×';
+          }, 4000);
+          return;
+        }
+        btn.disabled = true;
+        try {
+          await call('svr_file_delete', { p_file: btn.dataset.id });
+          state[kind] = state[kind].filter(f => f.id !== btn.dataset.id);
+          renderAll();
+          toast('הקובץ הוסר', 'ok');
+        } catch (err) {
+          btn.disabled = false;
+          if (err.code !== 'AUTH') toast(errText(err), 'err');
+        }
+      });
     });
 
     document.querySelectorAll('.tab').forEach(tab => {
@@ -4374,6 +4665,10 @@ renderTable();
       }
       if (e.target.closest('[data-open-import]')) {
         openImportModal();
+        return;
+      }
+      if (e.target.closest('[data-refresh]')) {
+        document.getElementById('btnRefresh').click();
         return;
       }
       const del = e.target.closest('.row-del');
@@ -4448,7 +4743,7 @@ renderTable();
     });
 
     window.addEventListener('dragenter', (e) => {
-      if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) openImportModal();
+      if (isAdmin() && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) openImportModal();
     });
     ['dragover', 'drop'].forEach(type => {
       window.addEventListener(type, (e) => e.preventDefault());
@@ -4663,6 +4958,11 @@ renderTable();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
+      const top = ['passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      if (top) {
+        top.classList.remove('show');
+        return;
+      }
       if (document.getElementById('overReturnModal').classList.contains('show')) {
         if (document.getElementById('docModal').classList.contains('show')) closeDocModal();
         else closeOverReturnModal();
@@ -4719,11 +5019,12 @@ renderTable();
       renderAll();
       toast('שוחזרו ' + n + ' שורות', 'ok');
     });
-    document.getElementById('btnClear').addEventListener('click', (e) => {
+    document.getElementById('btnClear').addEventListener('click', async (e) => {
       const btn = e.currentTarget;
+      if (!isAdmin()) return;
       if (state.shipped.length + state.returns.length > 0 && !btn.dataset.armed) {
         btn.dataset.armed = '1';
-        btn.textContent = 'לחצו שוב כדי למחוק הכל';
+        btn.textContent = 'לחצו שוב כדי למחוק הכל לכל המשתמשים';
         clearTimeout(btn._t);
         btn._t = setTimeout(() => {
           delete btn.dataset.armed;
@@ -4734,41 +5035,221 @@ renderTable();
       clearTimeout(btn._t);
       delete btn.dataset.armed;
       btn.textContent = 'נקה הכל';
-      state.sev = '';
-      state.shipped = [];
-      state.returns = [];
-      state.hiddenSkus.clear();
-      state.selectedIds = null;
-      state.combineStores = false;
-      state.mergedStores.clear();
-      state.multiCust = false;
-      document.getElementById('searchBox').value = '';
-      document.getElementById('onlyReturns').checked = false;
-      document.getElementById('minPct').value = '0';
-      clearDateFilters();
-      renderAll();
-      toast('הנתונים נוקו');
-    });
-
-    window.addEventListener('beforeunload', () => {
-      if (!state.ready) return;
-      saveToLocalStorage(snapshotState());
-    });
-
-    (async () => {
       try {
-        const data = await loadNow();
-        if (data && (Array.isArray(data.shipped) && data.shipped.length ||
-                     Array.isArray(data.returns) && data.returns.length)) {
-          applySnapshot(data);
-        }
-      } catch (e) {
-        // ignore — start fresh
-      } finally {
-        state.ready = true;
-        renderAll();
+        await call('svr_files_clear');
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+        return;
       }
-    })();
+      clearLocalData();
+      renderAll();
+      toast('הנתונים נוקו לכל המשתמשים');
+    });
+
+    // ---------- sign-in, users, password ----------
+    document.getElementById('authForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (authMode !== 'login' && authMode !== 'setup') return;
+      const username = document.getElementById('authUser').value.trim();
+      const password = document.getElementById('authPass').value;
+      if (!username || !password) { setAuthError('הכניסו שם משתמש וסיסמה'); return; }
+      const btn = document.getElementById('authSubmit');
+      btn.disabled = true;
+      setAuthError('');
+      try {
+        const res = authMode === 'setup'
+          ? await rpc('svr_setup', { p_username: username, p_password: password, p_name: document.getElementById('authName').value.trim() })
+          : await rpc('svr_login', { p_username: username, p_password: password });
+        if (!res || res.error) { setAuthError(errText({ code: res && res.error })); return; }
+        token = res.token;
+        me = res.user;
+        storeToken();
+        document.getElementById('authPass').value = '';
+        await enterApp();
+      } catch (err) {
+        setAuthError(errText(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    document.getElementById('authRetry').addEventListener('click', boot);
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      const old = token;
+      token = null;
+      me = null;
+      storeToken();
+      clearLocalData();
+      showAuth('login');
+      rpc('svr_logout', { p_token: old }).catch(() => {});
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      syncData(true)
+        .then(changed => toast(changed ? 'הנתונים עודכנו' : 'הנתונים כבר מעודכנים', 'ok'))
+        .catch(err => { if (err.code !== 'AUTH') toast(errText(err), 'err'); });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !me || Date.now() - lastSync < 120000) return;
+      syncData(false).catch(() => {});
+    });
+
+    let usersCache = [];
+    let editUserId = null;
+
+    function setFormError(id, message) {
+      const el = document.getElementById(id);
+      el.hidden = !message;
+      el.textContent = message || '';
+    }
+
+    function fillUserForm(user) {
+      editUserId = user ? user.id : null;
+      document.getElementById('ufUsername').value = user ? user.username : '';
+      document.getElementById('ufName').value = user ? user.name : '';
+      document.getElementById('ufPassword').value = '';
+      document.getElementById('ufRole').value = user ? user.role : 'user';
+      document.getElementById('ufActive').checked = user ? user.active : true;
+      document.getElementById('userFormTitle').textContent = user ? 'עריכת המשתמש ' + user.username : 'משתמש חדש';
+      document.getElementById('ufPasswordHint').textContent = user ? 'השאירו ריק כדי לא לשנות את הסיסמה' : 'לפחות 6 תווים';
+      document.getElementById('ufSave').textContent = user ? 'שמירת השינויים' : 'הוספת משתמש';
+      document.getElementById('ufCancel').hidden = !user;
+      const del = document.getElementById('ufDelete');
+      del.hidden = !user || user.id === me.id;
+      delete del.dataset.armed;
+      del.textContent = 'מחיקת המשתמש';
+      setFormError('userFormError', '');
+    }
+
+    function renderUsers() {
+      document.getElementById('usersList').innerHTML = '<table><thead><tr>' +
+        '<th>שם משתמש</th><th>שם מלא</th><th>הרשאה</th><th>מצב</th><th></th></tr></thead><tbody>' +
+        usersCache.map(u =>
+          '<tr><td class="doc-no">' + escapeHtml(u.username) + '</td>' +
+          '<td>' + escapeHtml(u.name) + (u.id === me.id ? ' (אני)' : '') + '</td>' +
+          '<td><span class="role-pill' + (u.role === 'admin' ? ' admin' : '') + '">' + (u.role === 'admin' ? 'מנהל' : 'משתמש') + '</span></td>' +
+          '<td><span class="role-pill' + (u.active ? '' : ' off') + '">' + (u.active ? 'פעיל' : 'לא פעיל') + '</span></td>' +
+          '<td><button type="button" class="btn btn-ghost btn-sm" data-edit-user="' + escapeHtml(u.id) + '">עריכה</button></td></tr>'
+        ).join('') + '</tbody></table>';
+    }
+
+    async function loadUsers() {
+      try {
+        usersCache = await call('svr_users_list') || [];
+        renderUsers();
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    }
+
+    document.getElementById('btnUsers').addEventListener('click', () => {
+      document.getElementById('usersList').innerHTML = '<div class="modal-empty">טוען...</div>';
+      fillUserForm(null);
+      document.getElementById('usersModal').classList.add('show');
+      loadUsers();
+    });
+    document.getElementById('usersClose').addEventListener('click', () => document.getElementById('usersModal').classList.remove('show'));
+    document.getElementById('usersModal').addEventListener('click', (e) => {
+      if (e.target.id === 'usersModal') e.currentTarget.classList.remove('show');
+    });
+    document.getElementById('usersList').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-edit-user]');
+      if (!btn) return;
+      fillUserForm(usersCache.find(u => u.id === btn.dataset.editUser) || null);
+      document.getElementById('ufUsername').focus();
+    });
+    document.getElementById('ufCancel').addEventListener('click', () => fillUserForm(null));
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('ufSave');
+      btn.disabled = true;
+      setFormError('userFormError', '');
+      const wasEdit = editUserId;
+      try {
+        await call('svr_user_save', {
+          p_id: editUserId,
+          p_username: document.getElementById('ufUsername').value,
+          p_name: document.getElementById('ufName').value,
+          p_role: document.getElementById('ufRole').value,
+          p_active: document.getElementById('ufActive').checked,
+          p_password: document.getElementById('ufPassword').value || null
+        });
+        toast(wasEdit ? 'המשתמש עודכן' : 'המשתמש נוסף', 'ok');
+        if (wasEdit === me.id) {
+          me = await call('svr_me');
+          applyRole();
+        }
+        fillUserForm(null);
+        await loadUsers();
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('userFormError', errText(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    document.getElementById('ufDelete').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (!editUserId) return;
+      if (!btn.dataset.armed) {
+        btn.dataset.armed = '1';
+        btn.textContent = 'לחצו שוב כדי למחוק';
+        return;
+      }
+      try {
+        await call('svr_user_delete', { p_id: editUserId });
+        toast('המשתמש נמחק', 'ok');
+        fillUserForm(null);
+        await loadUsers();
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('userFormError', errText(err));
+      }
+    });
+
+    document.getElementById('btnPassword').addEventListener('click', () => {
+      document.getElementById('passwordForm').reset();
+      setFormError('passwordError', '');
+      document.getElementById('passwordModal').classList.add('show');
+    });
+    document.getElementById('passwordClose').addEventListener('click', () => document.getElementById('passwordModal').classList.remove('show'));
+    document.getElementById('passwordModal').addEventListener('click', (e) => {
+      if (e.target.id === 'passwordModal') e.currentTarget.classList.remove('show');
+    });
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setFormError('passwordError', '');
+      try {
+        await call('svr_change_password', { p_old: document.getElementById('pwOld').value, p_new: document.getElementById('pwNew').value });
+        document.getElementById('passwordModal').classList.remove('show');
+        document.getElementById('passwordForm').reset();
+        toast('הסיסמה הוחלפה', 'ok');
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('passwordError', err.code === 'BAD_LOGIN' ? 'הסיסמה הנוכחית שגויה' : errText(err));
+      }
+    });
+
+    // ---------- install as an app ----------
+    let installEvent = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      installEvent = e;
+      document.getElementById('btnInstall').hidden = false;
+    });
+    window.addEventListener('appinstalled', () => {
+      installEvent = null;
+      document.getElementById('btnInstall').hidden = true;
+    });
+    document.getElementById('btnInstall').addEventListener('click', () => {
+      if (!installEvent) return;
+      installEvent.prompt();
+      installEvent = null;
+      document.getElementById('btnInstall').hidden = true;
+    });
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    boot();
+
   </script>
 </body>
 </html>
