@@ -1285,6 +1285,165 @@
       font-weight: 600;
     }
 
+    /* ---------- phones ---------- */
+    @media screen and (max-width: 640px) {
+      body { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); }
+      .container { min-height: 0; }
+
+      /* 16px inputs: iOS zooms the page on anything smaller */
+      .filters input, .filters select, .field input, .field select, .extra-search,
+      .date-input-wrap input[type="date"] { font-size: 16px; }
+
+      .dash-header { padding: 12px; gap: 12px; margin-bottom: 12px; border-radius: 16px; }
+      .dash-header h1 { font-size: 1.3rem; }
+      .dash-header p { font-size: 0.8rem; }
+      .brand-mark { width: 42px; height: 42px; border-radius: 12px; }
+      .head-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .head-actions .btn { width: 100%; padding: 8px 10px; min-height: 42px; font-size: 0.86rem; }
+      .head-actions .manage-btn { grid-column: 1 / -1; min-height: 46px; }
+      .user-chip { grid-column: 1 / -1; flex-direction: row; gap: 8px; align-items: baseline; border: none; padding: 0 2px; }
+
+      .stats { gap: 8px; margin-bottom: 12px; }
+      .stat { padding: 12px; }
+      .stat .value { font-size: 1.25rem; }
+
+      .filters { padding: 10px; margin-bottom: 12px; }
+      .filters input[type="search"] { flex: 1 1 100%; min-width: 0; }
+      #familyFilterWrap, #familyFilterWrap select { flex: 1 1 100%; width: 100%; }
+      .filters label.check, .filters .min-pct { flex: 1 1 auto; }
+      .sev-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+      .sev-chips::-webkit-scrollbar { display: none; }
+      .sev-chip { flex-shrink: 0; min-height: 36px; }
+      .date-filters { padding: 10px; gap: 8px; }
+      .date-group { width: 100%; flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
+      .date-range { width: 100%; min-width: 0; }
+      .date-field-label { flex: 1; min-width: 0; }
+      .date-input-wrap { width: 100%; }
+      .date-input-wrap input[type="date"] { width: 100%; min-width: 0; min-height: 40px; }
+      #btnClearDates { width: 100%; }
+
+      .card-head { padding: 12px; }
+      .card-body { padding: 12px; }
+      .report-card { min-height: 0; }
+      .report-head-title { width: 100%; justify-content: space-between; }
+      .report-toolbar { width: 100%; justify-content: stretch; }
+      .report-toolbar .btn { flex: 1 1 auto; }
+      #statusText { flex: 1 1 100%; }
+      .high-return-bar .btn { width: 100%; }
+      .store-head h3 { font-size: 1.1rem; }
+      .store-tools { width: 100%; }
+      .store-tools .btn { flex: 1 1 auto; }
+
+      /* the report: one card per row, column headers become sort chips */
+      .table-wrap { max-height: none; overflow: visible; border: none; background: transparent; }
+      table.report, table.report thead, table.report tbody, table.report tfoot { display: block; width: 100%; }
+      table.report thead tr { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+      table.report th {
+        position: static; width: auto !important;
+        border: 1px solid #d3dae8; border-radius: 999px;
+        background: #fff; padding: 6px 12px;
+      }
+      table.report th.col-act { display: none; }
+      table.report tbody tr, table.report tfoot tr {
+        position: relative;
+        display: flex; flex-wrap: wrap; gap: 6px;
+        background: #fff;
+        border: 1px solid #cfd8ea; border-radius: 14px;
+        padding: 12px; margin-bottom: 8px;
+      }
+      table.report tbody tr:nth-child(even) { background: #fff; }
+      table.report tfoot tr { background: #eef3fb; border-color: #c5d0e6; }
+      table.report td {
+        display: block; border: none; padding: 0;
+        width: auto !important; flex: 0 0 100%;
+        text-align: right; white-space: normal;
+      }
+      table.report tfoot td { border: none; background: transparent; }
+      table.report tbody td.sku { padding-left: 40px; font-size: 0.95rem; }
+      table.report td.text-col { font-weight: 600; line-height: 1.4; }
+      table.report td.fam-col { color: var(--muted); font-size: 0.8rem; }
+      table.report td.num {
+        flex: 1 1 0; min-width: 0;
+        text-align: center;
+        background: #f4f7fb; border-radius: 10px;
+        padding: 6px 4px;
+      }
+      table.report tfoot td.num { background: #fff; }
+      table.report td.num::before, .stack-sm td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.68rem; font-weight: 700; color: var(--muted);
+        margin-bottom: 1px;
+      }
+      table.report td.pct-col { padding: 4px 0 0; }
+      table.report .pct-cell, .stack-sm .pct-cell { flex-direction: row; align-items: center; gap: 10px; }
+      table.report .pct-cell b, .stack-sm .pct-cell b { min-width: 62px; text-align: right; }
+      table.report td.col-act { position: absolute; top: 4px; inset-inline-end: 4px; flex: none; }
+      table.report td.col-act:empty { display: none; }
+      .row-del { width: 36px; height: 36px; }
+      .sent-link { display: inline-block; min-width: 36px; padding: 2px 4px; }
+
+      /* pop-ups open as a sheet from the bottom */
+      .modal-backdrop { padding: 0; align-items: flex-end; }
+      .modal-box, .modal-box.wide, .import-modal, #overReturnModal .modal-box {
+        width: 100%; max-height: 92vh;
+        border-radius: 18px 18px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .modal-head { padding: 14px 14px 10px; }
+      .modal-box th, .modal-box td { padding: 9px 10px; font-size: 0.86rem; }
+      .import-modal .modal-body { padding: 12px 12px 4px; }
+      .drop-zone { padding: 16px 12px 12px; }
+      .picker-actions { width: 100%; }
+      .picker-actions .btn { flex: 1 1 auto; }
+      .store-grid { grid-template-columns: 1fr; }
+      .import-foot { padding: 10px 12px; }
+      .import-foot .btn { flex: 1 1 auto; }
+      .cust-pct-bar { flex-wrap: wrap; padding: 8px 10px; }
+      .cust-pct-bar .extra-search { flex: 1 1 100%; }
+      .cust-pct-bar .btn { flex: 1 1 auto; }
+      .form-grid { padding: 12px; }
+      .form-actions .btn { flex: 1 1 auto; }
+
+      /* lists inside pop-ups: one block per row */
+      table.stack-sm, .stack-sm thead, .stack-sm tbody, .stack-sm tfoot { display: block; width: 100%; }
+      .stack-sm thead { display: none; }
+      .stack-sm.sortable thead { display: block; }
+      .stack-sm.sortable thead tr { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+      .modal-box .stack-sm.sortable th {
+        position: static;
+        border: 1px solid #d3dae8; border-radius: 999px;
+        background: #fff; padding: 5px 11px;
+      }
+      .stack-sm tbody tr, .stack-sm tfoot tr {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+        padding: 12px; border-bottom: 1px solid var(--border);
+      }
+      .stack-sm tfoot tr { background: #f3f6fb; }
+      .modal-box .stack-sm td {
+        display: block; border: none; padding: 0; background: transparent;
+        flex: 0 0 100%; min-width: 0 !important; width: auto;
+        text-align: right; white-space: normal;
+      }
+      .modal-box .stack-sm td:empty { display: none; }
+      .modal-box .stack-sm td[data-label] {
+        flex: 1 1 0;
+        text-align: center;
+        background: #f4f7fb; border-radius: 10px;
+        padding: 6px 4px;
+      }
+      .modal-box .stack-sm tfoot td[data-label] { background: #fff; }
+      .modal-box .stack-sm td.inl { flex: 0 0 auto; }
+      .modal-box .stack-sm td.doc-no { white-space: normal; direction: rtl; unicode-bidi: plaintext; }
+      .over-id { display: inline; margin-inline-start: 8px; }
+
+      .toast { max-width: calc(100vw - 24px); width: max-content; white-space: normal; border-radius: 18px; text-align: center; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+      .auth-screen { min-height: calc(100vh - 40px); }
+      .auth-card { padding: 24px 18px 20px; }
+      .ob-steps li { padding: 10px 12px; }
+      .empty-state { padding: 28px 14px; min-height: 0; }
+    }
+
     .print-header { display: none; }
     @media print {
       @page { margin: 12mm 10mm; }
@@ -3078,10 +3237,10 @@
         html += '<tr>' +
           '<td class="sku">' + escapeHtml(r.sku) + '</td>' +
           '<td class="text-col">' + escapeHtml(r.desc || '—') + '</td>' +
-          (showFamily ? '<td class="text-col">' + escapeHtml(r.family || '—') + '</td>' : '') +
-          '<td class="num"><button type="button" class="sent-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button></td>' +
-          '<td class="num"><button type="button" class="sent-link return-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
-          '<td class="num">' + netCell(r.sent, r.returned) + '</td>' +
+          (showFamily ? '<td class="text-col fam-col">' + escapeHtml(r.family || '—') + '</td>' : '') +
+          '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button></td>' +
+          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
+          '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
           '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td>' +
           '<td class="col-act no-print"><button type="button" class="row-del" data-sku="' + escapeHtml(r.sku) + '" title="מחק שורה" aria-label="מחק שורה">×</button></td>' +
           '<td class="col-fill"></td>' +
@@ -3091,9 +3250,9 @@
       html += '</tbody><tfoot><tr>' +
         '<td>סה״כ</td><td class="text-col">' + rows.length + ' מק״טים</td>' +
         (showFamily ? '<td class="text-col"></td>' : '') +
-        '<td class="num">' + fmtNum(totals.sent) + '</td>' +
-        '<td class="num">' + fmtNum(totals.returned) + '</td>' +
-        '<td class="num">' + netCell(totals.sent, totals.returned) + '</td>' +
+        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + '</td>' +
+        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + '</td>' +
+        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
         '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td>' +
         '<td class="col-act no-print"></td>' +
         '<td class="col-fill"></td>' +
@@ -3120,10 +3279,10 @@
       rows.forEach(r => {
         html += '<tr>' +
           '<td class="text-col">' + escapeHtml(r.family) + '</td>' +
-          '<td class="num">' + fmtNum(r.count) + '</td>' +
-          '<td class="num"><button type="button" class="sent-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button></td>' +
-          '<td class="num"><button type="button" class="sent-link return-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
-          '<td class="num">' + netCell(r.sent, r.returned) + '</td>' +
+          '<td class="num" data-label="מק״טים">' + fmtNum(r.count) + '</td>' +
+          '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button></td>' +
+          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
+          '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
           '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td>' +
           '<td class="col-act no-print"><button type="button" class="row-del" data-family="' + escapeHtml(r.family) + '" title="מחק משפחה" aria-label="מחק משפחה">×</button></td>' +
           '<td class="col-fill"></td>' +
@@ -3132,10 +3291,10 @@
 
       html += '</tbody><tfoot><tr>' +
         '<td>סה״כ</td>' +
-        '<td class="num">' + fmtNum(totals.count) + '</td>' +
-        '<td class="num">' + fmtNum(totals.sent) + '</td>' +
-        '<td class="num">' + fmtNum(totals.returned) + '</td>' +
-        '<td class="num">' + netCell(totals.sent, totals.returned) + '</td>' +
+        '<td class="num" data-label="מק״טים">' + fmtNum(totals.count) + '</td>' +
+        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + '</td>' +
+        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + '</td>' +
+        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
         '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td>' +
         '<td class="col-act no-print"></td>' +
         '<td class="col-fill"></td>' +
@@ -3497,14 +3656,14 @@
       if (!rows.length) {
         body.innerHTML = '<div class="modal-empty">אין תעודות משלוח שחזרו ב־90% ומעלה.</div>';
       } else {
-        body.innerHTML = '<table><thead><tr><th>מספר תעודה</th><th>תאריך</th><th>לקוח</th><th>נשלח</th><th>חזר</th><th>אחוז</th></tr></thead><tbody>' +
+        body.innerHTML = '<table class="stack-sm"><thead><tr><th>מספר תעודה</th><th>תאריך</th><th>לקוח</th><th>נשלח</th><th>חזר</th><th>אחוז</th></tr></thead><tbody>' +
           rows.map((r, i) =>
             '<tr><td class="doc-no"><button type="button" class="doc-open" data-high-idx="' + i + '">' + escapeHtml(r.doc) + '</button></td>' +
             '<td class="doc-date">' + escapeHtml(r.date || '—') + '</td>' +
             '<td>' + escapeHtml(r.customerName) + '</td>' +
-            '<td class="num">' + fmtNum(r.sent) + '</td>' +
-            '<td class="num">' + fmtNum(r.returned) + '</td>' +
-            '<td class="num">' + fmtPct(r.pct) + '</td></tr>'
+            '<td class="num" data-label="נשלח">' + fmtNum(r.sent) + '</td>' +
+            '<td class="num" data-label="חזר">' + fmtNum(r.returned) + '</td>' +
+            '<td class="num" data-label="אחוז">' + fmtPct(r.pct) + '</td></tr>'
           ).join('') +
           '</tbody></table>';
       }
@@ -3519,12 +3678,12 @@
         (doc.date ? doc.date + ' · ' : '') + doc.customerName + ' · ' + fmtPct(doc.pct);
       const body = document.getElementById('highReturnBody');
       body.innerHTML = '<div class="doc-detail-bar"><button type="button" class="btn btn-ghost btn-sm" data-high-back>חזרה לרשימה</button></div>' +
-        '<table><thead><tr><th>מק״ט</th><th>תאור מוצר</th><th>נשלח בתעודה</th><th>חזר אצל הלקוח</th><th>אחוז</th></tr></thead><tbody>' +
+        '<table class="stack-sm"><thead><tr><th>מק״ט</th><th>תאור מוצר</th><th>נשלח בתעודה</th><th>חזר אצל הלקוח</th><th>אחוז</th></tr></thead><tbody>' +
         doc.lines.map(r =>
           '<tr><td class="doc-no">' + escapeHtml(r.sku) + '</td><td>' + escapeHtml(r.desc || '—') + '</td>' +
-          '<td class="num">' + fmtNum(r.sent) + '</td><td class="num">' + fmtNum(r.returned) + '</td><td class="num">' + fmtPct(r.pct) + '</td></tr>'
+          '<td class="num" data-label="נשלח">' + fmtNum(r.sent) + '</td><td class="num" data-label="חזר">' + fmtNum(r.returned) + '</td><td class="num" data-label="אחוז">' + fmtPct(r.pct) + '</td></tr>'
         ).join('') +
-        '</tbody><tfoot><tr><td colspan="2">סה״כ</td><td class="num">' + fmtNum(doc.sent) + '</td><td class="num">' + fmtNum(doc.returned) + '</td><td class="num">' + fmtPct(doc.pct) + '</td></tr></tfoot></table>';
+        '</tbody><tfoot><tr><td colspan="2">סה״כ</td><td class="num" data-label="נשלח">' + fmtNum(doc.sent) + '</td><td class="num" data-label="חזר">' + fmtNum(doc.returned) + '</td><td class="num" data-label="אחוז">' + fmtPct(doc.pct) + '</td></tr></tfoot></table>';
     }
 
     function openHighReturnModal() {
@@ -3573,7 +3732,7 @@
         return;
       }
       const totals = totalsOf(rows);
-      body.innerHTML = '<table><thead><tr>' +
+      body.innerHTML = '<table class="stack-sm sortable"><thead><tr>' +
         '<th data-csort="name">לקוח' + mark('name') + '</th>' +
         '<th data-csort="id">מס. לקוח' + mark('id') + '</th>' +
         '<th class="num" data-csort="sent">נשלח' + mark('sent') + '</th>' +
@@ -3584,15 +3743,15 @@
         rows.map(r =>
           '<tr><td><button type="button" class="doc-open" data-pick-cust="' + escapeHtml(r.ids.join(',') || '__none__') + '" title="הצג דוח ללקוח">' + escapeHtml(r.name) + '</button></td>' +
           '<td class="doc-no">' + escapeHtml(r.id || '—') + '</td>' +
-          '<td class="num">' + fmtNum(r.sent) + '</td>' +
-          '<td class="num">' + fmtNum(r.returned) + '</td>' +
-          '<td class="num">' + netCell(r.sent, r.returned) + '</td>' +
+          '<td class="num" data-label="נשלח">' + fmtNum(r.sent) + '</td>' +
+          '<td class="num" data-label="חזר">' + fmtNum(r.returned) + '</td>' +
+          '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
           '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td></tr>'
         ).join('') +
         '</tbody><tfoot><tr><td>סה״כ · ' + rows.length + ' לקוחות</td><td></td>' +
-        '<td class="num">' + fmtNum(totals.sent) + '</td>' +
-        '<td class="num">' + fmtNum(totals.returned) + '</td>' +
-        '<td class="num">' + netCell(totals.sent, totals.returned) + '</td>' +
+        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + '</td>' +
+        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + '</td>' +
+        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
         '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td></tr></tfoot></table>';
     }
 
@@ -3692,7 +3851,7 @@
         body.innerHTML = '<div class="modal-empty">לא נמצאו מק״טים שחזרו יותר ממה שנשלח.</div>';
         return;
       }
-      body.innerHTML = '<table><thead><tr>' +
+      body.innerHTML = '<table class="stack-sm sortable"><thead><tr>' +
         '<th data-osort="name">לקוח' + mark('name') + '</th>' +
         '<th data-osort="sku">מק״ט' + mark('sku') + '</th>' +
         '<th data-osort="desc">תאור מוצר' + mark('desc') + '</th>' +
@@ -3705,11 +3864,11 @@
           '<tr><td>' + escapeHtml(r.name) + '<span class="over-id">' + escapeHtml(r.id) + '</span></td>' +
           '<td class="doc-no">' + escapeHtml(r.sku) + '</td>' +
           '<td>' + escapeHtml(r.desc || '—') + '</td>' +
-          '<td class="num">' + fmtNum(r.sent) + '</td>' +
-          '<td class="num"><button type="button" class="sent-link return-link" data-over-docs="' + escapeHtml(r.ids.join(',') || '__none__') +
+          '<td class="num" data-label="נשלח">' + fmtNum(r.sent) + '</td>' +
+          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-over-docs="' + escapeHtml(r.ids.join(',') || '__none__') +
             '" data-sku="' + escapeHtml(r.sku) + '" title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
-          '<td class="num"><span class="net-cell net-neg">+' + fmtNum(r.excess) + '</span></td>' +
-          '<td class="num pct-crit">' + (r.pct === null ? 'אין שליחה' : fmtPct(r.pct)) + '</td></tr>'
+          '<td class="num" data-label="עודף"><span class="net-cell net-neg">+' + fmtNum(r.excess) + '</span></td>' +
+          '<td class="num pct-crit" data-label="אחוז">' + (r.pct === null ? 'אין שליחה' : fmtPct(r.pct)) + '</td></tr>'
         ).join('') +
         '</tbody></table>';
     }
@@ -5122,14 +5281,14 @@ renderTable();
     }
 
     function renderUsers() {
-      document.getElementById('usersList').innerHTML = '<table><thead><tr>' +
+      document.getElementById('usersList').innerHTML = '<table class="stack-sm"><thead><tr>' +
         '<th>שם משתמש</th><th>שם מלא</th><th>הרשאה</th><th>מצב</th><th></th></tr></thead><tbody>' +
         usersCache.map(u =>
           '<tr><td class="doc-no">' + escapeHtml(u.username) + '</td>' +
           '<td>' + escapeHtml(u.name) + (u.id === me.id ? ' (אני)' : '') + '</td>' +
-          '<td><span class="role-pill' + (u.role === 'admin' ? ' admin' : '') + '">' + (u.role === 'admin' ? 'מנהל' : 'משתמש') + '</span></td>' +
-          '<td><span class="role-pill' + (u.active ? '' : ' off') + '">' + (u.active ? 'פעיל' : 'לא פעיל') + '</span></td>' +
-          '<td><button type="button" class="btn btn-ghost btn-sm" data-edit-user="' + escapeHtml(u.id) + '">עריכה</button></td></tr>'
+          '<td class="inl"><span class="role-pill' + (u.role === 'admin' ? ' admin' : '') + '">' + (u.role === 'admin' ? 'מנהל' : 'משתמש') + '</span></td>' +
+          '<td class="inl"><span class="role-pill' + (u.active ? '' : ' off') + '">' + (u.active ? 'פעיל' : 'לא פעיל') + '</span></td>' +
+          '<td class="inl"><button type="button" class="btn btn-ghost btn-sm" data-edit-user="' + escapeHtml(u.id) + '">עריכה</button></td></tr>'
         ).join('') + '</tbody></table>';
     }
 
