@@ -1935,8 +1935,59 @@
       return data;
     }
 
+    // ---------- sign out after an hour without use ----------
+    // The server ends an unused session after the same hour (svr_idle in the SQL file).
+    const IDLE_MINUTES = 60;
+    const IDLE_MS = IDLE_MINUTES * 60000;
+    const KEEPALIVE_MS = 5 * 60000;
+    const ACTIVE_KEY = 'svr-last-active';
+    let lastActive = Date.now();
+    let lastStoredActive = 0;
+    let lastServerCall = 0;
+
+    // Shared through localStorage, so other tabs and a reopened app count too
+    function storedLastActive() {
+      try { return Number(localStorage.getItem(ACTIVE_KEY)) || 0; } catch (e) { return 0; }
+    }
+
+    function markActive() {
+      lastActive = Date.now();
+      if (lastActive - lastStoredActive < 15000) return;
+      lastStoredActive = lastActive;
+      try { localStorage.setItem(ACTIVE_KEY, String(lastActive)); } catch (e) {}
+    }
+
+    function idleTooLong() {
+      return Date.now() - Math.max(lastActive, storedLastActive()) > IDLE_MS;
+    }
+
+    function idleLogout() {
+      const old = token;
+      token = null;
+      me = null;
+      storeToken();
+      clearLocalData();
+      showAuth('login', 'נותקת אחרי ' + (IDLE_MINUTES === 60 ? 'שעה' : IDLE_MINUTES + ' דקות') + ' ללא שימוש. התחברו שוב');
+      if (old) rpc('svr_logout', { p_token: old }).catch(() => {});
+    }
+
+    function checkIdle() {
+      if (me && idleTooLong()) idleLogout();
+    }
+
+    // Any tap, key or scroll counts as use. While the user only browses data that is already
+    // loaded, a light call now and then tells the server the session is still in use.
+    function onActivity() {
+      if (!me) return;
+      if (idleTooLong()) { idleLogout(); return; }
+      markActive();
+      if (Date.now() - lastServerCall > KEEPALIVE_MS) call('svr_me').catch(() => {});
+    }
+
     // A signed-in call. A dead session sends the user back to the sign-in screen.
     async function call(fn, args) {
+      lastServerCall = Date.now();
+      if (me) markActive();   // work in progress, such as a long upload, counts as use
       try {
         return await rpc(fn, Object.assign({ p_token: token }, args || {}));
       } catch (err) {
@@ -2042,6 +2093,8 @@
     }
 
     async function enterApp() {
+      lastStoredActive = 0;
+      markActive();
       document.getElementById('authScreen').hidden = true;
       document.getElementById('appRoot').hidden = false;
       applyRole();
@@ -2058,6 +2111,13 @@
       try { localStorage.removeItem(LS_KEY); } catch (e) {}
       try { indexedDB.deleteDatabase(DB_NAME); } catch (e) {}
       try {
+        // the app was closed for longer than the idle limit: ask for the password again
+        const last = storedLastActive();
+        if (token && last && Date.now() - last > IDLE_MS) {
+          rpc('svr_logout', { p_token: token }).catch(() => {});
+          token = null;
+          storeToken();
+        }
         if (token) {
           try {
             me = await rpc('svr_me', { p_token: token });
@@ -5248,7 +5308,13 @@ renderTable();
         .then(changed => toast(changed ? 'הנתונים עודכנו' : 'הנתונים כבר מעודכנים', 'ok'))
         .catch(err => { if (err.code !== 'AUTH') toast(errText(err), 'err'); });
     });
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(type => {
+      document.addEventListener(type, onActivity, { passive: true, capture: true });
+    });
+    document.addEventListener('scroll', onActivity, { passive: true, capture: true });
+    setInterval(checkIdle, 30000);
     document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkIdle();
       if (document.hidden || !me || Date.now() - lastSync < 120000) return;
       syncData(false).catch(() => {});
     });
