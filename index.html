@@ -140,6 +140,35 @@
     }
     .role-pill.admin { background: var(--navy); color: #fff; }
     .role-pill.off { background: #eef2f8; color: var(--muted); }
+    .role-pill.wait { background: var(--amber-light); color: var(--amber); }
+    #usersList { padding-bottom: 12px; }
+    .user-card { margin: 12px 18px 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .user-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap;
+      padding: 10px 14px; background: #f7f9fc;
+    }
+    .user-name { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+    .user-name b { font-weight: 800; color: var(--navy); direction: ltr; unicode-bidi: isolate; }
+    .user-name span { color: var(--muted); font-size: 0.86rem; font-weight: 600; }
+    .user-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .dev-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap;
+      padding: 10px 14px; border-top: 1px solid var(--border);
+    }
+    .dev-row.pending { background: var(--amber-light); }
+    .dev-info { display: flex; align-items: center; gap: 4px 8px; flex-wrap: wrap; min-width: 0; font-size: 0.88rem; }
+    .dev-info b { font-weight: 700; color: var(--text); }
+    .dev-meta { flex: 1 1 100%; color: var(--muted); font-size: 0.76rem; font-weight: 600; }
+    .dev-acts { display: flex; gap: 6px; flex-shrink: 0; }
+    .dev-none { padding: 10px 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+    .menu-btn { position: relative; }
+    .menu-badge {
+      position: absolute; top: -6px; inset-inline-end: -6px;
+      min-width: 20px; height: 20px; padding: 0 5px;
+      border-radius: 999px; background: var(--danger); color: #fff;
+      font-size: 0.72rem; font-weight: 800; line-height: 20px; text-align: center;
+    }
+    .drawer-item #usersBadge { background: var(--danger); color: #fff; }
     .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
     .brand-mark {
       flex-shrink: 0;
@@ -1701,6 +1730,11 @@
         <input type="password" id="authPass" autocomplete="current-password">
         <small id="authPassHint" hidden>לפחות 6 תווים</small>
       </div>
+      <div class="field" id="authDeviceField" hidden>
+        <label for="authDevice">שם למכשיר הזה (רשות)</label>
+        <input type="text" id="authDevice" maxlength="60" autocomplete="off" placeholder="למשל: הטלפון של אלי">
+        <small>כניסה ממכשיר חדש דורשת אישור של המנהל. השם יעזור לו לזהות את המכשיר.</small>
+      </div>
       <div class="form-error" id="authError" hidden></div>
       <button type="submit" class="btn btn-primary" id="authSubmit" hidden>כניסה</button>
       <button type="button" class="btn btn-ghost" id="authRetry" hidden>נסו שוב</button>
@@ -1709,7 +1743,7 @@
 
   <div class="container" id="appRoot" hidden>
     <header class="dash-header no-print">
-      <button type="button" class="menu-btn" id="btnMenu" aria-label="תפריט" aria-controls="drawer" aria-expanded="false">☰</button>
+      <button type="button" class="menu-btn" id="btnMenu" aria-label="תפריט" aria-controls="drawer" aria-expanded="false">☰<span class="menu-badge" id="menuBadge" hidden></span></button>
       <div class="brand">
         <span class="brand-mark" data-icon="chart"></span>
         <div>
@@ -1731,7 +1765,7 @@
           <span class="manage-count" id="manageFileCount" hidden>0</span>
         </button>
         <button type="button" class="drawer-item" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">רענון נתונים</button>
-        <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים</button>
+        <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים ומכשירים<span class="manage-count" id="usersBadge" hidden title="מכשירים שממתינים לאישור"></span></button>
         <label class="drawer-switch admin-only">
           <span>הצגת סינונים למשתמשים
             <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
@@ -1899,8 +1933,8 @@
     <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="usersTitle">
       <div class="modal-head">
         <div>
-          <h3 id="usersTitle">משתמשים</h3>
-          <p>רק מי שמופיע כאן ופעיל יכול להיכנס. רק מנהל יכול להעלות קבצים.</p>
+          <h3 id="usersTitle">משתמשים ומכשירים</h3>
+          <p>רק משתמש פעיל נכנס, ורק ממכשיר שאישרתם. רק מנהל יכול להעלות קבצים.</p>
         </div>
         <button type="button" class="modal-close" id="usersClose" aria-label="סגור">×</button>
       </div>
@@ -2142,6 +2176,46 @@
       return !!me && me.role === 'admin';
     }
 
+    // ---------- this device ----------
+    // A password is not enough to get in: the admin approves each browser once. The browser is
+    // recognised by a random key that never leaves it except to sign in.
+    const DEVICE_KEY = 'svr-device';
+    const DEVICE_OK_KEY = 'svr-device-ok';
+    let deviceKey = null;
+    try { deviceKey = localStorage.getItem(DEVICE_KEY); } catch (e) {}
+    if (!deviceKey || deviceKey.length < 32) {
+      const bytes = new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      deviceKey = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      try { localStorage.setItem(DEVICE_KEY, deviceKey); } catch (e) {}
+    }
+
+    // What the admin sees in the list, e.g. "טלפון אנדרואיד · Chrome"
+    function deviceLabel() {
+      const ua = navigator.userAgent || '';
+      const kind =
+        /iPhone/.test(ua) ? 'אייפון' :
+        /iPad/.test(ua) ? 'אייפד' :
+        /Android/.test(ua) ? (/Mobile/.test(ua) ? 'טלפון אנדרואיד' : 'טאבלט אנדרואיד') :
+        /Windows/.test(ua) ? 'מחשב Windows' :
+        /Macintosh|Mac OS X/.test(ua) ? 'מחשב Mac' :
+        /Linux/.test(ua) ? 'מחשב Linux' : 'מכשיר';
+      const browser =
+        /Edg\//.test(ua) ? 'Edge' :
+        /SamsungBrowser/.test(ua) ? 'Samsung Internet' :
+        /Firefox\//.test(ua) ? 'Firefox' :
+        /OPR\//.test(ua) ? 'Opera' :
+        /Chrome\//.test(ua) ? 'Chrome' :
+        /Safari\//.test(ua) ? 'Safari' : 'דפדפן';
+      let installed = false;
+      try { installed = window.matchMedia('(display-mode: standalone)').matches; } catch (e) {}
+      return kind + ' · ' + browser + (installed ? ' · אפליקציה' : '');
+    }
+
+    function deviceKnown() {
+      try { return localStorage.getItem(DEVICE_OK_KEY) === '1'; } catch (e) { return false; }
+    }
+
     async function rpc(fn, args) {
       let res;
       try {
@@ -2236,6 +2310,10 @@
       LAST_ADMIN: 'חייב להישאר לפחות מנהל פעיל אחד',
       SELF_DELETE: 'אי אפשר למחוק את המשתמש שאיתו אתם מחוברים',
       SETUP_DONE: 'כבר הוגדר מנהל למערכת. רעננו את הדף והתחברו',
+      DEVICE_PENDING: 'המכשיר הזה ממתין לאישור המנהל. אחרי שיאשר, התחברו שוב',
+      DEVICE_REQUIRED: 'הגרסה שבדפדפן ישנה. רעננו את הדף ונסו שוב',
+      TOO_MANY_DEVICES: 'יש כבר כמה מכשירים שממתינים לאישור עבור המשתמש הזה. פנו למנהל',
+      OWN_DEVICE: 'אי אפשר להסיר את המכשיר שממנו אתם מחוברים עכשיו',
       NOT_FOUND: 'הפריט לא נמצא. רעננו את הנתונים'
     };
 
@@ -2275,6 +2353,7 @@
       show('authUserField', form);
       show('authPassField', form);
       show('authPassHint', mode === 'setup');
+      show('authDeviceField', mode === 'login' && !deviceKnown());
       show('authSubmit', form);
       show('authRetry', mode === 'error');
       document.getElementById('authPass').value = '';
@@ -2314,6 +2393,8 @@
     function applyRole() {
       const admin = isAdmin();
       document.body.classList.toggle('is-admin', admin);
+      if (!admin) devicesCache = [];
+      updatePendingBadges();
       document.getElementById('userName').textContent = me.name || me.username;
       document.getElementById('userRole').textContent = admin ? 'מנהל' : 'משתמש';
       const title = admin ? 'ניהול והעלאת קבצים' : 'בחירת לקוח ודוחות';
@@ -2385,6 +2466,7 @@
       let shown = false;
       try {
         const settingsChanged = await loadSettings();
+        if (isAdmin()) await loadDevices();
         const list = await call('svr_files_list') || [];
         const have = new Map();
         state.shipped.concat(state.returns).forEach(f => have.set(f.id, f));
@@ -5685,13 +5767,19 @@ renderTable();
       btn.disabled = true;
       setAuthError('');
       try {
+        const label = deviceLabel();
         const res = authMode === 'setup'
-          ? await rpc('svr_setup', { p_username: username, p_password: password, p_name: document.getElementById('authName').value.trim() })
-          : await rpc('svr_login', { p_username: username, p_password: password });
-        if (!res || res.error) { setAuthError(errText({ code: res && res.error })); return; }
+          ? await rpc('svr_setup', { p_username: username, p_password: password, p_name: document.getElementById('authName').value.trim(), p_device: deviceKey, p_label: label })
+          : await rpc('svr_login', { p_username: username, p_password: password, p_device: deviceKey, p_label: label, p_name: document.getElementById('authDevice').value.trim() });
+        if (!res || res.error) {
+          setAuthError(errText({ code: res && res.error }));
+          if (res && res.error === 'DEVICE_PENDING') document.getElementById('authPass').value = '';
+          return;
+        }
         token = res.token;
         me = res.user;
         storeToken();
+        try { localStorage.setItem(DEVICE_OK_KEY, '1'); } catch (err) {}
         document.getElementById('authPass').value = '';
         await enterApp();
       } catch (err) {
@@ -5755,21 +5843,85 @@ renderTable();
       setFormError('userFormError', '');
     }
 
+    let devicesCache = [];
+
+    function fmtWhen(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' +
+        d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // The number of devices waiting for approval, shown on the menu button and on the menu entry
+    function updatePendingBadges() {
+      const n = isAdmin() ? devicesCache.filter(d => d.status === 'pending').length : 0;
+      ['menuBadge', 'usersBadge'].forEach(id => {
+        const el = document.getElementById(id);
+        el.hidden = n === 0;
+        el.textContent = n ? String(n) : '';
+      });
+    }
+
+    async function loadDevices() {
+      try {
+        devicesCache = await call('svr_devices_list') || [];
+      } catch (err) {
+        if (err.code === 'AUTH') throw err;
+      }
+      updatePendingBadges();
+    }
+
+    function deviceRowHtml(d) {
+      const pending = d.status === 'pending';
+      const id = escapeHtml(d.id);
+      const meta = pending
+        ? 'ביקש אישור ב־' + fmtWhen(d.created_at)
+        : 'אושר ב־' + fmtWhen(d.approved_at) + ' · ' + (d.last_login ? 'כניסה אחרונה ' + fmtWhen(d.last_login) : 'עוד לא נכנס מאז האישור');
+      const acts = pending
+        ? '<button type="button" class="btn btn-success btn-sm" data-dev-act="approve" data-dev="' + id + '">אשר</button>' +
+          '<button type="button" class="btn btn-danger btn-sm" data-dev-act="remove" data-dev="' + id + '">דחה</button>'
+        : (d.current ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-dev-act="remove" data-dev="' + id + '" data-confirm>הסר</button>');
+      return '<div class="dev-row' + (pending ? ' pending' : '') + '">' +
+        '<div class="dev-info"><b>' + escapeHtml(d.label || 'מכשיר לא מזוהה') + (d.name ? ' · ' + escapeHtml(d.name) : '') + '</b>' +
+        (pending ? '<span class="role-pill wait">ממתין לאישור</span>' : '') +
+        (d.current ? '<span class="role-pill">המכשיר הזה</span>' : '') +
+        '<span class="dev-meta">' + escapeHtml(meta) + '</span></div>' +
+        '<div class="dev-acts">' + acts + '</div></div>';
+    }
+
     function renderUsers() {
-      document.getElementById('usersList').innerHTML = '<table class="stack-sm"><thead><tr>' +
-        '<th>שם משתמש</th><th>שם מלא</th><th>הרשאה</th><th>מצב</th><th></th></tr></thead><tbody>' +
-        usersCache.map(u =>
-          '<tr><td class="doc-no">' + escapeHtml(u.username) + '</td>' +
-          '<td>' + escapeHtml(u.name) + (u.id === me.id ? ' (אני)' : '') + '</td>' +
-          '<td class="inl"><span class="role-pill' + (u.role === 'admin' ? ' admin' : '') + '">' + (u.role === 'admin' ? 'מנהל' : 'משתמש') + '</span></td>' +
-          '<td class="inl"><span class="role-pill' + (u.active ? '' : ' off') + '">' + (u.active ? 'פעיל' : 'לא פעיל') + '</span></td>' +
-          '<td class="inl"><button type="button" class="btn btn-ghost btn-sm" data-edit-user="' + escapeHtml(u.id) + '">עריכה</button></td></tr>'
-        ).join('') + '</tbody></table>';
+      const byUser = new Map();
+      devicesCache.forEach(d => {
+        if (!byUser.has(d.user_id)) byUser.set(d.user_id, []);
+        byUser.get(d.user_id).push(d);
+      });
+      const waiting = (u) => (byUser.get(u.id) || []).filter(d => d.status === 'pending').length;
+      // users with a device waiting for approval come first
+      const users = usersCache.slice().sort((a, b) => waiting(b) - waiting(a));
+      document.getElementById('usersList').innerHTML = users.map(u => {
+        const devs = (byUser.get(u.id) || []).slice().sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1));
+        return '<div class="user-card">' +
+          '<div class="user-head">' +
+          '<div class="user-name"><b>' + escapeHtml(u.username) + '</b><span>' + escapeHtml(u.name) + (u.id === me.id ? ' (אני)' : '') + '</span></div>' +
+          '<div class="user-pills">' +
+          '<span class="role-pill' + (u.role === 'admin' ? ' admin' : '') + '">' + (u.role === 'admin' ? 'מנהל' : 'משתמש') + '</span>' +
+          '<span class="role-pill' + (u.active ? '' : ' off') + '">' + (u.active ? 'פעיל' : 'לא פעיל') + '</span>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-edit-user="' + escapeHtml(u.id) + '">עריכה</button>' +
+          '</div></div>' +
+          (devs.length
+            ? devs.map(deviceRowHtml).join('')
+            : '<div class="dev-none">אין מכשירים. בקשת האישור תופיע כאן אחרי שהמשתמש ינסה להיכנס.</div>') +
+          '</div>';
+      }).join('');
     }
 
     async function loadUsers() {
       try {
-        usersCache = await call('svr_users_list') || [];
+        const lists = await Promise.all([call('svr_users_list'), call('svr_devices_list')]);
+        usersCache = lists[0] || [];
+        devicesCache = lists[1] || [];
+        updatePendingBadges();
         renderUsers();
       } catch (err) {
         if (err.code !== 'AUTH') toast(errText(err), 'err');
@@ -5786,7 +5938,28 @@ renderTable();
     document.getElementById('usersModal').addEventListener('click', (e) => {
       if (e.target.id === 'usersModal') e.currentTarget.classList.remove('show');
     });
-    document.getElementById('usersList').addEventListener('click', (e) => {
+    document.getElementById('usersList').addEventListener('click', async (e) => {
+      const dev = e.target.closest('[data-dev-act]');
+      if (dev) {
+        const action = dev.dataset.devAct;
+        // removing an approved device signs it out, so it takes a second click
+        if (dev.hasAttribute('data-confirm') && !dev.dataset.armed) {
+          dev.dataset.armed = '1';
+          dev.textContent = 'לחצו שוב להסרה';
+          setTimeout(() => { delete dev.dataset.armed; dev.textContent = 'הסר'; }, 3500);
+          return;
+        }
+        dev.disabled = true;
+        try {
+          await call('svr_device_set', { p_id: dev.dataset.dev, p_action: action });
+          toast(action === 'approve' ? 'המכשיר אושר. המשתמש יכול להתחבר עכשיו' : 'המכשיר הוסר', 'ok');
+          await loadUsers();
+        } catch (err) {
+          dev.disabled = false;
+          if (err.code !== 'AUTH') toast(errText(err), 'err');
+        }
+        return;
+      }
       const btn = e.target.closest('[data-edit-user]');
       if (!btn) return;
       fillUserForm(usersCache.find(u => u.id === btn.dataset.editUser) || null);
