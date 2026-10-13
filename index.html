@@ -72,7 +72,7 @@
     .dash-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 16px 24px;
       flex-wrap: wrap;
       margin-bottom: 18px;
@@ -648,7 +648,7 @@
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
     }
     .cust-pick-hint {
-      margin: -4px 0 12px;
+      margin: 10px 0 12px;
       color: var(--muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -1160,7 +1160,149 @@
     }
     .import-modal .modal-body { padding: 18px 20px 8px; min-height: 0; }
     .modal-head, .import-foot { flex-shrink: 0; }
-    .import-modal .customer-block { margin-top: 16px; margin-bottom: 8px; box-shadow: none; border: 1px solid var(--border); }
+    .import-modal .customer-block { margin-top: 4px; margin-bottom: 8px; }
+    .cust-search-wrap { position: sticky; top: -18px; z-index: 2; background: #fff; padding: 10px 0 8px; }
+    .cust-search-wrap .extra-search { margin-bottom: 0; min-height: 44px; font-size: 0.95rem; }
+    .customer-block .picker-actions + .picker-actions { margin-top: 8px; }
+    .customer-block .picker-actions .btn { flex: 1 1 0; white-space: nowrap; }
+    .store-row { display: flex; align-items: stretch; gap: 8px; }
+    .store-pick {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+      background: none; border: none; padding: 2px 0;
+      font: inherit; text-align: right; color: var(--text);
+      cursor: pointer;
+    }
+    .store-pick b { font-size: 0.95rem; font-weight: 800; color: var(--navy); }
+    .store-pick .count { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+    .store-pick:disabled { opacity: 0.45; cursor: default; }
+    .store-pick:focus-visible, .store-chev:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); border-radius: 8px; }
+    .store-chev {
+      flex-shrink: 0; width: 40px;
+      border: 1px solid #d3dae8; border-radius: 10px;
+      background: #fff; color: var(--navy);
+      font-size: 1rem; cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .store-chev:hover { background: var(--accent-light); }
+    .store-chev.open { transform: rotate(180deg); }
+    .store-subs { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); }
+
+    /* side menu */
+    .menu-btn {
+      flex-shrink: 0;
+      width: 46px; height: 46px;
+      border: 1px solid #d3dae8; border-radius: 12px;
+      background: #fff; color: var(--navy);
+      font-size: 1.4rem; line-height: 1;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .menu-btn:hover { background: var(--accent-light); border-color: #b7c4f0; }
+    .menu-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
+    .drawer-scrim { position: fixed; inset: 0; z-index: 240; background: rgba(20, 32, 60, 0.45); }
+    .drawer {
+      position: fixed; top: 0; bottom: 0; right: 0; z-index: 250;
+      width: min(310px, 86vw);
+      display: flex; flex-direction: column;
+      background: #142138; color: #e6ecf7;
+      box-shadow: -18px 0 40px rgba(10, 20, 40, 0.3);
+      transform: translateX(105%);
+      visibility: hidden;
+      transition: transform 0.22s ease, visibility 0.22s;
+    }
+    .drawer.open { transform: none; visibility: visible; }
+    @media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
+    .drawer-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .drawer-head b { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .drawer-close {
+      width: 36px; height: 36px;
+      border: none; border-radius: 10px;
+      background: rgba(255,255,255,0.1); color: #fff;
+      font-size: 1.3rem; line-height: 1; cursor: pointer;
+    }
+    .drawer-close:hover { background: rgba(255,255,255,0.2); }
+    .drawer-nav { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .drawer-foot {
+      padding: 12px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .drawer-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; min-height: 46px;
+      padding: 10px 14px;
+      border: 1px solid transparent; border-radius: 12px;
+      background: transparent; color: #e6ecf7;
+      font: inherit; font-size: 0.98rem; font-weight: 700; text-align: right;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .drawer-item:hover { background: rgba(255,255,255,0.09); }
+    .drawer-item:focus-visible, .drawer-close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(120,150,255,0.5); }
+    .drawer-nav .drawer-item:first-child { background: #3b5bdb; color: #fff; }
+    .drawer-nav .drawer-item:first-child:hover { background: #4c6ef5; }
+    .drawer-item .manage-count { margin-inline-start: auto; }
+    .drawer-foot .drawer-item { border-color: rgba(255,255,255,0.16); justify-content: center; }
+    .drawer .user-chip { border: none; padding: 2px 6px 6px; flex-direction: row; gap: 8px; align-items: baseline; }
+    .drawer .user-chip b { color: #fff; }
+    .drawer .user-chip span { color: #9fb0cc; }
+    .drawer-switch {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-top: 8px; padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.16); border-radius: 12px;
+      font-size: 0.92rem; font-weight: 700; color: #e6ecf7;
+      cursor: pointer;
+    }
+    .drawer-switch small { display: block; margin-top: 3px; font-size: 0.72rem; font-weight: 500; color: #9fb0cc; line-height: 1.4; }
+    .drawer-switch input {
+      appearance: none; -webkit-appearance: none;
+      flex-shrink: 0; position: relative;
+      width: 46px; height: 26px; border-radius: 999px;
+      background: #46536e; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .drawer-switch input::after {
+      content: ''; position: absolute; top: 3px; right: 3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #fff; transition: transform 0.15s;
+    }
+    .drawer-switch input:checked { background: #0ca678; }
+    .drawer-switch input:checked::after { transform: translateX(-20px); }
+    .drawer-switch input:disabled { opacity: 0.5; }
+    .drawer-switch input:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(120,150,255,0.5); }
+
+    /* filters the admin switched off */
+    body:not(.show-filters) .opt-filter { display: none !important; }
+
+    /* pop-up menu (export) */
+    .menu-wrap { position: relative; display: inline-flex; }
+    .menu-pop {
+      position: absolute; top: calc(100% + 6px); inset-inline-start: 0; z-index: 30;
+      min-width: 190px;
+      display: flex; flex-direction: column;
+      background: #fff; border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: 0 14px 34px rgba(20,40,80,0.18);
+      padding: 6px;
+    }
+    .menu-pop button {
+      border: none; background: none; border-radius: 8px;
+      padding: 10px 12px; min-height: 42px;
+      font: inherit; font-size: 0.9rem; font-weight: 700; color: var(--navy);
+      text-align: right; cursor: pointer;
+    }
+    .menu-pop button:hover { background: var(--accent-light); color: var(--accent); }
+    #statusText { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+    #scopeCount { display: none; font-style: normal; font-weight: 600; color: var(--muted); }
+
+    /* date filter title: a plain label on wide screens, a fold-out button on phones */
+    .date-toggle { display: inline-flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; font: inherit; cursor: default; }
+    .date-toggle .chev { display: none; color: var(--navy); font-size: 0.9rem; transition: transform 0.15s; }
+    .stat .l-short { display: none; }
     .import-foot {
       display: flex;
       align-items: center;
@@ -1294,27 +1436,46 @@
       .filters input, .filters select, .field input, .field select, .extra-search,
       .date-input-wrap input[type="date"] { font-size: 16px; }
 
-      .dash-header { padding: 12px; gap: 12px; margin-bottom: 12px; border-radius: 16px; }
-      .dash-header h1 { font-size: 1.3rem; }
-      .dash-header p { font-size: 0.8rem; }
-      .brand-mark { width: 42px; height: 42px; border-radius: 12px; }
-      .head-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .head-actions .btn { width: 100%; padding: 8px 10px; min-height: 42px; font-size: 0.86rem; }
-      .head-actions .manage-btn { grid-column: 1 / -1; min-height: 46px; }
-      .user-chip { grid-column: 1 / -1; flex-direction: row; gap: 8px; align-items: baseline; border: none; padding: 0 2px; }
+      .dash-header { padding: 8px 10px; gap: 10px; margin-bottom: 10px; border-radius: 14px; }
+      .dash-header h1 { font-size: 1.12rem; }
+      .dash-header p { display: none; }
+      .brand { gap: 10px; }
+      .brand-mark { width: 36px; height: 36px; border-radius: 10px; box-shadow: none; }
+      .brand-mark svg { width: 20px; height: 20px; }
+      .menu-btn { width: 42px; height: 42px; }
 
-      .stats { gap: 8px; margin-bottom: 12px; }
-      .stat { padding: 12px; }
-      .stat .value { font-size: 1.25rem; }
+      /* the five summary tiles become one thin strip */
+      .stats {
+        grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin-bottom: 10px;
+        background: #fff; border: 1px solid var(--border); border-radius: 14px;
+        overflow: hidden; box-shadow: var(--shadow-sm);
+      }
+      .stat, .stat.ok, .stat.bad, .stat.warn {
+        display: block; padding: 8px 2px; text-align: center;
+        background: none; border: none; border-radius: 0; box-shadow: none;
+      }
+      .stat + .stat { border-inline-start: 1px solid var(--border); }
+      .stat:hover { transform: none; }
+      .stat-ico, .stat .sub, .stat .l-full { display: none !important; }
+      .stat .l-short { display: inline; }
+      .stat-txt { display: flex; flex-direction: column-reverse; gap: 1px; }
+      .stat .label { margin: 0; font-size: 0.66rem; white-space: nowrap; }
+      .stat .value { font-size: 1rem; letter-spacing: 0; line-height: 1.2; white-space: nowrap; }
 
       .filters { padding: 10px; margin-bottom: 12px; }
       .filters input[type="search"] { flex: 1 1 100%; min-width: 0; }
+      .filters > span.opt-filter { flex: 1 1 100%; display: flex; }
       #familyFilterWrap, #familyFilterWrap select { flex: 1 1 100%; width: 100%; }
       .filters label.check, .filters .min-pct { flex: 1 1 auto; }
       .sev-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
       .sev-chips::-webkit-scrollbar { display: none; }
       .sev-chip { flex-shrink: 0; min-height: 36px; }
-      .date-filters { padding: 10px; gap: 8px; }
+      .date-filters { padding: 6px 10px; gap: 8px; margin-top: 0; }
+      .date-filters.open { padding-bottom: 10px; }
+      .date-toggle { width: 100%; min-height: 36px; justify-content: space-between; cursor: pointer; }
+      .date-toggle .chev { display: inline; }
+      .date-filters.open .date-toggle .chev { transform: rotate(180deg); }
+      .date-filters:not(.open) > :not(.date-toggle) { display: none; }
       .date-group { width: 100%; flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
       .date-range { width: 100%; min-width: 0; }
       .date-field-label { flex: 1; min-width: 0; }
@@ -1325,11 +1486,15 @@
       .card-head { padding: 12px; }
       .card-body { padding: 12px; }
       .report-card { min-height: 0; }
-      .report-head-title { width: 100%; justify-content: space-between; }
-      .report-toolbar { width: 100%; justify-content: stretch; }
-      .report-toolbar .btn { flex: 1 1 auto; }
-      #statusText { flex: 1 1 100%; }
-      .high-return-bar .btn { width: 100%; }
+      .report-head-title { width: 100%; justify-content: space-between; flex-wrap: nowrap; gap: 8px; }
+      .report-head-title h2 { font-size: 0.98rem; white-space: nowrap; }
+      .tab { padding: 6px 10px; font-size: 0.76rem; white-space: nowrap; }
+      .report-toolbar { width: 100%; justify-content: flex-start; flex-wrap: nowrap; gap: 6px; }
+      .report-toolbar .btn { min-height: 36px; padding: 6px 10px; font-size: 0.8rem; white-space: nowrap; }
+      .report-toolbar #btnHighReturn { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      #statusText { display: none; }
+      #scopeCount { display: inline; }
+      .scope-banner { background: none; border: none; padding: 0 2px; margin-bottom: 8px; font-size: 0.82rem; font-weight: 700; }
       .store-head h3 { font-size: 1.1rem; }
       .store-tools { width: 100%; }
       .store-tools .btn { flex: 1 1 auto; }
@@ -1337,8 +1502,13 @@
       /* the report: one card per row, column headers become sort chips */
       .table-wrap { max-height: none; overflow: visible; border: none; background: transparent; }
       table.report, table.report thead, table.report tbody, table.report tfoot { display: block; width: 100%; }
-      table.report thead tr { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+      table.report thead tr {
+        display: flex; flex-wrap: nowrap; gap: 6px; margin-bottom: 10px;
+        overflow-x: auto; padding-bottom: 2px; scrollbar-width: none;
+      }
+      table.report thead tr::-webkit-scrollbar { display: none; }
       table.report th {
+        flex-shrink: 0;
         position: static; width: auto !important;
         border: 1px solid #d3dae8; border-radius: 999px;
         background: #fff; padding: 6px 12px;
@@ -1509,6 +1679,7 @@
 
   <div class="container" id="appRoot" hidden>
     <header class="dash-header no-print">
+      <button type="button" class="menu-btn" id="btnMenu" aria-label="תפריט" aria-controls="drawer" aria-expanded="false">☰</button>
       <div class="brand">
         <span class="brand-mark" data-icon="chart"></span>
         <div>
@@ -1516,35 +1687,54 @@
           <p>השוואה בין מה שנשלח לחנות לבין מה שחזר</p>
         </div>
       </div>
-      <div class="head-actions">
-        <button type="button" class="btn btn-primary manage-btn" id="btnManageFiles" data-icon="folder">
+    </header>
+
+    <div class="drawer-scrim no-print" id="drawerScrim" hidden></div>
+    <aside class="drawer no-print" id="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <b>מכירות מול החזרות</b>
+        <button type="button" class="drawer-close" id="drawerClose" aria-label="סגור תפריט">×</button>
+      </div>
+      <nav class="drawer-nav">
+        <button type="button" class="drawer-item" id="btnManageFiles" data-icon="folder">
           <span id="manageLabel">ניהול והעלאת קבצים</span>
           <span class="manage-count" id="manageFileCount" hidden>0</span>
         </button>
-        <button type="button" class="btn btn-ghost" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">רענון נתונים</button>
-        <button type="button" class="btn btn-ghost" id="btnInstall" hidden>התקנה כאפליקציה</button>
-        <button type="button" class="btn btn-ghost admin-only" id="btnUsers">משתמשים</button>
-        <button type="button" class="btn btn-ghost" id="btnPassword">החלפת סיסמה</button>
-        <button type="button" class="btn btn-ghost" id="btnLogout">יציאה</button>
-        <span class="user-chip"><b id="userName"></b><span id="userRole"></span></span>
+        <button type="button" class="drawer-item" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">רענון נתונים</button>
+        <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים</button>
+        <label class="drawer-switch admin-only">
+          <span>הצגת סינונים למשתמשים
+            <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
+          </span>
+          <input type="checkbox" id="showFiltersSwitch">
+        </label>
+      </nav>
+      <div class="drawer-foot">
+        <div class="user-chip"><b id="userName"></b><span id="userRole"></span></div>
+        <button type="button" class="drawer-item" id="btnInstall" hidden>התקנה כאפליקציה</button>
+        <button type="button" class="drawer-item" id="btnPassword">החלפת סיסמה</button>
+        <button type="button" class="drawer-item" id="btnLogout">יציאה</button>
       </div>
-    </header>
+    </aside>
 
     <div class="no-print" id="statsRow" hidden></div>
 
     <div class="filters no-print" id="filtersBar" hidden>
       <input type="search" id="searchBox" placeholder="חיפוש מק״ט או תיאור...  ( / )">
-      <span id="familyFilterWrap"><select id="familyFilter">
+      <span class="opt-filter"><span id="familyFilterWrap"><select id="familyFilter">
         <option value="">כל המשפחות</option>
-      </select></span>
-      <label class="check"><input type="checkbox" id="onlyReturns"> רק מוצרים שחזרו</label>
-      <label class="min-pct">החזרה מעל
+      </select></span></span>
+      <label class="check opt-filter"><input type="checkbox" id="onlyReturns"> רק מוצרים שחזרו</label>
+      <label class="min-pct opt-filter">החזרה מעל
         <input type="number" id="minPct" min="0" max="100" step="1" value="0"> %
       </label>
       <button type="button" class="btn btn-ghost" id="btnResetFilters" hidden>איפוס סינון</button>
-      <div class="sev-chips" id="sevChips"></div>
+      <div class="sev-chips opt-filter" id="sevChips"></div>
       <div class="date-filters" id="dateFilters">
-        <span class="date-filters-label">סינון תאריך</span>
+        <button type="button" class="date-toggle" id="dateToggle" aria-expanded="false">
+          <span class="date-filters-label" id="dateToggleLabel">סינון תאריך</span>
+          <span class="chev" aria-hidden="true">▾</span>
+        </button>
         <div class="date-group" id="shipDateGroup">
           <span class="date-group-label">נשלח</span>
           <div class="date-range">
@@ -1591,18 +1781,21 @@
           </div>
         </div>
         <div class="toolbar report-toolbar">
-          <button class="btn btn-success" id="btnExport" data-icon="download" disabled>ייצוא לאקסל</button>
-          <button class="btn btn-ghost" id="btnExportHtml" data-icon="download" disabled>הורדה כ-HTML</button>
-          <button class="btn btn-ghost" id="btnPrint" data-icon="print" disabled>הדפסה</button>
-          <button class="btn btn-ghost" id="btnRestore" disabled>שחזר שורות</button>
-          <span id="statusText" style="color:var(--muted);font-size:0.85rem;font-weight:600;"></span>
+          <div class="menu-wrap">
+            <button type="button" class="btn btn-success" id="btnExportMenu" data-icon="download" data-menu-toggle disabled>ייצוא ▾</button>
+            <div class="menu-pop" hidden>
+              <button type="button" id="btnExport">ייצוא לאקסל</button>
+              <button type="button" id="btnExportHtml">הורדה כ-HTML</button>
+              <button type="button" id="btnPrint">הדפסה</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost" id="btnHighReturn" hidden>תעודות שחזרו מעל 90%</button>
+          <button type="button" class="btn btn-ghost" id="btnRestore" hidden>שחזר שורות</button>
+          <span id="statusText"></span>
         </div>
       </div>
       <div class="card-body">
         <div class="scope-banner" id="reportScope" hidden></div>
-        <div class="high-return-bar no-print" id="highReturnBar" hidden>
-          <button type="button" class="btn btn-ghost" id="btnHighReturn">תעודות שחזרו מעל 90%</button>
-        </div>
         <div id="reportArea"></div>
       </div>
     </div>
@@ -1650,18 +1843,20 @@
           אפשר להעלות קבצים של הרבה לקוחות יחד, ואז לבחור למי להפיק את הדוח.
           בדוח המסכם, לחיצה על הכמות ב־<b>נשלח</b> או ב־<b>חזר</b> מציגה את התעודות.
         </div>
-        <div class="card no-print customer-block" id="customerCard" hidden>
-          <div class="card-head">
-            <h2>בחירת לקוח לדוח</h2>
-            <div class="picker-actions">
-              <button type="button" class="btn btn-ghost btn-sm" id="btnCustPct" data-icon="percent">אחוזי החזרה לכל לקוח</button>
-              <button type="button" class="btn btn-danger btn-sm" id="btnOverReturn" data-icon="return"><span id="btnOverReturnLabel">החזרות מעל 100%</span></button>
-              <button type="button" class="btn btn-ghost btn-sm" id="btnCustAll">כל הלקוחות</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="btnCustMulti">בחירה מרובה</button>
-            </div>
+        <div class="no-print customer-block" id="customerCard" hidden>
+          <div class="cust-search-wrap">
+            <input type="search" class="extra-search" id="custSearch" placeholder="חיפוש לקוח או חנות, לפי שם או מספר...">
+          </div>
+          <div class="picker-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCustAll">כל הלקוחות</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCustMulti">בחירה מרובה</button>
+          </div>
+          <div class="picker-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCustPct" data-icon="percent">אחוזי החזרה לכל לקוח</button>
+            <button type="button" class="btn btn-danger btn-sm" id="btnOverReturn" data-icon="return"><span id="btnOverReturnLabel">החזרות מעל 100%</span></button>
           </div>
           <p class="cust-pick-hint" id="custPickHint"></p>
-          <div class="card-body" id="customerPicker"></div>
+          <div id="customerPicker"></div>
         </div>
       </div>
       <div class="import-foot">
@@ -1839,10 +2034,11 @@
       view: 'sku',
       sortKey: 'pct',
       sortDir: 'desc',
-      extraCustQ: '',
+      custQ: '',
+      storeOpen: new Set(),
       extraCustOpen: false,
-      bothCustQ: '',
       bothCustOpen: false,
+      showFilters: false,
       sev: '',
       ready: false
     };
@@ -2039,6 +2235,7 @@
       authMode = mode;
       document.querySelectorAll('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
       document.body.classList.remove('modal-open');
+      closeDrawer();
       document.getElementById('appRoot').hidden = true;
       document.getElementById('authScreen').hidden = false;
       const form = mode === 'login' || mode === 'setup';
@@ -2067,6 +2264,9 @@
       state.combineStores = false;
       state.mergedStores.clear();
       state.multiCust = false;
+      state.custQ = '';
+      state.storeOpen.clear();
+      document.getElementById('custSearch').value = '';
       resetFilters();
     }
 
@@ -2152,6 +2352,7 @@
       const msg = document.getElementById('loadingMsg');
       let shown = false;
       try {
+        const settingsChanged = await loadSettings();
         const list = await call('svr_files_list') || [];
         const have = new Map();
         state.shipped.concat(state.returns).forEach(f => have.set(f.id, f));
@@ -2193,7 +2394,7 @@
         state.shipped = next.shipped;
         state.returns = next.returns;
         lastSync = Date.now();
-        if (changed) renderAll();
+        if (changed || settingsChanged) renderAll();
         return changed;
       } finally {
         if (shown) overlay.classList.remove('show');
@@ -2780,9 +2981,12 @@
       document.getElementById('btnCustAll').className = 'btn btn-sm ' + (allActive ? 'btn-primary' : 'btn-ghost');
       document.getElementById('btnCustMulti').className = 'btn btn-sm ' + (state.multiCust ? 'btn-primary' : 'btn-ghost');
       document.getElementById('custPickHint').textContent = state.multiCust
-        ? 'אפשר לסמן לקוחות, או «מרוכז של שניהם» לכמה מהחמש החנויות. כל דוח מרוכז יוצג בנפרד.'
-        : 'בחירת חנות חדשה מחליפה את הקודמת.';
+        ? 'סמנו לקוחות או חנויות, ואז לחצו «סגור והצג דוח». כל אחד יוצג כדוח נפרד.'
+        : 'לחיצה על חנות או על לקוח מציגה את הדוח שלו.';
+      document.getElementById('importModalDone').textContent = state.multiCust ? 'סגור והצג דוח' : 'סגור';
 
+      const q = (state.custQ || '').trim().toLowerCase();
+      let shown = 0;
       let html = '<div class="store-grid">';
       byStore.forEach((rows, store) => {
         if (!rows.length) return;
@@ -2790,33 +2994,50 @@
         const isBoth = store === BOTH_GROUP;
         const isLimited = isExtra || isBoth;
         rows.sort((a, b) => a.type.localeCompare(b.type, 'he'));
-        const storeIds = rows.map(r => r.id);
-        const storeActive = selected && storeIds.length && storeIds.every(id => selected.has(id)) && selected.size === storeIds.length;
-        html += '<div class="store-box' + (storeActive ? ' active' : '') + (isBoth ? ' both-box' : '') + '">';
-        html += '<h3><span>' + (STORE_ORDER.includes(store) ? 'חנות ' : '') + escapeHtml(store);
-        if (isLimited) html += ' <span class="id">(' + rows.length + ')</span>';
-        html += '</span>';
-        if (isLimited && state.multiCust) {
-          html += '<button type="button" class="btn btn-ghost" data-select-all="' + (isBoth ? 'both' : 'extra') + '">בחר הכול</button>';
-        }
-        if (STORE_ORDER.includes(store) && storeIds.filter(id => id).length >= 2) {
-          const merged = state.mergedStores && state.mergedStores.has(store);
-          html += '<button type="button" class="btn ' + (merged ? 'btn-primary' : 'btn-ghost') + '" data-merge-store="' + escapeHtml(store) + '">' +
-            (merged ? 'מרוכז' : 'מרוכז של שניהם') + '</button>';
-        }
-        html += '</h3>';
+
         if (isLimited) {
-          const sid = isBoth ? 'bothCustSearch' : 'extraCustSearch';
-          const lid = isBoth ? 'bothCustList' : 'extraCustList';
-          const q = isBoth ? state.bothCustQ : state.extraCustQ;
-          html += '<input type="search" class="extra-search" id="' + sid + '" placeholder="חיפוש שם או מספר לקוח..." value="' + escapeHtml(q || '') + '">';
-          html += '<div id="' + lid + '"></div>';
-        } else {
-          rows.forEach(row => { html += custOptHtml(row, selected); });
+          if (!custGroupMatches(rows, q).length) return;
+          shown++;
+          html += '<div class="store-box' + (isBoth ? ' both-box' : '') + '">';
+          html += '<h3><span>' + escapeHtml(store) + ' <span class="id">(' + rows.length + ')</span></span>';
+          if (state.multiCust) {
+            html += '<button type="button" class="btn btn-ghost" data-select-all="' + (isBoth ? 'both' : 'extra') + '">בחר הכול</button>';
+          }
+          html += '</h3><div id="' + (isBoth ? 'bothCustList' : 'extraCustList') + '"></div></div>';
+          return;
+        }
+
+        // A store is one customer: its row opens the merged report of both customer numbers
+        const storeIds = rows.map(r => r.id);
+        const nameHit = !q || ('חנות ' + store).toLowerCase().includes(q);
+        const rowHits = custGroupMatches(rows, q);
+        if (!nameHit && !rowHits.length) return;
+        shown++;
+        const sentRows = rows.reduce((s, r) => s + r.sentRows, 0);
+        const returnRows = rows.reduce((s, r) => s + r.returnRows, 0);
+        const empty = sentRows + returnRows === 0;
+        const allOn = !!selected && storeIds.every(id => selected.has(id));
+        const merged = allOn && (state.mergedStores.has(store) || (state.combineStores && selected.size === storeIds.length));
+        const partial = !!selected && !merged && storeIds.some(id => selected.has(id));
+        const open = state.storeOpen.has(store) || partial || (!!q && !nameHit);
+        const countBits = [];
+        if (sentRows) countBits.push(sentRows + ' שורות משלוח');
+        if (returnRows) countBits.push(returnRows + ' שורות החזרה');
+        html += '<div class="store-box' + (merged ? ' active' : '') + '">' +
+          '<div class="store-row">' +
+          '<button type="button" class="store-pick" data-merge-store="' + escapeHtml(store) + '"' + (empty ? ' disabled' : '') + '>' +
+          '<b>חנות ' + escapeHtml(store) + '</b>' +
+          '<span class="count">' + (countBits.join(' · ') || 'אין נתונים בקבצים') + '</span></button>' +
+          '<button type="button" class="store-chev' + (open ? ' open' : '') + '" data-toggle-store="' + escapeHtml(store) + '"' +
+          ' aria-expanded="' + open + '" title="מספרי הלקוח של החנות" aria-label="מספרי הלקוח של החנות">▾</button>' +
+          '</div>';
+        if (open) {
+          html += '<div class="store-subs">' + rows.map(row => custOptHtml(row, selected)).join('') + '</div>';
         }
         html += '</div>';
       });
       html += '</div>';
+      if (!shown) html = '<div class="extra-empty">לא נמצא לקוח או חנות שמתאימים לחיפוש.</div>';
       box.innerHTML = html;
       fillLimitedCustList('extraCustList', byStore.get('לקוחות נוספים') || [], selected, 'extra');
       fillLimitedCustList('bothCustList', byStore.get(BOTH_GROUP) || [], selected, 'both');
@@ -2832,7 +3053,7 @@
     function fillLimitedCustList(listId, rows, selected, kind) {
       const list = document.getElementById(listId);
       if (!list) return;
-      const q = kind === 'both' ? state.bothCustQ : state.extraCustQ;
+      const q = state.custQ;
       const allBtn = document.querySelector('[data-select-all="' + kind + '"]');
       if (allBtn) {
         const matches = custGroupMatches(rows, q);
@@ -2907,6 +3128,8 @@
           group.classList.toggle(isReturn ? 'has-dates-ret' : 'has-dates', !!hasFilter);
         }
       });
+      // on phones the dates are folded away, so the title says when a date filter is on
+      document.getElementById('dateToggleLabel').textContent = 'סינון תאריך' + (hasDateFilter() ? ' · פעיל' : '');
     }
 
     function rangeBounds(kind) {
@@ -3247,13 +3470,15 @@
     }
 
     function updateActionButtons(visibleCount) {
-      document.getElementById('btnExport').disabled = visibleCount === 0;
-      document.getElementById('btnExportHtml').disabled = visibleCount === 0;
-      document.getElementById('btnPrint').disabled = visibleCount === 0;
-      document.getElementById('btnRestore').disabled = state.hiddenSkus.size === 0;
-      document.getElementById('btnRestore').textContent = state.hiddenSkus.size
-        ? 'שחזר שורות (' + state.hiddenSkus.size + ')'
-        : 'שחזר שורות';
+      document.getElementById('btnExportMenu').disabled = visibleCount === 0;
+      if (visibleCount === 0) closeMenus();
+      // shown only when there is something to bring back
+      document.getElementById('btnRestore').hidden = state.hiddenSkus.size === 0;
+      document.getElementById('btnRestore').textContent = 'שחזר שורות (' + state.hiddenSkus.size + ')';
+    }
+
+    function closeMenus() {
+      document.querySelectorAll('.menu-pop').forEach(m => { m.hidden = true; });
     }
 
     function sortMark(key) {
@@ -3399,15 +3624,17 @@
         ? fmtNum(filtered.length) + ' אחרי סינון'
         : fmtNum(ship.lines) + ' שורות משלוח';
       const net = totals.sent - totals.returned;
-      const card = (ico, label, value, sub, extra) =>
+      // short = the label used in the one-row strip on phones
+      const card = (ico, label, short, value, sub, extra) =>
         '<div class="stat' + (extra || '') + '"><span class="stat-ico">' + icon(ico) + '</span><div class="stat-txt">' +
-        '<div class="label">' + label + '</div><div class="value">' + value + '</div><div class="sub">' + sub + '</div></div></div>';
+        '<div class="label"><span class="l-full">' + label + '</span><span class="l-short">' + short + '</span></div>' +
+        '<div class="value">' + value + '</div><div class="sub">' + sub + '</div></div></div>';
       return '<div class="stats store-stats">' +
-        card('box', 'מק״טים בדוח', fmtNum(rows.length), skuSub) +
-        card('send', 'סה״כ נשלח', fmtNum(totals.sent), ship.files + ' קבצי משלוח') +
-        card('return', 'סה״כ חזר', fmtNum(totals.returned), ret.files + ' קבצי החזרה') +
-        card('net', 'יתרה', (net > 0 ? '+' : '') + fmtNum(net), 'נשלח פחות חזר', net < 0 ? ' bad' : '') +
-        card('percent', 'אחוז החזרה כולל', fmtPct(totals.pct), 'מכל הכמות שנשלחה', pctCls) +
+        card('box', 'מק״טים בדוח', 'מק״טים', fmtNum(rows.length), skuSub) +
+        card('send', 'סה״כ נשלח', 'נשלח', fmtNum(totals.sent), ship.files + ' קבצי משלוח') +
+        card('return', 'סה״כ חזר', 'חזר', fmtNum(totals.returned), ret.files + ' קבצי החזרה') +
+        card('net', 'יתרה', 'יתרה', (net > 0 ? '+' : '') + fmtNum(net), 'נשלח פחות חזר', net < 0 ? ' bad' : '') +
+        card('percent', 'אחוז החזרה כולל', '% החזרה', fmtPct(totals.pct), 'מכל הכמות שנשלחה', pctCls) +
         '</div>';
     }
 
@@ -3489,11 +3716,13 @@
         if (!people.some(p => p.key === state.focusStoreId)) state.focusStoreId = people[0].key;
         const tools = (ids) => {
           const enc = escapeHtml(ids.join(','));
-          return '<div class="store-tools no-print">' +
-            '<button type="button" class="btn btn-success" data-store-export="excel" data-cust="' + enc + '">ייצוא לאקסל</button>' +
-            '<button type="button" class="btn btn-ghost" data-store-export="html" data-cust="' + enc + '">הורדה כ-HTML</button>' +
-            (IN_VIEWER ? '' : '<button type="button" class="btn btn-ghost" data-store-export="print" data-cust="' + enc + '">הדפסה</button>') +
-            '</div>';
+          return '<div class="store-tools no-print"><div class="menu-wrap">' +
+            '<button type="button" class="btn btn-success" data-menu-toggle>' + icon('download') + 'ייצוא ▾</button>' +
+            '<div class="menu-pop" hidden>' +
+            '<button type="button" data-store-export="excel" data-cust="' + enc + '">ייצוא לאקסל</button>' +
+            '<button type="button" data-store-export="html" data-cust="' + enc + '">הורדה כ-HTML</button>' +
+            (IN_VIEWER ? '' : '<button type="button" data-store-export="print" data-cust="' + enc + '">הדפסה</button>') +
+            '</div></div></div>';
         };
         html = '<div class="store-switch no-print">' + people.map(p =>
           '<button type="button" data-focus-store="' + escapeHtml(p.key) + '"' +
@@ -3532,9 +3761,13 @@
       }
 
       document.getElementById('reportArea').innerHTML = html;
-      document.getElementById('statusText').textContent = (people ? people.length + ' חנויות · ' : '') +
+      const status = (people ? people.length + ' חנויות · ' : '') +
         filtered.length + ' מק״טים מוצגים' +
         (state.hiddenSkus.size ? ' · ' + state.hiddenSkus.size + ' נמחקו' : '');
+      document.getElementById('statusText').textContent = status;
+      // on phones the same count rides on the "showing now" line instead of its own row
+      const scopeCount = document.getElementById('scopeCount');
+      if (scopeCount) scopeCount.textContent = ' · ' + status;
     }
 
     function collectDocs(kind, filter) {
@@ -3690,16 +3923,11 @@
     let highReturnList = [];
 
     function updateHighReturnButton() {
-      const bar = document.getElementById('highReturnBar');
       const btn = document.getElementById('btnHighReturn');
       const hasFiles = state.shipped.length + state.returns.length > 0;
-      if (!hasFiles) {
-        bar.hidden = true;
-        btn.textContent = 'תעודות שחזרו מעל 90%';
-        return;
-      }
+      btn.hidden = !hasFiles;
+      if (!hasFiles) return;
       const n = highReturnDocs().length;
-      bar.hidden = false;
       btn.textContent = 'תעודות שחזרו מעל 90%' + (n ? ' · ' + n : '');
     }
 
@@ -3988,7 +4216,7 @@
         el.textContent = '';
       } else {
         el.hidden = false;
-        el.innerHTML = 'מוצג עכשיו: <span>' + escapeHtml(label + range) + '</span>';
+        el.innerHTML = 'מוצג עכשיו: <span>' + escapeHtml(label + range) + '</span><em id="scopeCount"></em>';
       }
       let printH = document.getElementById('printScopeHeader');
       if (!printH) {
@@ -4973,6 +5201,80 @@ renderTable();
       state.combineStores = false;
       state.mergedStores.clear();
       renderAll();
+      if (!state.multiCust) closeImportModal();
+    });
+
+    // ---------- side menu ----------
+    function openDrawer() {
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawer').setAttribute('aria-hidden', 'false');
+      document.getElementById('drawerScrim').hidden = false;
+      document.getElementById('btnMenu').setAttribute('aria-expanded', 'true');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawer').setAttribute('aria-hidden', 'true');
+      document.getElementById('drawerScrim').hidden = true;
+      document.getElementById('btnMenu').setAttribute('aria-expanded', 'false');
+    }
+
+    document.getElementById('btnMenu').addEventListener('click', openDrawer);
+    document.getElementById('drawerScrim').addEventListener('click', closeDrawer);
+    // every entry in the menu does its job and gets out of the way; the switch stays open
+    document.getElementById('drawer').addEventListener('click', (e) => {
+      if (e.target.closest('button')) closeDrawer();
+    });
+
+    // ---------- filters the admin can show or hide for everyone ----------
+    function applyShowFilters(show) {
+      state.showFilters = !!show;
+      document.body.classList.toggle('show-filters', state.showFilters);
+      document.getElementById('showFiltersSwitch').checked = state.showFilters;
+      if (state.showFilters) return;
+      // a filter nobody can see must not keep filtering the report
+      document.getElementById('familyFilter').value = '';
+      document.getElementById('onlyReturns').checked = false;
+      document.getElementById('minPct').value = '0';
+      state.sev = '';
+    }
+
+    async function loadSettings() {
+      const settings = await call('svr_settings_get') || {};
+      const show = settings.show_filters === true;
+      const changed = show !== state.showFilters;
+      applyShowFilters(show);
+      return changed;
+    }
+
+    document.getElementById('showFiltersSwitch').addEventListener('change', async (e) => {
+      const input = e.currentTarget;
+      const show = input.checked;
+      input.disabled = true;
+      try {
+        await call('svr_setting_set', { p_key: 'show_filters', p_value: show });
+        applyShowFilters(show);
+        renderAll();
+        toast(show ? 'הסינונים מוצגים עכשיו לכל המשתמשים' : 'הסינונים מוסתרים מכל המשתמשים', 'ok');
+      } catch (err) {
+        input.checked = state.showFilters;
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      } finally {
+        input.disabled = false;
+      }
+    });
+
+    // ---------- small pop-up menus (export) and the folded date filter ----------
+    document.addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-menu-toggle]');
+      const pop = toggle ? toggle.parentElement.querySelector('.menu-pop') : null;
+      const wasOpen = pop && !pop.hidden;
+      closeMenus();
+      if (pop && !wasOpen && !toggle.disabled) pop.hidden = false;
+    });
+    document.getElementById('dateToggle').addEventListener('click', (e) => {
+      const open = document.getElementById('dateFilters').classList.toggle('open');
+      e.currentTarget.setAttribute('aria-expanded', String(open));
     });
     document.getElementById('btnCustPct').addEventListener('click', openCustPctModal);
     document.getElementById('custPctClose').addEventListener('click', closeCustPctModal);
@@ -5038,15 +5340,10 @@ renderTable();
       return Array.from(collectCustomerStats().values()).filter(r => r.store === storeName);
     }
 
-    document.getElementById('customerPicker').addEventListener('input', (e) => {
-      if (e.target.id === 'extraCustSearch') {
-        state.extraCustQ = e.target.value;
-        fillLimitedCustList('extraCustList', rowsInGroup('לקוחות נוספים'), state.selectedIds, 'extra');
-      }
-      if (e.target.id === 'bothCustSearch') {
-        state.bothCustQ = e.target.value;
-        fillLimitedCustList('bothCustList', rowsInGroup(BOTH_GROUP), state.selectedIds, 'both');
-      }
+    // One search box for every group; it sits outside the list, so typing keeps its focus
+    document.getElementById('custSearch').addEventListener('input', (e) => {
+      state.custQ = e.target.value;
+      renderCustomerPicker();
     });
     document.getElementById('customerPicker').addEventListener('change', (e) => {
       const input = e.target.closest('input[data-cust]');
@@ -5071,6 +5368,8 @@ renderTable();
         if (!allOn) state.mergedStores.delete(store);
       });
       renderAll();
+      // outside multi-select, picking a customer is the whole action: show the report
+      if (!state.multiCust && input.checked) closeImportModal();
     });
     document.getElementById('customerPicker').addEventListener('click', (e) => {
       if (e.target.closest('[data-expand-extra]')) {
@@ -5096,10 +5395,7 @@ renderTable();
       const allBtn = e.target.closest('[data-select-all]');
       if (allBtn) {
         const isBoth = allBtn.dataset.selectAll === 'both';
-        const matches = custGroupMatches(
-          rowsInGroup(isBoth ? BOTH_GROUP : 'לקוחות נוספים'),
-          isBoth ? state.bothCustQ : state.extraCustQ
-        );
+        const matches = custGroupMatches(rowsInGroup(isBoth ? BOTH_GROUP : 'לקוחות נוספים'), state.custQ);
         if (!matches.length) return;
         if (!state.selectedIds) state.selectedIds = new Set();
         const allOn = matches.every(row => state.selectedIds.has(row.id));
@@ -5111,6 +5407,14 @@ renderTable();
         state.combineStores = false;
         renderAll();
         toast(allOn ? 'הבחירה נוקתה' : 'נבחרו ' + matches.length + ' לקוחות', 'ok');
+        return;
+      }
+      const chev = e.target.closest('[data-toggle-store]');
+      if (chev) {
+        const name = chev.dataset.toggleStore;
+        if (state.storeOpen.has(name)) state.storeOpen.delete(name);
+        else state.storeOpen.add(name);
+        renderCustomerPicker();
         return;
       }
       const btn = e.target.closest('[data-merge-store]');
@@ -5137,8 +5441,10 @@ renderTable();
       state.mergedStores.clear();
       state.combineStores = true;
       state.selectedIds = new Set(ids);
+      state.storeOpen.delete(store);
       renderAll();
-      toast('דוח מרוכז לחנות ' + store, 'ok');
+      closeImportModal();
+      toast('מוצג הדוח של חנות ' + store, 'ok');
     });
     document.getElementById('btnManageFiles').addEventListener('click', openImportModal);
     document.getElementById('importModalClose').addEventListener('click', closeImportModal);
@@ -5177,7 +5483,12 @@ renderTable();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
-      const top = ['passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      closeMenus();
+      if (document.getElementById('drawer').classList.contains('open')) {
+        closeDrawer();
+        return;
+      }
+      const top =['passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
