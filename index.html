@@ -1165,6 +1165,35 @@
     .cust-search-wrap .extra-search { margin-bottom: 0; min-height: 44px; font-size: 0.95rem; }
     .customer-block .picker-actions + .picker-actions { margin-top: 8px; }
     .customer-block .picker-actions .btn { flex: 1 1 0; white-space: nowrap; }
+    /* stores: one row of equal tiles; customer groups: side by side, each scrolling on its own */
+    .store-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    /* an opened store takes a row of its own, so it never stretches its neighbours */
+    .store-strip .store-box.is-open { grid-column: 1 / -1; }
+    @media (max-width: 900px) { .store-strip { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+    .cust-groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+      align-items: start;
+      margin-top: 12px;
+    }
+    .cust-list { max-height: 44vh; overflow-y: auto; padding-inline-end: 4px; }
+    .zone-head { display: flex; justify-content: flex-start; margin-bottom: 8px; }
+    .sel-all {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 12px; min-height: 32px;
+      border: 1px solid #d3dae8; border-radius: 999px;
+      background: #fff;
+      font-size: 0.78rem; font-weight: 800; color: var(--navy);
+      cursor: pointer; user-select: none; flex-shrink: 0;
+    }
+    .sel-all input { width: 16px; height: 16px; accent-color: var(--accent); }
+    .sel-all:has(input:checked) { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .sel-all:has(input:disabled) { opacity: 0.5; cursor: default; }
     .store-row { display: flex; align-items: stretch; gap: 8px; }
     .store-pick {
       flex: 1; min-width: 0;
@@ -1566,7 +1595,8 @@
       .drop-zone { padding: 16px 12px 12px; }
       .picker-actions { width: 100%; }
       .picker-actions .btn { flex: 1 1 auto; }
-      .store-grid { grid-template-columns: 1fr; }
+      .store-grid, .store-strip, .cust-groups { grid-template-columns: 1fr; }
+      .cust-list { max-height: none; overflow: visible; padding: 0; }
       .import-foot { padding: 10px 12px; }
       .import-foot .btn { flex: 1 1 auto; }
       .cust-pct-bar { flex-wrap: wrap; padding: 8px 10px; }
@@ -1848,7 +1878,7 @@
             <input type="search" class="extra-search" id="custSearch" placeholder="חיפוש לקוח או חנות, לפי שם או מספר...">
           </div>
           <div class="picker-actions">
-            <button type="button" class="btn btn-ghost btn-sm" id="btnCustAll">כל הלקוחות</button>
+            <button type="button" class="btn btn-ghost btn-sm admin-only" id="btnCustAll">כל הלקוחות</button>
             <button type="button" class="btn btn-ghost btn-sm" id="btnCustMulti">בחירה מרובה</button>
           </div>
           <div class="picker-actions">
@@ -2035,6 +2065,7 @@
       sortKey: 'pct',
       sortDir: 'desc',
       custQ: '',
+      allCust: false,
       storeOpen: new Set(),
       extraCustOpen: false,
       bothCustOpen: false,
@@ -2264,6 +2295,7 @@
       state.combineStores = false;
       state.mergedStores.clear();
       state.multiCust = false;
+      state.allCust = false;
       state.custQ = '';
       state.storeOpen.clear();
       document.getElementById('custSearch').value = '';
@@ -2977,8 +3009,7 @@
       });
 
       const selected = state.selectedIds;
-      const allActive = !selected;
-      document.getElementById('btnCustAll').className = 'btn btn-sm ' + (allActive ? 'btn-primary' : 'btn-ghost');
+      document.getElementById('btnCustAll').className = 'btn btn-sm admin-only ' + (state.allCust ? 'btn-primary' : 'btn-ghost');
       document.getElementById('btnCustMulti').className = 'btn btn-sm ' + (state.multiCust ? 'btn-primary' : 'btn-ghost');
       document.getElementById('custPickHint').textContent = state.multiCust
         ? 'סמנו לקוחות או חנויות, ואז לחצו «סגור והצג דוח». כל אחד יוצג כדוח נפרד.'
@@ -2986,8 +3017,13 @@
       document.getElementById('importModalDone').textContent = state.multiCust ? 'סגור והצג דוח' : 'סגור';
 
       const q = (state.custQ || '').trim().toLowerCase();
+      // The stores get a row of their own; the two customer groups sit side by side below it
+      const selectAll = (kind, label) =>
+        '<label class="sel-all"><input type="checkbox" data-select-all="' + kind + '"><span>' + label + '</span></label>';
       let shown = 0;
-      let html = '<div class="store-grid">';
+      let storeHtml = '';
+      let groupHtml = '';
+      let html = '';
       byStore.forEach((rows, store) => {
         if (!rows.length) return;
         const isExtra = store === 'לקוחות נוספים';
@@ -2998,12 +3034,10 @@
         if (isLimited) {
           if (!custGroupMatches(rows, q).length) return;
           shown++;
-          html += '<div class="store-box' + (isBoth ? ' both-box' : '') + '">';
-          html += '<h3><span>' + escapeHtml(store) + ' <span class="id">(' + rows.length + ')</span></span>';
-          if (state.multiCust) {
-            html += '<button type="button" class="btn btn-ghost" data-select-all="' + (isBoth ? 'both' : 'extra') + '">בחר הכול</button>';
-          }
-          html += '</h3><div id="' + (isBoth ? 'bothCustList' : 'extraCustList') + '"></div></div>';
+          groupHtml += '<div class="store-box' + (isBoth ? ' both-box' : '') + '">' +
+            '<h3><span>' + escapeHtml(store) + ' <span class="id">(' + rows.length + ')</span></span>' +
+            (state.multiCust ? selectAll(isBoth ? 'both' : 'extra', 'בחר הכול') : '') +
+            '</h3><div class="cust-list" id="' + (isBoth ? 'bothCustList' : 'extraCustList') + '"></div></div>';
           return;
         }
 
@@ -3023,7 +3057,7 @@
         const countBits = [];
         if (sentRows) countBits.push(sentRows + ' שורות משלוח');
         if (returnRows) countBits.push(returnRows + ' שורות החזרה');
-        html += '<div class="store-box' + (merged ? ' active' : '') + '">' +
+        html = '<div class="store-box' + (merged ? ' active' : '') + (open ? ' is-open' : '') + '">' +
           '<div class="store-row">' +
           '<button type="button" class="store-pick" data-merge-store="' + escapeHtml(store) + '"' + (empty ? ' disabled' : '') + '>' +
           '<b>חנות ' + escapeHtml(store) + '</b>' +
@@ -3034,13 +3068,41 @@
         if (open) {
           html += '<div class="store-subs">' + rows.map(row => custOptHtml(row, selected)).join('') + '</div>';
         }
-        html += '</div>';
+        storeHtml += html + '</div>';
       });
-      html += '</div>';
+      html = '';
+      if (storeHtml) {
+        html += '<div class="store-zone">' +
+          (state.multiCust ? '<div class="zone-head">' + selectAll('stores', 'בחר את כל החנויות') + '</div>' : '') +
+          '<div class="store-strip">' + storeHtml + '</div></div>';
+      }
+      if (groupHtml) html += '<div class="cust-groups">' + groupHtml + '</div>';
       if (!shown) html = '<div class="extra-empty">לא נמצא לקוח או חנות שמתאימים לחיפוש.</div>';
       box.innerHTML = html;
       fillLimitedCustList('extraCustList', byStore.get('לקוחות נוספים') || [], selected, 'extra');
       fillLimitedCustList('bothCustList', byStore.get(BOTH_GROUP) || [], selected, 'both');
+      const storesAll = box.querySelector('[data-select-all="stores"]');
+      if (storesAll) {
+        const stores = storesMatching();
+        storesAll.checked = stores.length > 0 && stores.every(store => state.mergedStores.has(store));
+        storesAll.disabled = !stores.length;
+      }
+    }
+
+    // The stores that have data and fit the search: what "select all stores" acts on
+    function storesMatching() {
+      const q = (state.custQ || '').trim().toLowerCase();
+      const stats = collectCustomerStats();
+      return STORE_ORDER.filter(store => {
+        const rows = idsForStore(store).map(id => stats.get(id)).filter(Boolean);
+        if (!rows.some(r => r.sentRows + r.returnRows > 0)) return false;
+        return !q || ('חנות ' + store).toLowerCase().includes(q) || custGroupMatches(rows, q).length > 0;
+      });
+    }
+
+    // Nothing is shown until a customer is picked; "all customers" is the admin's explicit choice
+    function hasSelection() {
+      return state.allCust || (!!state.selectedIds && state.selectedIds.size > 0);
     }
 
     function custGroupMatches(rows, q) {
@@ -3054,12 +3116,12 @@
       const list = document.getElementById(listId);
       if (!list) return;
       const q = state.custQ;
-      const allBtn = document.querySelector('[data-select-all="' + kind + '"]');
-      if (allBtn) {
+      const allBox = document.querySelector('[data-select-all="' + kind + '"]');
+      if (allBox) {
         const matches = custGroupMatches(rows, q);
-        const allOn = matches.length > 0 && !!selected && matches.every(row => selected.has(row.id));
-        allBtn.textContent = allOn ? 'נקה בחירה' : ((q || '').trim() ? 'בחר את תוצאות החיפוש' : 'בחר הכול');
-        allBtn.disabled = !matches.length;
+        allBox.checked = matches.length > 0 && !!selected && matches.every(row => selected.has(row.id));
+        allBox.disabled = !matches.length;
+        allBox.nextElementSibling.textContent = (q || '').trim() ? 'בחר את תוצאות החיפוש' : 'בחר הכול';
       }
       const isOpen = kind === 'both' ? state.bothCustOpen : state.extraCustOpen;
       const view = extraCustVisible(rows, selected, q, isOpen);
@@ -3678,8 +3740,25 @@
       updateHighReturnButton();
       updateOverReturnButton();
 
-      const all = buildReport();
       const hasFiles = state.shipped.length + state.returns.length > 0;
+      if (hasFiles && !hasSelection()) {
+        // signed in but no customer picked yet: no report, only a way to pick one
+        document.getElementById('filtersBar').hidden = true;
+        document.getElementById('statsRow').hidden = true;
+        document.getElementById('reportScope').hidden = true;
+        document.getElementById('btnHighReturn').hidden = true;
+        updateActionButtons(0);
+        document.getElementById('statusText').textContent = '';
+        document.getElementById('reportArea').innerHTML = '<div class="empty-state onboarding">' +
+          '<div class="ob-mark">' + icon('chart') + '</div>' +
+          '<h3>בחרו לקוח כדי לראות דוח</h3>' +
+          '<p>הדוח יוצג אחרי שתבחרו לקוח או חנות מהרשימה.</p>' +
+          '<button type="button" class="btn btn-primary" data-open-import>בחירת לקוח</button>' +
+          '</div>';
+        return;
+      }
+
+      const all = buildReport();
       const hasData = all.length > 0;
       document.getElementById('filtersBar').hidden = !hasFiles;
       document.getElementById('statsRow').hidden = !hasData;
@@ -5197,6 +5276,8 @@ renderTable();
     });
 
     document.getElementById('btnCustAll').addEventListener('click', () => {
+      if (!isAdmin()) return;
+      state.allCust = true;
       state.selectedIds = null;
       state.combineStores = false;
       state.mergedStores.clear();
@@ -5298,6 +5379,7 @@ renderTable();
       const pick = e.target.closest('[data-pick-cust]');
       if (!pick) return;
       const ids = pick.dataset.pickCust === '__none__' ? [''] : pick.dataset.pickCust.split(',');
+      state.allCust = false;
       state.selectedIds = new Set(ids);
       // a store opens as one merged report of its two customer numbers
       state.combineStores = ids.length > 1;
@@ -5346,9 +5428,41 @@ renderTable();
       renderCustomerPicker();
     });
     document.getElementById('customerPicker').addEventListener('change', (e) => {
+      // "select all" of one category; the categories add up and each is cleared on its own
+      const allBox = e.target.closest('input[data-select-all]');
+      if (allBox) {
+        const kind = allBox.dataset.selectAll;
+        const on = allBox.checked;
+        if (!state.selectedIds) state.selectedIds = new Set();
+        let count = 0;
+        if (kind === 'stores') {
+          storesMatching().forEach(store => {
+            idsForStore(store).forEach(id => {
+              if (on) state.selectedIds.add(id);
+              else state.selectedIds.delete(id);
+            });
+            if (on) state.mergedStores.add(store);
+            else state.mergedStores.delete(store);
+            count++;
+          });
+        } else {
+          custGroupMatches(rowsInGroup(kind === 'both' ? BOTH_GROUP : 'לקוחות נוספים'), state.custQ).forEach(row => {
+            if (on) state.selectedIds.add(row.id);
+            else state.selectedIds.delete(row.id);
+            count++;
+          });
+        }
+        if (!state.selectedIds.size) state.selectedIds = null;
+        state.allCust = false;
+        state.combineStores = false;
+        renderAll();
+        toast(on ? 'נבחרו ' + count + (kind === 'stores' ? ' חנויות' : ' לקוחות') : 'הבחירה בקטגוריה נוקתה', 'ok');
+        return;
+      }
       const input = e.target.closest('input[data-cust]');
       if (!input) return;
       const id = input.dataset.cust === '__none__' ? '' : input.dataset.cust;
+      state.allCust = false;
       state.combineStores = false;
       if (input.checked) {
         if (state.multiCust) {
@@ -5392,23 +5506,6 @@ renderTable();
         fillLimitedCustList('bothCustList', rowsInGroup(BOTH_GROUP), state.selectedIds, 'both');
         return;
       }
-      const allBtn = e.target.closest('[data-select-all]');
-      if (allBtn) {
-        const isBoth = allBtn.dataset.selectAll === 'both';
-        const matches = custGroupMatches(rowsInGroup(isBoth ? BOTH_GROUP : 'לקוחות נוספים'), state.custQ);
-        if (!matches.length) return;
-        if (!state.selectedIds) state.selectedIds = new Set();
-        const allOn = matches.every(row => state.selectedIds.has(row.id));
-        matches.forEach(row => {
-          if (allOn) state.selectedIds.delete(row.id);
-          else state.selectedIds.add(row.id);
-        });
-        if (!state.selectedIds.size) state.selectedIds = null;
-        state.combineStores = false;
-        renderAll();
-        toast(allOn ? 'הבחירה נוקתה' : 'נבחרו ' + matches.length + ' לקוחות', 'ok');
-        return;
-      }
       const chev = e.target.closest('[data-toggle-store]');
       if (chev) {
         const name = chev.dataset.toggleStore;
@@ -5421,6 +5518,7 @@ renderTable();
       if (!btn) return;
       const store = btn.dataset.mergeStore;
       const ids = idsForStore(store);
+      state.allCust = false;
       if (state.multiCust) {
         if (!state.selectedIds) state.selectedIds = new Set();
         const on = state.mergedStores.has(store);
