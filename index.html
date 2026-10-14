@@ -242,45 +242,49 @@
       .import-grid { grid-template-columns: 1fr; }
     }
 
+    /* an upload area is one low row (icon, title, count, pick button) with its files listed under it */
     .drop-zone {
       border: 1.5px dashed #cfd7e8;
       border-radius: var(--radius);
-      padding: 26px 16px 18px;
-      text-align: center;
-      cursor: pointer;
+      padding: 12px 14px;
+      text-align: right;
       transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
-      background: linear-gradient(180deg, #fff 0%, #f7f9ff 100%);
+      background: #fff;
       position: relative;
       overflow: hidden;
       min-width: 0;
     }
-    .drop-zone:hover, .drop-zone.drag-over {
+    .dz-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .dz-text { flex: 1; min-width: 0; }
+    .drop-zone:hover { border-color: #b9c5e2; background: #fbfcff; }
+    .drop-zone.drag-over {
       border-color: var(--accent);
       border-style: solid;
       background: var(--accent-light);
       box-shadow: 0 0 0 4px var(--accent-glow);
     }
-    .drop-zone.returns:hover, .drop-zone.returns.drag-over {
+    .drop-zone.returns.drag-over {
       border-color: var(--danger);
       background: var(--danger-light);
       box-shadow: 0 0 0 4px rgba(224,49,49,0.14);
     }
     .drop-zone input[type="file"] { display: none; }
     .drop-zone .dz-icon {
-      width: 48px; height: 48px;
-      margin: 0 auto 10px;
-      border-radius: 14px;
+      flex-shrink: 0;
+      width: 38px; height: 38px;
+      border-radius: 11px;
       display: flex; align-items: center; justify-content: center;
       background: var(--accent-light);
       color: var(--accent);
     }
-    .drop-zone .dz-icon svg { width: 24px; height: 24px; }
+    .drop-zone .dz-icon svg { width: 20px; height: 20px; }
     .drop-zone.returns .dz-icon { background: var(--danger-light); color: var(--danger); }
-    .drop-zone h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
-    .drop-zone p { color: var(--muted); font-size: 0.82rem; }
+    .drop-zone h3 { font-size: 0.95rem; font-weight: 800; color: var(--navy); line-height: 1.3; }
+    .drop-zone p { color: var(--muted); font-size: 0.75rem; font-weight: 500; }
+    .drop-zone .dz-pick { flex-shrink: 0; }
     .drop-zone .badge {
+      flex-shrink: 0;
       display: inline-block;
-      margin-top: 10px;
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 0.78rem;
@@ -358,6 +362,18 @@
     }
     .file-chip button:hover { background: #ffd0d0; color: var(--danger-hover); }
     .file-chip.warn { border-color: #ffd8a8; background: var(--amber-light); }
+    .file-list:empty { display: none; }
+    .file-chip .chip-acts { display: flex; gap: 5px; flex-shrink: 0; }
+    .file-chip button.chip-edit { background: #eef2f8; color: var(--navy); font-size: 0.85rem; }
+    .file-chip button.chip-edit:hover { background: var(--accent-light); color: var(--accent); }
+    .file-chip .note {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      margin-top: 4px; padding: 3px 8px; border-radius: 7px;
+      background: #f4f6fb; color: var(--text); font-size: 0.76rem; font-weight: 500;
+      white-space: pre-line; cursor: pointer;
+    }
+    .file-chip .note.open { -webkit-line-clamp: unset; display: block; }
+    .file-chip .fwarn { display: block; margin-top: 3px; color: var(--amber); font-size: 0.74rem; font-weight: 700; }
 
     .hint {
       margin-top: 12px;
@@ -368,6 +384,56 @@
       border-radius: var(--radius-sm);
       padding: 10px 12px;
     }
+    details.hint { padding: 0; }
+    details.hint > summary {
+      cursor: pointer; padding: 9px 12px; font-weight: 700; color: var(--navy); list-style: none;
+    }
+    details.hint > summary::-webkit-details-marker { display: none; }
+    details.hint > summary::after { content: ' ▾'; color: var(--muted); }
+    details.hint[open] > summary::after { content: ' ▴'; }
+    details.hint > div { padding: 0 12px 10px; }
+
+    /* packages: one chip per period, the open one filled */
+    .pkg-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pkg-bar .pkg-label { font-size: 0.8rem; font-weight: 800; color: var(--navy); margin-inline-end: 2px; }
+    .pkg-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; min-height: 34px;
+      border: 1px solid #d3dae8; border-radius: 999px; background: #fff;
+      font: inherit; font-size: 0.84rem; font-weight: 700; color: var(--navy); cursor: pointer;
+    }
+    .pkg-chip:hover { border-color: #b7c4f0; background: var(--accent-light); }
+    .pkg-chip.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .pkg-chip .pkg-tag { font-size: 0.68rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: #eef2f8; color: var(--muted); }
+    .pkg-chip.active .pkg-tag { background: rgba(255,255,255,0.18); color: #fff; }
+    .pkg-chip.add { border-style: dashed; color: var(--accent); }
+    .pkg-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-inline-start: auto; }
+
+    /* the trash: files taken out of the reports, kept until the admin deletes them */
+    details.trash-box { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fbfcfe; }
+    details.trash-box > summary { cursor: pointer; padding: 9px 12px; font-size: 0.84rem; font-weight: 800; color: var(--navy); }
+    .trash-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap;
+      padding: 8px 12px; border-top: 1px solid var(--border); font-size: 0.82rem;
+    }
+    .trash-row .info { min-width: 0; flex: 1 1 220px; }
+    .trash-row b { display: block; color: var(--navy); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trash-row span { color: var(--muted); font-size: 0.74rem; font-weight: 600; }
+    .trash-row .acts { display: flex; gap: 6px; }
+
+    .ov-files { margin: 8px 0 0; padding-inline-start: 18px; font-size: 0.86rem; }
+    .ov-files li { margin-bottom: 4px; }
+    .ov-files small { display: block; color: var(--amber); font-weight: 700; }
+    .ov-actions { display: flex; flex-direction: column; gap: 8px; padding: 0 18px 16px; }
+    .ov-actions .btn { width: 100%; }
+    .ov-actions small { color: var(--muted); font-size: 0.74rem; font-weight: 600; margin-top: -4px; text-align: center; }
+    .modal-text { padding: 14px 18px; font-size: 0.9rem; color: var(--text); }
+    .field textarea {
+      font-family: inherit; font-size: 0.92rem; color: var(--text); padding: 10px 12px; min-height: 84px; resize: vertical;
+      border: 1px solid #d3dae8; border-radius: var(--radius-sm); outline: none; width: 100%;
+    }
+    .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .field .readonly { font-size: 0.8rem; color: var(--muted); font-weight: 600; word-break: break-all; direction: ltr; text-align: right; unicode-bidi: plaintext; }
 
     .stats {
       display: grid;
@@ -1621,7 +1687,9 @@
       .modal-head { padding: 14px 14px 10px; }
       .modal-box th, .modal-box td { padding: 9px 10px; font-size: 0.86rem; }
       .import-modal .modal-body { padding: 12px 12px 4px; }
-      .drop-zone { padding: 16px 12px 12px; }
+      .drop-zone { padding: 10px 10px; }
+      .drop-zone p { display: none; }
+      .pkg-tools { margin-inline-start: 0; width: 100%; }
       .picker-actions { width: 100%; }
       .picker-actions .btn { flex: 1 1 auto; }
       .store-grid, .store-strip, .cust-groups { grid-template-columns: 1fr; }
@@ -1880,33 +1948,52 @@
         <button type="button" class="modal-close" id="importModalClose" aria-label="סגור">×</button>
       </div>
       <div class="modal-body">
+        <div class="pkg-bar" id="pkgBar" hidden></div>
         <div class="import-grid admin-only">
           <div class="drop-zone" id="dropShipped" data-kind="shipped">
             <input type="file" id="fileShipped" accept=".xlsx,.xls,.xlsm,.csv" multiple>
-            <span class="dz-icon" data-icon="upload"></span>
-            <h3>נשלח לחנות</h3>
-            <p>גררו לכאן קבצים או לחצו לבחירה · אפשר כמה אקסלים</p>
-            <span class="badge" id="badgeShipped">0 קבצים</span>
+            <div class="dz-row">
+              <span class="dz-icon" data-icon="upload"></span>
+              <div class="dz-text">
+                <h3>נשלח לחנות</h3>
+                <p>גררו לכאן קבצים, או לחצו לבחירה</p>
+              </div>
+              <span class="badge" id="badgeShipped">אין קבצים</span>
+              <span class="btn btn-ghost btn-sm dz-pick">בחר קבצים</span>
+            </div>
             <div class="file-list" id="listShipped"></div>
           </div>
           <div class="drop-zone returns" id="dropReturns" data-kind="returns">
             <input type="file" id="fileReturns" accept=".xlsx,.xls,.xlsm,.csv" multiple>
-            <span class="dz-icon" data-icon="return"></span>
-            <h3>החזרות מהחנות</h3>
-            <p>גררו לכאן קבצים או לחצו לבחירה · גם אקסל עם הרבה לקוחות</p>
-            <span class="badge" id="badgeReturns">0 קבצים</span>
+            <div class="dz-row">
+              <span class="dz-icon" data-icon="return"></span>
+              <div class="dz-text">
+                <h3>החזרות מהחנות</h3>
+                <p>גררו לכאן קבצים, או לחצו לבחירה</p>
+              </div>
+              <span class="badge" id="badgeReturns">אין קבצים</span>
+              <span class="btn btn-ghost btn-sm dz-pick">בחר קבצים</span>
+            </div>
             <div class="file-list" id="listReturns"></div>
           </div>
         </div>
-        <div class="hint admin-only">
-          הקבצים נשמרים בשרת, וכל המשתמשים רואים אותם. העמודות מזוהות אוטומטית: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות</b> / <b>כמות שהוחזרה</b>,
-          <b>תאור משפחה</b>, <b>תעודה</b>, <b>תאריך</b>, <b>מס. לקוח</b> ו־<b>שם לקוח</b>.
-          בהחזרות אפשר גם קובץ ישן (מספר ושם בראש הקובץ לכל השורות) וגם אקסל עם הרבה עמודות
-          שבו כל שורה היא החזרה: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות שהוחזרה</b>, <b>תעודה</b>,
-          <b>מס. לקוח</b> ו־<b>שם לקוח</b> — כולל הרבה לקוחות באותו קובץ.
-          אפשר להעלות קבצים של הרבה לקוחות יחד, ואז לבחור למי להפיק את הדוח.
-          בדוח המסכם, לחיצה על הכמות ב־<b>נשלח</b> או ב־<b>חזר</b> מציגה את התעודות.
-        </div>
+        <details class="trash-box admin-only" id="trashBox" hidden>
+          <summary id="trashTitle">קבצים שנמחקו</summary>
+          <div id="trashList"></div>
+        </details>
+        <details class="hint admin-only">
+          <summary>איזה קבצים אפשר להעלות?</summary>
+          <div>
+            הקבצים נשמרים בשרת, וכל המשתמשים רואים אותם. העמודות מזוהות אוטומטית: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות</b> / <b>כמות שהוחזרה</b>,
+            <b>תאור משפחה</b>, <b>תעודה</b>, <b>תאריך</b>, <b>מס. לקוח</b> ו־<b>שם לקוח</b>.
+            בהחזרות אפשר גם קובץ ישן (מספר ושם בראש הקובץ לכל השורות) וגם אקסל עם הרבה עמודות
+            שבו כל שורה היא החזרה: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות שהוחזרה</b>, <b>תעודה</b>,
+            <b>מס. לקוח</b> ו־<b>שם לקוח</b> — כולל הרבה לקוחות באותו קובץ.
+            אפשר להעלות קבצים של הרבה לקוחות יחד, ואז לבחור למי להפיק את הדוח.
+            תעודה שכבר קיימת בקובץ אחר באותה חבילה לא נספרת פעמיים: בהעלאה תתבקשו לבחור מה לעשות איתה.
+            בדוח המסכם, לחיצה על הכמות ב־<b>נשלח</b> או ב־<b>חזר</b> מציגה את התעודות.
+          </div>
+        </details>
         <div class="no-print customer-block" id="customerCard" hidden>
           <div class="cust-search-wrap">
             <input type="search" class="extra-search" id="custSearch" placeholder="חיפוש לקוח או חנות, לפי שם או מספר...">
@@ -1997,6 +2084,89 @@
           <button type="submit" class="btn btn-primary">שמירת הסיסמה</button>
         </div>
       </form>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="fileEditModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="fileEditTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="fileEditTitle">פרטי הקובץ</h3>
+          <p id="fileEditSub"></p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <form class="form-grid" id="fileEditForm" autocomplete="off">
+        <div class="field wide">
+          <label for="feTitle">שם הקובץ</label>
+          <input type="text" id="feTitle" maxlength="120">
+        </div>
+        <div class="field wide">
+          <label for="feNote">הערה</label>
+          <textarea id="feNote" maxlength="1000" placeholder="למשל: חסרות תעודות מ־15.09"></textarea>
+        </div>
+        <div class="field wide">
+          <label for="fePackage">חבילה</label>
+          <select id="fePackage"></select>
+          <small>אפשר להעביר את הקובץ לחבילה אחרת. בדיקת התעודות הכפולות רצה גם כאן.</small>
+        </div>
+        <div class="field wide">
+          <label>השם המקורי של הקובץ</label>
+          <div class="readonly" id="feOriginal"></div>
+        </div>
+        <div class="form-error wide" id="fileEditError" hidden></div>
+        <div class="form-actions wide">
+          <button type="submit" class="btn btn-primary" id="feSave">שמירה</button>
+          <button type="button" class="btn btn-ghost" data-close-modal>ביטול</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="pkgModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="pkgTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="pkgTitle">חבילה חדשה</h3>
+          <p>חבילה היא תקופה עם קבצי נשלח והחזרות משלה. הדוחות נבנים מחבילה אחת בכל פעם.</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <form class="form-grid" id="pkgForm" autocomplete="off">
+        <div class="field wide">
+          <label for="pkgName">שם החבילה</label>
+          <input type="text" id="pkgName" maxlength="60" placeholder="למשל: קיץ 2026">
+        </div>
+        <label class="check-line wide"><input type="checkbox" id="pkgHidden"> מוסתרת ממשתמשים (רק מנהלים רואים אותה)</label>
+        <label class="check-line wide" id="pkgMainLine"><input type="checkbox" id="pkgMain"> חבילה ראשית: נפתחת לכולם בכניסה</label>
+        <div class="form-actions wide" id="pkgOrder">
+          <button type="button" class="btn btn-ghost btn-sm" data-pkg-move="earlier" title="מקום אחד קודם ברשימה">→ הזזה ימינה</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-pkg-move="later" title="מקום אחד אחר כך ברשימה">הזזה שמאלה ←</button>
+        </div>
+        <div class="form-error wide" id="pkgError" hidden></div>
+        <div class="form-actions wide">
+          <button type="submit" class="btn btn-primary" id="pkgSave">יצירת החבילה</button>
+          <button type="button" class="btn btn-ghost" data-close-modal>ביטול</button>
+          <button type="button" class="btn btn-danger" id="pkgDelete" hidden>מחיקת החבילה</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="overlapModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="overlapTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="overlapTitle">חלק מהתעודות כבר נמצאות בחבילה</h3>
+          <p id="overlapSub"></p>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-text" id="overlapText"></div>
+        <div class="ov-actions">
+          <button type="button" class="btn btn-primary" data-ov="new" id="ovNew"></button>
+          <button type="button" class="btn btn-ghost" data-ov="replace" id="ovReplace"></button>
+          <small id="ovReplaceNote">הקובץ הקיים יעבור לסל, ואפשר להחזיר אותו משם.</small>
+          <button type="button" class="btn btn-ghost" data-ov="cancel">ביטול</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="modal-backdrop no-print" id="docModal">
@@ -2105,6 +2275,9 @@
       bothCustOpen: false,
       showFilters: false,
       sev: '',
+      packages: [],   // the periods the admin made; reports come from one of them (pkgId)
+      pkgId: null,
+      trash: [],      // admin: files of the open package that are in its trash (no rows loaded)
       ready: false
     };
 
@@ -2314,7 +2487,13 @@
       DEVICE_REQUIRED: 'הגרסה שבדפדפן ישנה. רעננו את הדף ונסו שוב',
       TOO_MANY_DEVICES: 'יש כבר כמה מכשירים שממתינים לאישור עבור המשתמש הזה. פנו למנהל',
       OWN_DEVICE: 'אי אפשר להסיר את המכשיר שממנו אתם מחוברים עכשיו',
-      NOT_FOUND: 'הפריט לא נמצא. רעננו את הנתונים'
+      NOT_FOUND: 'הפריט לא נמצא. רעננו את הנתונים',
+      BAD_NAME: 'צריך לתת שם לחבילה',
+      NAME_TAKEN: 'כבר יש חבילה בשם הזה',
+      MAIN_HIDDEN: 'החבילה הראשית לא יכולה להיות מוסתרת: היא נפתחת לכולם בכניסה',
+      PACKAGE_MAIN: 'אי אפשר למחוק את החבילה הראשית. סמנו קודם חבילה אחרת כראשית',
+      PACKAGE_NOT_EMPTY: 'אפשר למחוק רק חבילה ריקה. העבירו או מחקו קודם את הקבצים שלה, גם מהסל',
+      NOT_IN_TRASH: 'אפשר למחוק לצמיתות רק קובץ שנמצא בסל'
     };
 
     function errText(err) {
@@ -2369,6 +2548,10 @@
     function clearLocalData() {
       state.shipped = [];
       state.returns = [];
+      state.trash = [];
+      state.packages = [];
+      state.pkgId = null;
+      fileCache.clear();
       state.hiddenSkus.clear();
       state.selectedIds = null;
       state.combineStores = false;
@@ -2451,80 +2634,148 @@
       }
     }
 
-    let syncing = null;
+    let syncQueue = Promise.resolve();
     let lastSync = 0;
 
-    // Brings the list of uploaded files from the server and downloads the ones not loaded yet
+    // Every file loaded in this session, by id, so going back to a package does not download it again.
+    // Emptied on sign-out.
+    const fileCache = new Map();
+
+    // Brings the packages and the open package's files from the server and downloads the rows not
+    // loaded yet. Calls run one after another, so a sync never overwrites a newer one.
     function syncData(showOverlay) {
-      if (!syncing) syncing = doSync(showOverlay).finally(() => { syncing = null; });
-      return syncing;
+      const run = syncQueue.catch(() => {}).then(() => doSync(showOverlay));
+      syncQueue = run;
+      return run;
     }
 
-    async function doSync(showOverlay) {
+    function fileFromMeta(meta) {
+      let file = fileCache.get(meta.id);
+      if (!file) {
+        file = { id: meta.id, items: null };
+        fileCache.set(meta.id, file);
+      }
+      Object.assign(file, {
+        kind: meta.kind, name: meta.name, size: meta.size, warning: meta.warning || '', rows: meta.rows || 0,
+        chunks: meta.chunks || 0, title: meta.title || '', note: meta.note || '',
+        createdAt: meta.created_at || '', deletedAt: meta.deleted_at || ''
+      });
+      return file;
+    }
+
+    // Downloads the rows of the given files (those not in memory yet), four requests at a time
+    async function loadRows(files, showOverlay) {
+      const tasks = [];
+      const parts = new Map();
+      files.forEach(f => {
+        if (f.items) return;
+        const p = new Array(f.chunks);
+        parts.set(f.id, p);
+        for (let seq = 0; seq < f.chunks; seq++) tasks.push({ p, id: f.id, seq });
+      });
+      if (!parts.size) return;
       const overlay = document.getElementById('loadingOverlay');
       const msg = document.getElementById('loadingMsg');
-      let shown = false;
+      const total = tasks.length;
+      const shown = showOverlay && total > 0 && !overlay.classList.contains('show');
+      if (shown) {
+        msg.textContent = 'טוען נתונים מהשרת...';
+        overlay.classList.add('show');
+      }
       try {
-        const settingsChanged = await loadSettings();
-        if (isAdmin()) await loadDevices();
-        const list = await call('svr_files_list') || [];
-        const have = new Map();
-        state.shipped.concat(state.returns).forEach(f => have.set(f.id, f));
-        const tasks = [];
-        const entries = list.map(meta => {
-          const old = have.get(meta.id);
-          if (old) return { meta, file: old };
-          const parts = new Array(meta.chunks);
-          for (let seq = 0; seq < meta.chunks; seq++) tasks.push({ parts, id: meta.id, seq });
-          return { meta, parts };
-        });
-        const total = tasks.length;
-        if (total && showOverlay) {
-          msg.textContent = 'טוען נתונים מהשרת...';
-          overlay.classList.add('show');
-          shown = true;
-        }
         let done = 0;
         const worker = async () => {
           while (tasks.length) {
             const task = tasks.shift();
-            task.parts[task.seq] = await call('svr_file_chunk', { p_file: task.id, p_seq: task.seq }) || [];
+            task.p[task.seq] = await call('svr_file_chunk', { p_file: task.id, p_seq: task.seq }) || [];
             done++;
-            msg.textContent = 'טוען נתונים מהשרת... ' + Math.round(done / total * 100) + '%';
+            if (shown) msg.textContent = 'טוען נתונים מהשרת... ' + Math.round(done / total * 100) + '%';
           }
         };
         await Promise.all([worker(), worker(), worker(), worker()]);
-        const next = { shipped: [], returns: [] };
-        entries.forEach(entry => {
-          const meta = entry.meta;
-          const file = entry.file || {
-            id: meta.id, name: meta.name, size: meta.size, warning: meta.warning || '',
-            items: [].concat(...entry.parts).map(unpackItem)
-          };
-          (next[meta.kind] || next.shipped).push(file);
+        files.forEach(f => {
+          const p = parts.get(f.id);
+          if (p) f.items = [].concat(...p).map(unpackItem);
         });
-        const ids = (s) => s.shipped.concat(s.returns).map(f => f.id).join(',');
-        const changed = ids(next) !== ids(state);
-        state.shipped = next.shipped;
-        state.returns = next.returns;
-        lastSync = Date.now();
-        if (changed || settingsChanged) renderAll();
-        return changed;
       } finally {
         if (shown) overlay.classList.remove('show');
       }
     }
 
-    async function uploadFile(kind, file, parsed, onProgress) {
-      const id = await call('svr_file_begin', { p_kind: kind, p_name: file.name, p_size: file.size, p_warning: parsed.warning || '' });
-      const total = Math.max(1, Math.ceil(parsed.items.length / CHUNK_ROWS));
+    // The files of one package: the ones in use with their rows, and (admin) the ones in its trash
+    async function fetchPackage(pkgId, showOverlay) {
+      const list = await call('svr_files_list', { p_package: pkgId }) || [];
+      const files = list.map(fileFromMeta);
+      const live = files.filter(f => !f.deletedAt);
+      await loadRows(live, showOverlay);
+      return {
+        shipped: live.filter(f => f.kind !== 'returns'),
+        returns: live.filter(f => f.kind === 'returns'),
+        trash: files.filter(f => f.deletedAt)
+      };
+    }
+
+    function currentPackage() {
+      return state.packages.find(p => p.id === state.pkgId) || null;
+    }
+
+    async function doSync(showOverlay) {
+      const settingsChanged = await loadSettings();
+      if (isAdmin()) await loadDevices();
+      const packages = await call('svr_packages_list') || [];
+      const pkgChanged = JSON.stringify(packages) !== JSON.stringify(state.packages);
+      state.packages = packages;
+      // the open package was deleted or hidden: back to the main one
+      if (!packages.some(p => p.id === state.pkgId)) {
+        const main = packages.find(p => p.main) || packages[0];
+        state.pkgId = main ? main.id : null;
+      }
+      const next = state.pkgId ? await fetchPackage(state.pkgId, showOverlay) : { shipped: [], returns: [], trash: [] };
+      const sig = (s) => [s.shipped, s.returns, s.trash].map(list =>
+        list.map(f => f.id + ':' + f.title + ':' + f.note).join(',')).join('|');
+      const changed = sig(next) !== sig(state);
+      state.shipped = next.shipped;
+      state.returns = next.returns;
+      state.trash = next.trash;
+      lastSync = Date.now();
+      if (changed || settingsChanged || pkgChanged) renderAll();
+      return changed;
+    }
+
+    // Opens another package: its files are downloaded the first time only
+    async function switchPackage(id) {
+      if (id === state.pkgId) return;
+      state.pkgId = id;
+      clearDateFilters();
+      state.shipped = [];
+      state.returns = [];
+      state.trash = [];
+      renderAll();
+      try {
+        await syncData(true);
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    }
+
+    async function uploadFile(f, onProgress) {
+      const id = await call('svr_file_begin', {
+        p_package: f.pkg, p_kind: f.kind, p_name: f.name, p_size: f.size || 0,
+        p_warning: f.warning || '', p_title: f.title || '', p_note: f.note || ''
+      });
+      const total = Math.max(1, Math.ceil(f.items.length / CHUNK_ROWS));
       for (let i = 0; i < total; i++) {
-        const rows = parsed.items.slice(i * CHUNK_ROWS, (i + 1) * CHUNK_ROWS).map(packItem);
+        const rows = f.items.slice(i * CHUNK_ROWS, (i + 1) * CHUNK_ROWS).map(packItem);
         await call('svr_file_append', { p_file: id, p_seq: i, p_items: rows });
-        onProgress(Math.round((i + 1) / total * 100));
+        if (onProgress) onProgress(Math.round((i + 1) / total * 100));
       }
       await call('svr_file_commit', { p_file: id });
-      return id;
+      const file = fileFromMeta({
+        id, kind: f.kind, name: f.name, size: f.size || 0, warning: f.warning || '', rows: f.items.length,
+        chunks: total, title: f.title || '', note: f.note || '', created_at: new Date().toISOString()
+      });
+      file.items = f.items;
+      return file;
     }
 
     function normalizeHeader(h) {
@@ -3556,28 +3807,148 @@
     function renderFileList(kind) {
       const list = document.getElementById(kind === 'shipped' ? 'listShipped' : 'listReturns');
       const files = state[kind];
+      const overlaps = fileOverlapNotes(files);
       list.innerHTML = files.map(f => {
-        const warn = f.warning ? ' warn' : '';
+        const notes = overlaps.get(f.id) || [];
+        const warn = f.warning || notes.length ? ' warn' : '';
+        const span = fileSpan(f);
         const cust = fileCustomerMeta(f.items);
-        const meta = f.items.length + ' שורות' + (cust ? ' · ' + cust : '') + (f.warning ? ' · ' + f.warning : '');
-        const shortName = shortenFileName(f.name);
+        const bits = [];
+        if (span.min) bits.push(span.min === span.max ? shortDate(span.min) : shortDate(span.min) + '–' + shortDate(span.max));
+        bits.push(countText(f.items.length, 'שורה אחת', 'שורות'));
+        if (cust) bits.push(cust);
+        if (f.createdAt) bits.push('הועלה ' + fmtDay(f.createdAt));
         return '<div class="file-chip' + warn + '">' +
           '<div class="info">' +
-            '<span class="name" title="' + escapeHtml(f.name) + '">' + escapeHtml(shortName) + '</span>' +
-            '<span class="meta">' + escapeHtml(meta) + '</span>' +
+            '<span class="name" title="' + escapeHtml(f.name) + '">' + escapeHtml(fileDisplayName(f)) + '</span>' +
+            '<span class="meta" title="' + escapeHtml(bits.join(' · ')) + '">' + escapeHtml(bits.join(' · ')) + '</span>' +
+            (f.note ? '<span class="note" data-note title="' + escapeHtml(f.note) + '">' + escapeHtml(f.note) + '</span>' : '') +
+            (f.warning ? '<span class="fwarn">' + escapeHtml(f.warning) + '</span>' : '') +
+            notes.map(n => '<span class="fwarn">' + escapeHtml(n) + '</span>').join('') +
           '</div>' +
-          (isAdmin() ? '<button type="button" data-kind="' + kind + '" data-id="' + f.id + '" aria-label="הסר" title="הסרת הקובץ לכל המשתמשים">×</button>' : '') +
+          (isAdmin()
+            ? '<div class="chip-acts">' +
+                '<button type="button" class="chip-edit" data-file-act="edit" data-id="' + f.id + '" aria-label="עריכה" title="שינוי שם, הערה או חבילה">✎</button>' +
+                '<button type="button" data-file-act="trash" data-id="' + f.id + '" aria-label="העברה לסל" title="העברה לסל (אפשר להחזיר משם)">×</button>' +
+              '</div>'
+            : '') +
           '</div>';
       }).join('');
     }
 
-    function shortenFileName(name) {
-      const s = String(name || '');
-      const extMatch = s.match(/(\.[^.]+)$/);
-      const ext = extMatch ? extMatch[1] : '';
-      const base = ext ? s.slice(0, -ext.length) : s;
-      if (base.length <= 42) return s;
-      return base.slice(0, 28) + '…' + base.slice(-8) + ext;
+    // The name shown for a file: the admin's name for it, or the Excel name without the number the
+    // export puts in front and the long code it puts at the end
+    // ("2080231משלוח סחורה ללקוחות6F…2DD3C3C2.xlsx" → "משלוח סחורה ללקוחות")
+    function cleanFileName(name) {
+      const full = String(name || '');
+      let s = full.replace(/\.[a-z0-9]{2,5}$/i, '');
+      const tail = s.match(/[\s_.-]*([0-9a-f][0-9a-f-]{7,})$/i);
+      if (tail && /[a-f]/i.test(tail[1]) && tail[1].replace(/-/g, '').length >= 8) s = s.slice(0, tail.index);
+      s = s.replace(/^[\s_.-]*\d{5,}[\s_.-]*/, '').replace(/_+/g, ' ').replace(/\s+/g, ' ').trim();
+      return s || full;
+    }
+
+    function fileDisplayName(f) {
+      return f.title || cleanFileName(f.name);
+    }
+
+    function fileCountText(n) {
+      return n === 0 ? 'אין קבצים' : n === 1 ? 'קובץ אחד' : n + ' קבצים';
+    }
+
+    // "שורה אחת" / "12 שורות"
+    function countText(n, one, many) {
+      return n === 1 ? one : fmtNum(n) + ' ' + many;
+    }
+
+    // 20260930 → 30.09.26
+    function shortDate(key) {
+      const s = String(key);
+      return s.slice(6, 8) + '.' + s.slice(4, 6) + '.' + s.slice(2, 4);
+    }
+
+    function fmtDay(iso) {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.');
+    }
+
+    // First and last date in a file, and the same for its rows that have no document number
+    function fileSpan(f) {
+      if (f._span) return f._span;
+      const span = { min: 0, max: 0, noDoc: 0, noDocMin: 0, noDocMax: 0 };
+      (f.items || []).forEach(it => {
+        const key = dateKey(it.date);
+        const hasDoc = !!docKey(it);
+        if (!hasDoc) span.noDoc++;
+        if (!key) return;
+        if (!span.min || key < span.min) span.min = key;
+        if (key > span.max) span.max = key;
+        if (!hasDoc) {
+          if (!span.noDocMin || key < span.noDocMin) span.noDocMin = key;
+          if (key > span.noDocMax) span.noDocMax = key;
+        }
+      });
+      f._span = span;
+      return span;
+    }
+
+    // ---------- the same document in two files ----------
+    // A document number appears in one export only, so a document found in two files of the same
+    // kind in one package would be counted twice.
+    function docKey(item) {
+      return String(item.doc || '').trim();
+    }
+
+    function fileDocs(f) {
+      if (!f._docs) {
+        const docs = new Set();
+        (f.items || []).forEach(it => { const k = docKey(it); if (k) docs.add(k); });
+        f._docs = docs;
+      }
+      return f._docs;
+    }
+
+    // Which of these rows' documents are in the given files already, and in which file
+    function overlapWith(items, files) {
+      const docs = new Set();
+      items.forEach(it => { const k = docKey(it); if (k) docs.add(k); });
+      const dup = new Set();
+      const hits = [];
+      files.forEach(f => {
+        let n = 0;
+        fileDocs(f).forEach(d => { if (docs.has(d)) { n++; dup.add(d); } });
+        if (n) hits.push({ file: f, n, extra: fileDocs(f).size - n });
+      });
+      return { docs, dup, hits };
+    }
+
+    // Warnings shown on files that already overlap (for example from before this check existed)
+    function fileOverlapNotes(files) {
+      const notes = new Map();
+      const add = (f, text) => { if (!notes.has(f.id)) notes.set(f.id, []); notes.get(f.id).push(text); };
+      files.forEach((a, i) => {
+        files.forEach((b, j) => {
+          if (i === j) return;
+          if (j > i) {
+            let n = 0;
+            const small = fileDocs(a).size <= fileDocs(b).size ? [fileDocs(a), fileDocs(b)] : [fileDocs(b), fileDocs(a)];
+            small[0].forEach(d => { if (small[1].has(d)) n++; });
+            if (n) {
+              const what = n === 1 ? 'תעודה אחת נמצאת גם ב«' : n + ' תעודות נמצאות גם ב«';
+              const tail = n === 1 ? '» ונספרת פעמיים' : '» ונספרות פעמיים';
+              add(a, what + fileDisplayName(b) + tail);
+              add(b, what + fileDisplayName(a) + tail);
+            }
+          }
+          const sa = fileSpan(a);
+          const sb = fileSpan(b);
+          if (sa.noDoc && sa.noDocMin && sb.min && sa.noDocMin <= sb.max && sa.noDocMax >= sb.min) {
+            add(a, countText(sa.noDoc, 'שורה אחת', 'שורות') + ' בלי מספר תעודה, בתאריכים שחופפים ל«' + fileDisplayName(b) + '»');
+          }
+        });
+      });
+      return notes;
     }
 
     function fileCustomerMeta(items) {
@@ -3605,12 +3976,64 @@
     }
 
     function updateBadges() {
-      document.getElementById('badgeShipped').textContent = state.shipped.length + ' קבצים';
-      document.getElementById('badgeReturns').textContent = state.returns.length + ' קבצים';
+      document.getElementById('badgeShipped').textContent = fileCountText(state.shipped.length);
+      document.getElementById('badgeReturns').textContent = fileCountText(state.returns.length);
       const n = state.shipped.length + state.returns.length;
       const chip = document.getElementById('manageFileCount');
       chip.hidden = n === 0;
       chip.textContent = String(n);
+    }
+
+    function kindLabel(kind) {
+      return kind === 'returns' ? 'החזרות' : 'נשלח';
+    }
+
+    // Admin: the files of the open package that are in its trash
+    function renderTrash() {
+      const box = document.getElementById('trashBox');
+      const files = isAdmin() ? state.trash.slice().sort((a, b) => String(b.deletedAt).localeCompare(String(a.deletedAt))) : [];
+      box.hidden = files.length === 0;
+      document.getElementById('trashTitle').textContent = 'קבצים שנמחקו (' + files.length + ')';
+      document.getElementById('trashList').innerHTML = files.map(f =>
+        '<div class="trash-row">' +
+          '<div class="info">' +
+            '<b title="' + escapeHtml(f.name) + '">' + escapeHtml(fileDisplayName(f)) + '</b>' +
+            '<span>' + kindLabel(f.kind) + ' · ' + countText(f.rows, 'שורה אחת', 'שורות') + ' · נמחק ' + escapeHtml(fmtDay(f.deletedAt)) + '</span>' +
+          '</div>' +
+          '<div class="acts">' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-trash-act="restore" data-id="' + f.id + '">שחזר</button>' +
+            '<button type="button" class="btn btn-danger btn-sm" data-trash-act="purge" data-id="' + f.id + '">מחק לצמיתות</button>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+    }
+
+    // The packages as chips. Users see it only when there is more than one; admins always,
+    // with the buttons to make and set up packages.
+    function renderPkgBar() {
+      const bar = document.getElementById('pkgBar');
+      const admin = isAdmin();
+      const pkgs = state.packages;
+      bar.hidden = !(admin ? pkgs.length > 0 : pkgs.length > 1);
+      if (bar.hidden) { bar.innerHTML = ''; return; }
+      bar.innerHTML = '<span class="pkg-label">חבילה:</span>' + pkgs.map(p => {
+        const tags = [];
+        if (admin && p.main) tags.push('ראשית');
+        if (p.hidden) tags.push('מוסתרת');
+        return '<button type="button" class="pkg-chip' + (p.id === state.pkgId ? ' active' : '') + '" data-pkg="' + escapeHtml(p.id) + '">' +
+          escapeHtml(p.name) + tags.map(t => '<span class="pkg-tag">' + t + '</span>').join('') + '</button>';
+      }).join('') +
+      (admin
+        ? '<span class="pkg-tools">' +
+            '<button type="button" class="pkg-chip add" data-pkg-new>+ חבילה חדשה</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-pkg-edit>הגדרות החבילה</button>' +
+          '</span>'
+        : '');
+    }
+
+    function packageName() {
+      const p = currentPackage();
+      return p ? p.name : '';
     }
 
     function updateActionButtons(visibleCount) {
@@ -3784,11 +4207,23 @@
 
     function emptyStateHtml() {
       if (!isAdmin()) {
+        const several = state.packages.length > 1;
         return '<div class="empty-state onboarding">' +
           '<div class="ob-mark">' + icon('chart') + '</div>' +
           '<h3>עדיין אין נתונים</h3>' +
-          '<p>המנהל עוד לא העלה קבצים. כשיועלו, הם יופיעו כאן.</p>' +
-          '<button type="button" class="btn btn-primary" data-refresh>רענון נתונים</button>' +
+          (several
+            ? '<p>בחבילה «' + escapeHtml(packageName()) + '» עוד אין קבצים. אפשר לבחור חבילה אחרת.</p>' +
+              '<button type="button" class="btn btn-primary" data-open-import>בחירת חבילה</button>'
+            : '<p>המנהל עוד לא העלה קבצים. כשיועלו, הם יופיעו כאן.</p>' +
+              '<button type="button" class="btn btn-primary" data-refresh>רענון נתונים</button>') +
+          '</div>';
+      }
+      if (state.packages.length > 1 || state.trash.length) {
+        return '<div class="empty-state onboarding">' +
+          '<div class="ob-mark">' + icon('chart') + '</div>' +
+          '<h3>אין קבצים בחבילה «' + escapeHtml(packageName()) + '»</h3>' +
+          '<p>מעלים לחבילה קובצי נשלח והחזרות, או בוחרים חבילה אחרת.</p>' +
+          '<button type="button" class="btn btn-primary" data-open-import>' + icon('folder') + 'ניהול והעלאת קבצים</button>' +
           '</div>';
       }
       return '<div class="empty-state onboarding">' +
@@ -3814,8 +4249,10 @@
     function renderAll() {
       custNamesCache = null;
       applyDateInputLimits();
+      renderPkgBar();
       renderFileList('shipped');
       renderFileList('returns');
+      renderTrash();
       updateBadges();
       renderCustomerPicker();
       updateReportScope();
@@ -3834,7 +4271,8 @@
         document.getElementById('reportArea').innerHTML = '<div class="empty-state onboarding">' +
           '<div class="ob-mark">' + icon('chart') + '</div>' +
           '<h3>בחרו לקוח כדי לראות דוח</h3>' +
-          '<p>הדוח יוצג אחרי שתבחרו לקוח או חנות מהרשימה.</p>' +
+          '<p>הדוח יוצג אחרי שתבחרו לקוח או חנות מהרשימה.' +
+          (state.packages.length > 1 ? '<br>חבילה: <b>' + escapeHtml(packageName()) + '</b>' : '') + '</p>' +
           '<button type="button" class="btn btn-primary" data-open-import>בחירת לקוח</button>' +
           '</div>';
         return;
@@ -4358,7 +4796,8 @@
     function updateReportScope() {
       const el = document.getElementById('reportScope');
       const hasFiles = state.shipped.length + state.returns.length > 0;
-      const label = reportScopeLabel();
+      // with more than one package, the report always says which one it comes from
+      const label = (state.packages.length > 1 && packageName() ? packageName() + ' · ' : '') + reportScopeLabel();
       const show = (key) => {
         const s = String(key);
         return s.slice(6, 8) + '/' + s.slice(4, 6) + '/' + s.slice(0, 4);
@@ -4392,6 +4831,8 @@
     async function addFiles(kind, fileList) {
       const files = Array.from(fileList || []);
       if (!files.length || !isAdmin()) return;
+      const pkg = state.pkgId;
+      if (!pkg) { toast('אין חבילה פתוחה. צרו חבילה ונסו שוב', 'err'); return; }
       if (typeof XLSX === 'undefined') {
         toast('ספריית האקסל לא נטענה — בדקו חיבור לאינטרנט ורעננו', 'err');
         return;
@@ -4422,17 +4863,30 @@
               toast(file.name + ': לא נמצאו שורות עם מק״ט', 'err');
               continue;
             }
+            // documents that are in this package already would be counted twice
+            let items = parsed.items;
+            let note = '';
+            const ov = overlapWith(items, state[kind]);
+            if (ov.dup.size) {
+              overlay.classList.remove('show');
+              const choice = await askOverlap({ verb: 'upload', name: file.name, ov });
+              overlay.classList.add('show');
+              if (choice === 'cancel') continue;
+              if (choice === 'new') {
+                items = items.filter(it => !ov.dup.has(docKey(it)));
+                note = skippedNote(ov);
+                if (!items.length) continue;
+              } else {
+                await trashFiles(ov.hits.map(h => h.file));
+              }
+            }
             msg.textContent = 'מעלה לשרת: ' + file.name;
-            const id = await uploadFile(kind, file, parsed, (pct) => {
+            const uploaded = await uploadFile({
+              pkg, kind, name: file.name, size: file.size, warning: parsed.warning || '', note, items
+            }, (pct) => {
               msg.textContent = 'מעלה לשרת ' + pct + '%: ' + file.name;
             });
-            state[kind].push({
-              id,
-              name: file.name,
-              size: file.size,
-              items: parsed.items,
-              warning: parsed.warning || ''
-            });
+            if (state.pkgId === pkg) state[kind].push(uploaded);
             ok++;
           } catch (err) {
             if (err && err.code === 'AUTH') break;
@@ -4442,8 +4896,74 @@
       } finally {
         overlay.classList.remove('show');
       }
-      if (ok) toast('הועלו ' + ok + ' קבצים לשרת', 'ok');
+      if (ok) toast(ok === 1 ? 'הקובץ הועלה לשרת' : 'הועלו ' + ok + ' קבצים לשרת', 'ok');
       renderAll();
+      refreshQuietly();
+    }
+
+    // After a change: the package counts and the trash come back from the server
+    function refreshQuietly() {
+      syncData(false).catch(err => { if (err.code !== 'AUTH') toast(errText(err), 'err'); });
+    }
+
+    // The note a file gets when only its new documents went in, so it is clear later why it is smaller
+    function skippedNote(ov) {
+      return 'נכנסו רק התעודות החדשות: ' + (ov.dup.size === 1 ? 'תעודה אחת שכבר הייתה' : ov.dup.size + ' תעודות שכבר היו') + ' ב' +
+        ov.hits.map(h => '«' + fileDisplayName(h.file) + '»').join(', ') + (ov.dup.size === 1 ? ' לא נכנסה.' : ' לא נכנסו.');
+    }
+
+    async function trashFiles(files) {
+      for (const f of files) {
+        await call('svr_file_set', { p_file: f.id, p_action: 'trash', p_title: null, p_note: null, p_package: null });
+        f.deletedAt = new Date().toISOString();
+        ['shipped', 'returns'].forEach(k => { state[k] = state[k].filter(x => x.id !== f.id); });
+        if (!state.trash.some(x => x.id === f.id)) state.trash.push(f);
+      }
+    }
+
+    // ---------- what to do with documents that are in the package already ----------
+    let overlapDone = null;
+
+    function askOverlap(opts) {
+      const ov = opts.ov;
+      const fresh = ov.docs.size - ov.dup.size;
+      const verbs = {
+        upload: { only: 'העלה רק את', full: 'העלה את הקובץ המלא' },
+        restore: { only: 'שחזר רק את', full: 'שחזר את הקובץ המלא' },
+        move: { only: 'העבר רק את', full: 'העבר את הקובץ המלא' }
+      }[opts.verb];
+      document.getElementById('overlapTitle').textContent = fresh
+        ? 'חלק מהתעודות כבר נמצאות בחבילה'
+        : 'כל התעודות בקובץ כבר נמצאות בחבילה';
+      document.getElementById('overlapSub').textContent = '«' + cleanFileName(opts.name) + '»';
+      const docs = (n) => countText(n, 'תעודה אחת', 'תעודות');
+      document.getElementById('overlapText').innerHTML =
+        'בקובץ ' + (ov.docs.size === 1 ? 'יש תעודה אחת' : 'יש ' + fmtNum(ov.docs.size) + ' תעודות') + '. ' +
+        (ov.dup.size === ov.docs.size ? (ov.docs.size === 1 ? 'היא כבר נמצאת ב:' : 'כולן כבר נמצאות ב:') :
+          (ov.dup.size === 1 ? 'אחת מהן כבר נמצאת ב:' : fmtNum(ov.dup.size) + ' מהן כבר נמצאות ב:')) +
+        '<ul class="ov-files">' + ov.hits.map(h =>
+          '<li><b>«' + escapeHtml(fileDisplayName(h.file)) + '»</b> · ' + docs(h.n) +
+          (h.extra > 0 ? '<small>יש בו עוד ' + docs(h.extra) + ' שאין בקובץ החדש. אם תחליפו אותו, ' +
+            (h.extra === 1 ? 'היא תצא' : 'הן ייצאו') + ' מהדוח.</small>' : '') +
+          '</li>').join('') + '</ul>' +
+        'אם שני הקבצים יישארו, התעודות האלה ייספרו פעמיים.';
+      const btnNew = document.getElementById('ovNew');
+      btnNew.hidden = fresh === 0;
+      btnNew.textContent = verbs.only + ' ' + (fresh === 1 ? 'התעודה החדשה' : fmtNum(fresh) + ' התעודות החדשות');
+      document.getElementById('ovReplace').textContent = verbs.full + ' והחלף את ' +
+        (ov.hits.length === 1 ? '«' + fileDisplayName(ov.hits[0].file) + '»' : ov.hits.length + ' הקבצים הקיימים');
+      document.getElementById('ovReplaceNote').textContent = ov.hits.length === 1
+        ? 'הקובץ הקיים יעבור לסל, ואפשר להחזיר אותו משם.'
+        : 'הקבצים הקיימים יעברו לסל, ואפשר להחזיר אותם משם.';
+      document.getElementById('overlapModal').classList.add('show');
+      return new Promise(resolve => { overlapDone = resolve; });
+    }
+
+    function finishOverlap(choice) {
+      document.getElementById('overlapModal').classList.remove('show');
+      const done = overlapDone;
+      overlapDone = null;
+      if (done) done(choice);
     }
 
     function setupDropZone(zoneId, inputId, kind) {
@@ -4451,10 +4971,7 @@
       const input = document.getElementById(inputId);
       let dragDepth = 0;
 
-      zone.addEventListener('click', (e) => {
-        if (e.target.closest('button')) return;
-        input.click();
-      });
+      zone.querySelector('.dz-row').addEventListener('click', () => input.click());
       input.addEventListener('change', () => {
         addFiles(kind, input.files);
         input.value = '';
@@ -5202,32 +5719,286 @@ renderTable();
     setupDropZone('dropShipped', 'fileShipped', 'shipped');
     setupDropZone('dropReturns', 'fileReturns', 'returns');
 
-    // Removing a file removes it for every user, so it takes a second click to confirm
+    // ---------- files: edit, trash, restore ----------
+    // × moves a file to the package's trash: it leaves the reports for everyone at once, and comes
+    // back with "בטל" or from the trash. Only "מחק לצמיתות" in the trash deletes it.
     ['shipped', 'returns'].forEach(kind => {
       document.getElementById(kind === 'shipped' ? 'listShipped' : 'listReturns').addEventListener('click', async (e) => {
         e.stopPropagation();
-        const btn = e.target.closest('button');
+        const note = e.target.closest('[data-note]');
+        if (note) { note.classList.toggle('open'); return; }
+        const btn = e.target.closest('[data-file-act]');
         if (!btn || !isAdmin()) return;
-        if (!btn.dataset.armed) {
-          btn.dataset.armed = '1';
-          btn.textContent = '✓';
-          toast('לחצו שוב על ✓ כדי להסיר את הקובץ לכל המשתמשים');
-          setTimeout(() => {
-            delete btn.dataset.armed;
-            btn.textContent = '×';
-          }, 4000);
-          return;
-        }
+        const file = state[kind].find(f => f.id === btn.dataset.id);
+        if (!file) return;
+        if (btn.dataset.fileAct === 'edit') { openFileEdit(file); return; }
         btn.disabled = true;
         try {
-          await call('svr_file_delete', { p_file: btn.dataset.id });
-          state[kind] = state[kind].filter(f => f.id !== btn.dataset.id);
+          await trashFiles([file]);
           renderAll();
-          toast('הקובץ הוסר', 'ok');
+          toast('«' + fileDisplayName(file) + '» הועבר לסל', 'ok', { label: 'בטל', fn: () => restoreFile(file) });
+          refreshQuietly();
         } catch (err) {
           btn.disabled = false;
           if (err.code !== 'AUTH') toast(errText(err), 'err');
         }
+      });
+    });
+
+    // Back from the trash. The check for documents that are in the package already runs here too.
+    async function restoreFile(file) {
+      try {
+        await loadRows([file], true);
+        const ov = overlapWith(file.items, state[file.kind]);
+        let choice = 'all';
+        if (ov.dup.size) choice = await askOverlap({ verb: 'restore', name: file.name, ov });
+        const fresh = file.items.filter(it => !ov.dup.has(docKey(it)));
+        if (choice === 'cancel' || (choice === 'new' && !fresh.length)) return;
+        if (choice === 'new') {
+          // a copy with the new documents only; the full file stays in the trash
+          const copy = await uploadFile({
+            pkg: state.pkgId, kind: file.kind, name: file.name, size: file.size, warning: file.warning,
+            title: file.title, note: [file.note, skippedNote(ov)].filter(Boolean).join('\n'), items: fresh
+          });
+          state[file.kind].push(copy);
+        } else {
+          if (choice === 'replace') await trashFiles(ov.hits.map(h => h.file));
+          await call('svr_file_set', { p_file: file.id, p_action: 'restore', p_title: null, p_note: null, p_package: null });
+          file.deletedAt = '';
+          state.trash = state.trash.filter(f => f.id !== file.id);
+          state[file.kind].push(file);
+        }
+        renderAll();
+        toast('«' + fileDisplayName(file) + '» חזר לדוחות', 'ok');
+        refreshQuietly();
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    }
+
+    document.getElementById('trashList').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-trash-act]');
+      if (!btn || !isAdmin()) return;
+      const file = state.trash.find(f => f.id === btn.dataset.id);
+      if (!file) return;
+      if (btn.dataset.trashAct === 'restore') {
+        btn.disabled = true;
+        await restoreFile(file);
+        btn.disabled = false;
+        return;
+      }
+      if (!btn.dataset.armed) {
+        btn.dataset.armed = '1';
+        btn.textContent = 'לחצו שוב למחיקה';
+        setTimeout(() => {
+          delete btn.dataset.armed;
+          btn.textContent = 'מחק לצמיתות';
+        }, 4000);
+        return;
+      }
+      btn.disabled = true;
+      try {
+        await call('svr_file_set', { p_file: file.id, p_action: 'purge', p_title: null, p_note: null, p_package: null });
+        state.trash = state.trash.filter(f => f.id !== file.id);
+        fileCache.delete(file.id);
+        renderAll();
+        toast('הקובץ נמחק לצמיתות', 'ok');
+        refreshQuietly();
+      } catch (err) {
+        btn.disabled = false;
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+
+    let editFile = null;
+
+    function openFileEdit(file) {
+      editFile = file;
+      document.getElementById('fileEditSub').textContent = kindLabel(file.kind) + ' · ' + countText(file.items.length, 'שורה אחת', 'שורות');
+      document.getElementById('feTitle').value = fileDisplayName(file);
+      document.getElementById('feNote').value = file.note || '';
+      document.getElementById('feOriginal').textContent = file.name;
+      document.getElementById('fePackage').innerHTML = state.packages.map(p =>
+        '<option value="' + escapeHtml(p.id) + '"' + (p.id === state.pkgId ? ' selected' : '') + '>' +
+        escapeHtml(p.name) + (p.hidden ? ' (מוסתרת)' : '') + '</option>').join('');
+      document.getElementById('fePackage').closest('.field').hidden = state.packages.length < 2;
+      setFormError('fileEditError', '');
+      document.getElementById('fileEditModal').classList.add('show');
+      setTimeout(() => document.getElementById('feTitle').focus(), 50);
+    }
+
+    document.getElementById('fileEditForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = editFile;
+      if (!file) return;
+      const typed = document.getElementById('feTitle').value.trim();
+      // the automatic name is not stored, so it keeps following the file name
+      const title = !typed || typed === cleanFileName(file.name) ? '' : typed;
+      const note = document.getElementById('feNote').value.trim();
+      const target = document.getElementById('fePackage').value || state.pkgId;
+      const save = document.getElementById('feSave');
+      save.disabled = true;
+      setFormError('fileEditError', '');
+      try {
+        if (title !== file.title || note !== file.note) {
+          await call('svr_file_set', { p_file: file.id, p_action: 'edit', p_title: title, p_note: note, p_package: null });
+          file.title = title;
+          file.note = note;
+        }
+        if (target !== state.pkgId) {
+          document.getElementById('fileEditModal').classList.remove('show');
+          await moveFile(file, target);
+        } else {
+          document.getElementById('fileEditModal').classList.remove('show');
+          renderAll();
+          toast('הפרטים נשמרו', 'ok');
+        }
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('fileEditError', errText(err));
+      } finally {
+        save.disabled = false;
+      }
+    });
+
+    // To another package, checked against the documents that package has already
+    async function moveFile(file, target) {
+      const pkg = state.packages.find(p => p.id === target);
+      const there = await fetchPackage(target, true);
+      const ov = overlapWith(file.items, there[file.kind]);
+      let choice = 'all';
+      if (ov.dup.size) choice = await askOverlap({ verb: 'move', name: file.name, ov });
+      const fresh = file.items.filter(it => !ov.dup.has(docKey(it)));
+      if (choice === 'cancel' || (choice === 'new' && !fresh.length)) { renderAll(); return; }
+      if (choice === 'new') {
+        // the new documents go over as a copy; the full file goes to this package's trash
+        await uploadFile({
+          pkg: target, kind: file.kind, name: file.name, size: file.size, warning: file.warning,
+          title: file.title, note: [file.note, skippedNote(ov)].filter(Boolean).join('\n'), items: fresh
+        });
+        await trashFiles([file]);
+      } else {
+        if (choice === 'replace') {
+          for (const h of ov.hits) {
+            await call('svr_file_set', { p_file: h.file.id, p_action: 'trash', p_title: null, p_note: null, p_package: null });
+          }
+        }
+        await call('svr_file_set', { p_file: file.id, p_action: 'move', p_title: null, p_note: null, p_package: target });
+        state[file.kind] = state[file.kind].filter(f => f.id !== file.id);
+      }
+      renderAll();
+      toast('«' + fileDisplayName(file) + '» הועבר לחבילה «' + (pkg ? pkg.name : '') + '»', 'ok');
+      refreshQuietly();
+    }
+
+    // ---------- packages ----------
+    let editPkgId = null;
+
+    function openPkgModal(pkg) {
+      editPkgId = pkg ? pkg.id : null;
+      document.getElementById('pkgTitle').textContent = pkg ? 'הגדרות החבילה' : 'חבילה חדשה';
+      document.getElementById('pkgName').value = pkg ? pkg.name : '';
+      // a new package starts hidden, so users do not see it half full
+      document.getElementById('pkgHidden').checked = pkg ? pkg.hidden : true;
+      document.getElementById('pkgMain').checked = pkg ? pkg.main : false;
+      document.getElementById('pkgMain').disabled = !!(pkg && pkg.main);
+      document.getElementById('pkgMainLine').hidden = !pkg;
+      document.getElementById('pkgOrder').hidden = !pkg || state.packages.length < 2;
+      document.getElementById('pkgSave').textContent = pkg ? 'שמירה' : 'יצירת החבילה';
+      const del = document.getElementById('pkgDelete');
+      del.hidden = !pkg || pkg.main;
+      delete del.dataset.armed;
+      del.textContent = 'מחיקת החבילה';
+      syncPkgChecks();
+      setFormError('pkgError', '');
+      document.getElementById('pkgModal').classList.add('show');
+      setTimeout(() => document.getElementById('pkgName').focus(), 50);
+    }
+
+    // the main package is opened for everyone, so it cannot be hidden
+    function syncPkgChecks() {
+      const main = document.getElementById('pkgMain').checked;
+      const hidden = document.getElementById('pkgHidden');
+      if (main) hidden.checked = false;
+      hidden.disabled = main;
+    }
+    document.getElementById('pkgMain').addEventListener('change', syncPkgChecks);
+
+    document.getElementById('pkgForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('pkgName').value.trim();
+      if (!name) { setFormError('pkgError', ERR_TEXT.BAD_NAME); return; }
+      const hidden = document.getElementById('pkgHidden').checked;
+      const makeMain = document.getElementById('pkgMain').checked;
+      const save = document.getElementById('pkgSave');
+      save.disabled = true;
+      setFormError('pkgError', '');
+      try {
+        const res = await call('svr_package_save', { p_id: editPkgId, p_name: name, p_hidden: hidden });
+        const id = (res && res.id) || editPkgId;
+        const old = state.packages.find(p => p.id === id);
+        if (makeMain && !(old && old.main)) await call('svr_package_set', { p_id: id, p_action: 'main' });
+        document.getElementById('pkgModal').classList.remove('show');
+        if (!editPkgId) {
+          toast('החבילה «' + name + '» נוצרה' + (hidden ? '. היא מוסתרת ממשתמשים עד שתבטלו את הסימון' : ''), 'ok');
+          await switchPackage(id);
+        } else {
+          toast('החבילה נשמרה', 'ok');
+          await syncData(false);
+        }
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('pkgError', errText(err));
+      } finally {
+        save.disabled = false;
+      }
+    });
+
+    document.getElementById('pkgOrder').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-pkg-move]');
+      if (!btn || !editPkgId) return;
+      try {
+        await call('svr_package_set', { p_id: editPkgId, p_action: btn.dataset.pkgMove });
+        await syncData(false);
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('pkgError', errText(err));
+      }
+    });
+
+    document.getElementById('pkgDelete').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (!editPkgId) return;
+      if (!btn.dataset.armed) {
+        btn.dataset.armed = '1';
+        btn.textContent = 'לחצו שוב למחיקה';
+        return;
+      }
+      try {
+        await call('svr_package_set', { p_id: editPkgId, p_action: 'delete' });
+        document.getElementById('pkgModal').classList.remove('show');
+        toast('החבילה נמחקה', 'ok');
+        await syncData(true);
+      } catch (err) {
+        delete btn.dataset.armed;
+        btn.textContent = 'מחיקת החבילה';
+        if (err.code !== 'AUTH') setFormError('pkgError', errText(err));
+      }
+    });
+
+    document.getElementById('pkgBar').addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-pkg]');
+      if (chip) { switchPackage(chip.dataset.pkg); return; }
+      if (e.target.closest('[data-pkg-new]')) { openPkgModal(null); return; }
+      if (e.target.closest('[data-pkg-edit]')) openPkgModal(currentPackage());
+    });
+
+    document.getElementById('overlapModal').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-ov]');
+      if (btn) finishOverlap(btn.dataset.ov);
+      else if (e.target.id === 'overlapModal') finishOverlap('cancel');
+    });
+
+    ['fileEditModal', 'pkgModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', (e) => {
+        if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
     });
 
@@ -5668,7 +6439,11 @@ renderTable();
         closeDrawer();
         return;
       }
-      const top =['passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      if (overlapDone) {
+        finishOverlap('cancel');
+        return;
+      }
+      const top = ['fileEditModal', 'pkgModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
@@ -5732,9 +6507,10 @@ renderTable();
     document.getElementById('btnClear').addEventListener('click', async (e) => {
       const btn = e.currentTarget;
       if (!isAdmin()) return;
-      if (state.shipped.length + state.returns.length > 0 && !btn.dataset.armed) {
+      if (!state.pkgId || state.shipped.length + state.returns.length === 0) return;
+      if (!btn.dataset.armed) {
         btn.dataset.armed = '1';
-        btn.textContent = 'לחצו שוב כדי למחוק הכל לכל המשתמשים';
+        btn.textContent = 'לחצו שוב: כל קבצי החבילה יעברו לסל';
         clearTimeout(btn._t);
         btn._t = setTimeout(() => {
           delete btn.dataset.armed;
@@ -5746,14 +6522,18 @@ renderTable();
       delete btn.dataset.armed;
       btn.textContent = 'נקה הכל';
       try {
-        await call('svr_files_clear');
+        await call('svr_files_clear', { p_package: state.pkgId });
       } catch (err) {
         if (err.code !== 'AUTH') toast(errText(err), 'err');
         return;
       }
-      clearLocalData();
+      const now = new Date().toISOString();
+      state.shipped.concat(state.returns).forEach(f => { f.deletedAt = now; state.trash.push(f); });
+      state.shipped = [];
+      state.returns = [];
       renderAll();
-      toast('הנתונים נוקו לכל המשתמשים');
+      toast('כל קבצי החבילה עברו לסל. אפשר להחזיר אותם משם');
+      refreshQuietly();
     });
 
     // ---------- sign-in, users, password ----------
