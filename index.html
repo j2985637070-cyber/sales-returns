@@ -1578,10 +1578,36 @@
     .doc-detail-bar {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       background: #fafbff;
     }
+    /* taking one document out of the reports (admin) */
+    .excl-ask { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .excl-ask input {
+      font: inherit; font-size: 0.84rem; padding: 6px 10px; min-height: 34px; min-width: 0; flex: 1 1 180px;
+      border: 1px solid #d3dae8; border-radius: 9px; outline: none;
+    }
+    .excl-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap;
+      padding: 10px 14px; background: var(--amber-light); border-bottom: 1px solid #ffd8a8;
+      color: #8a4b00; font-size: 0.86rem; font-weight: 700;
+    }
+    .excl-banner small { display: block; font-weight: 600; color: #8a6a3a; margin-top: 2px; }
+    .excl-find { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .excl-find input {
+      font: inherit; font-size: 0.88rem; padding: 7px 10px; min-height: 36px; flex: 1 1 160px; min-width: 0;
+      border: 1px solid #d3dae8; border-radius: 9px; outline: none; direction: ltr; text-align: right;
+    }
+    .excl-prev { padding: 0 12px 10px; }
+    .excl-prev .excl-hit { border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-top: 6px; overflow: hidden; }
+    .excl-prev .excl-hit > div:first-child { padding: 8px 12px; font-size: 0.84rem; }
+    .excl-prev .excl-hit b { color: var(--navy); }
+    .excl-prev .excl-hit .doc-detail-bar { border-bottom: none; border-top: 1px solid var(--border); }
+    .excl-note { color: var(--amber); font-weight: 700; }
     .modal-box td.doc-no {
       font-weight: 800;
       color: var(--navy);
@@ -2062,6 +2088,15 @@
           <summary id="trashTitle">קבצים שנמחקו</summary>
           <div id="trashList"></div>
         </details>
+        <details class="trash-box admin-only upload-part" id="exclBox">
+          <summary id="exclTitle">תעודות שהוצאו מהדוחות</summary>
+          <div class="excl-find">
+            <input type="search" id="exclDoc" placeholder="מספר תעודה, למשל IN260007055" autocomplete="off" spellcheck="false">
+            <button type="button" class="btn btn-ghost btn-sm" id="exclFind">חיפוש תעודה</button>
+          </div>
+          <div class="excl-prev" id="exclPreview"></div>
+          <div id="exclList"></div>
+        </details>
         <details class="hint admin-only upload-part">
           <summary>איזה קבצים אפשר להעלות?</summary>
           <div>
@@ -2388,6 +2423,7 @@
       trash: [],      // admin: files of the open package that are in its trash (no rows loaded)
       seen: new Map(),  // this user's "seen" marks in the open package: customer unit key → when
       onlyUnseen: false,
+      excluded: new Map(),  // documents taken out of the open package's reports: "kind|doc" → details
       ready: false
     };
 
@@ -2662,6 +2698,7 @@
       state.packages = [];
       state.pkgId = null;
       state.seen.clear();
+      state.excluded.clear();
       state.onlyUnseen = false;
       document.getElementById('onlyUnseen').checked = false;
       lastSeenSig = '';
@@ -2782,7 +2819,7 @@
       const tasks = [];
       const parts = new Map();
       files.forEach(f => {
-        if (f.items) return;
+        if (f.raw) return;
         const p = new Array(f.chunks);
         parts.set(f.id, p);
         for (let seq = 0; seq < f.chunks; seq++) tasks.push({ p, id: f.id, seq });
@@ -2809,7 +2846,7 @@
         await Promise.all([worker(), worker(), worker(), worker()]);
         files.forEach(f => {
           const p = parts.get(f.id);
-          if (p) f.items = [].concat(...p).map(unpackItem);
+          if (p) f.raw = f.items = [].concat(...p).map(unpackItem);
         });
       } finally {
         if (shown) overlay.classList.remove('show');
@@ -2846,14 +2883,18 @@
       }
       const next = state.pkgId ? await fetchPackage(state.pkgId, showOverlay) : { shipped: [], returns: [], trash: [] };
       const seen = state.pkgId ? await call('svr_seen_list', { p_package: state.pkgId }) || {} : {};
+      const excluded = state.pkgId ? await call('svr_excluded_list', { p_package: state.pkgId }) || [] : [];
       const sig = (s) => [s.shipped, s.returns, s.trash].map(list =>
         list.map(f => f.id + ':' + f.title + ':' + f.note).join(',')).join('|');
       const seenChanged = JSON.stringify(seen) !== JSON.stringify(Object.fromEntries(state.seen));
-      const changed = sig(next) !== sig(state) || seenChanged;
+      const exclChanged = JSON.stringify(excluded) !== JSON.stringify(Array.from(state.excluded.values()));
+      const changed = sig(next) !== sig(state) || seenChanged || exclChanged;
       state.shipped = next.shipped;
       state.returns = next.returns;
       state.trash = next.trash;
       state.seen = new Map(Object.entries(seen));
+      state.excluded = new Map(excluded.map(e => [exclKey(e.kind, e.doc), e]));
+      applyExclusions();
       lastSync = Date.now();
       if (changed || settingsChanged || pkgChanged) renderAll();
       return changed;
@@ -2868,6 +2909,7 @@
       state.returns = [];
       state.trash = [];
       state.seen = new Map();
+      state.excluded = new Map();
       lastSeenSig = '';
       renderAll();
       try {
@@ -2893,9 +2935,169 @@
         id, kind: f.kind, name: f.name, size: f.size || 0, warning: f.warning || '', rows: f.items.length,
         chunks: total, title: f.title || '', note: f.note || '', created_at: new Date().toISOString()
       });
-      file.items = f.items;
+      file.raw = file.items = f.items;
       return file;
     }
+
+    // ---------- documents the admin took out of the reports ----------
+    // A file keeps all of its rows in f.raw; f.items is what the reports count: f.raw without the
+    // documents taken out in this package. Everything that describes the file itself (its dates,
+    // its row count, the duplicate check) reads f.raw.
+    function rowsOf(f) {
+      return f.raw || f.items || [];
+    }
+
+    function exclKey(kind, doc) {
+      return (kind === 'returns' ? 'returns' : 'shipped') + '|' + String(doc || '').trim();
+    }
+
+    function isExcluded(kind, doc) {
+      return !!doc && state.excluded.has(exclKey(kind, doc));
+    }
+
+    function applyExclusions() {
+      state.shipped.concat(state.returns).forEach(f => {
+        if (!f.raw) return;
+        f.items = state.excluded.size ? f.raw.filter(it => !isExcluded(f.kind, docKey(it))) : f.raw;
+      });
+    }
+
+    // The admin's button in a document's own view. where: 'doc' | 'high' | 'list' (which view to draw again)
+    function exclAttrs(kind, doc, where) {
+      return ' data-kind="' + kind + '" data-doc="' + escapeHtml(doc) + '" data-where="' + where + '"';
+    }
+
+    function exclButtonHtml(kind, doc, where) {
+      if (!isAdmin() || !doc || doc === 'ללא מספר תעודה' || isExcluded(kind, doc)) return '';
+      return '<span class="excl-ask" data-excl-box>' +
+        '<button type="button" class="btn btn-danger btn-sm" data-excl="ask"' + exclAttrs(kind, doc, where) + '>הוצא מהדוחות</button></span>';
+    }
+
+    function exclBannerHtml(kind, doc, where) {
+      if (!isAdmin() || !isExcluded(kind, doc)) return '';
+      const e = state.excluded.get(exclKey(kind, doc)) || {};
+      const who = [e.by, e.at ? fmtWhen(e.at) : ''].filter(Boolean).join(' · ');
+      return '<div class="excl-banner"><div>התעודה הזו הוצאה מהדוחות' + (who ? ' · ' + escapeHtml(who) : '') +
+        (e.note ? '<small>' + escapeHtml(e.note) + '</small>' : '') + '</div>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-excl="remove"' + exclAttrs(kind, doc, where) + '>החזר לדוחות</button></div>';
+    }
+
+    // How many documents of the report on screen were taken out (shown to the admin only)
+    function excludedInView() {
+      if (!isAdmin() || !state.excluded.size) return 0;
+      const docs = new Set();
+      state.shipped.concat(state.returns).forEach(f => rowsOf(f).forEach(it => {
+        const d = docKey(it);
+        if (d && isExcluded(f.kind, d) && customerMatches(it.customerId)) docs.add(f.kind + '|' + d);
+      }));
+      return docs.size;
+    }
+
+    // Everything known about one document number in the open package, by kind
+    function findDoc(doc) {
+      const hits = [];
+      ['shipped', 'returns'].forEach(kind => {
+        const lines = [];
+        state[kind].forEach(f => rowsOf(f).forEach(it => { if (docKey(it) === doc) lines.push(it); }));
+        if (!lines.length) return;
+        const names = Array.from(new Set(lines.map(l => customerInfo(l.customerId).name)));
+        hits.push({
+          kind, lines: lines.length, names,
+          qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
+          date: (lines.find(l => l.date) || {}).date || ''
+        });
+      });
+      return hits;
+    }
+
+    function docHitHtml(doc, h) {
+      return '<div class="excl-hit"><div><b>' + escapeHtml(doc) + '</b> · ' + kindLabel(h.kind) + ' · ' + escapeHtml(h.names.join(', ')) +
+        (h.date ? ' · ' + escapeHtml(h.date) : '') + ' · ' + countText(h.lines, 'שורה אחת', 'שורות') + ' · ' + fmtNum(h.qty) + ' יח׳</div>' +
+        (isExcluded(h.kind, doc)
+          ? exclBannerHtml(h.kind, doc, 'list')
+          : '<div class="doc-detail-bar">' + exclButtonHtml(h.kind, doc, 'list') + '</div>') +
+        '</div>';
+    }
+
+    let exclQuery = '';
+
+    // Admin, files window: find a document by number, and the list of the ones taken out
+    function renderExclusions() {
+      const box = document.getElementById('exclBox');
+      if (!isAdmin()) return;
+      box.hidden = !state.pkgId;
+      const list = Array.from(state.excluded.values());
+      document.getElementById('exclTitle').textContent = 'תעודות שהוצאו מהדוחות (' + list.length + ')';
+      const prev = document.getElementById('exclPreview');
+      if (exclQuery) {
+        const hits = findDoc(exclQuery);
+        prev.innerHTML = hits.length
+          ? hits.map(h => docHitHtml(exclQuery, h)).join('')
+          : '<div class="dev-none">התעודה ' + escapeHtml(exclQuery) + ' לא נמצאה בקבצים של החבילה הזו.</div>';
+      } else {
+        prev.innerHTML = '';
+      }
+      document.getElementById('exclList').innerHTML = list.map(e => {
+        const hit = findDoc(e.doc).find(h => h.kind === e.kind);
+        return '<div class="trash-row"><div class="info">' +
+          '<b>' + escapeHtml(e.doc) + ' · ' + kindLabel(e.kind) + (hit ? ' · ' + escapeHtml(hit.names.join(', ')) : '') + '</b>' +
+          '<span>' + [hit ? countText(hit.lines, 'שורה אחת', 'שורות') + ' · ' + fmtNum(hit.qty) + ' יח׳' : 'לא נמצאה בקבצים',
+            e.by, e.at ? fmtWhen(e.at) : '', e.note].filter(Boolean).map(escapeHtml).join(' · ') + '</span>' +
+          '</div><div class="acts"><button type="button" class="btn btn-ghost btn-sm" data-excl="remove"' + exclAttrs(e.kind, e.doc, 'list') + '>החזר לדוחות</button></div></div>';
+      }).join('');
+    }
+
+    // The views that show a document are drawn again after it was taken out or brought back
+    function redrawAfterExclusion(where, kind, doc) {
+      applyExclusions();
+      renderAll();
+      if (where === 'doc' && docModalCtx && docModalCtx.openDoc === doc) renderDocLines(doc);
+      if (where === 'high' && highOpenDoc && highOpenDoc.doc === doc) renderHighReturnLines(highOpenDoc);
+    }
+
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-excl]');
+      if (!btn || !isAdmin()) return;
+      const { kind, doc, where } = btn.dataset;
+      const act = btn.dataset.excl;
+      const box = btn.closest('[data-excl-box]');
+      if (act === 'ask') {
+        // the confirmation step: an optional note and a second, explicit button
+        box.innerHTML = '<input type="text" maxlength="300" placeholder="למה? (לא חובה)" data-excl-note>' +
+          '<button type="button" class="btn btn-danger btn-sm" data-excl="add"' + exclAttrs(kind, doc, where) + '>הוצא מכל הדוחות</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-excl="cancel"' + exclAttrs(kind, doc, where) + '>ביטול</button>';
+        box.querySelector('input').focus();
+        return;
+      }
+      if (act === 'cancel') {
+        box.outerHTML = exclButtonHtml(kind, doc, where);
+        return;
+      }
+      const note = act === 'add' && box ? (box.querySelector('[data-excl-note]') || {}).value || '' : '';
+      btn.disabled = true;
+      try {
+        await call('svr_excluded_set', { p_package: state.pkgId, p_kind: kind, p_doc: doc, p_action: act === 'add' ? 'add' : 'remove', p_note: note });
+        const key = exclKey(kind, doc);
+        if (act === 'add') state.excluded.set(key, { kind, doc, note: note.trim(), by: me.name || me.username, at: new Date().toISOString() });
+        else state.excluded.delete(key);
+        redrawAfterExclusion(where, kind, doc);
+        toast(act === 'add' ? 'התעודה ' + doc + ' הוצאה מהדוחות' : 'התעודה ' + doc + ' חזרה לדוחות', 'ok');
+        refreshQuietly();
+      } catch (err) {
+        btn.disabled = false;
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+
+    function runExclFind() {
+      exclQuery = document.getElementById('exclDoc').value.trim();
+      renderExclusions();
+    }
+    document.getElementById('exclFind').addEventListener('click', runExclFind);
+    document.getElementById('exclDoc').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); runExclFind(); }
+    });
+    document.getElementById('exclDoc').addEventListener('search', runExclFind);
 
     function normalizeHeader(h) {
       return String(h || '')
@@ -3945,10 +4147,10 @@
         const notes = overlaps.get(f.id) || [];
         const warn = f.warning || notes.length ? ' warn' : '';
         const span = fileSpan(f);
-        const cust = fileCustomerMeta(f.items);
+        const cust = fileCustomerMeta(rowsOf(f));
         const bits = [];
         if (span.min) bits.push(span.min === span.max ? shortDate(span.min) : shortDate(span.min) + '–' + shortDate(span.max));
-        bits.push(countText(f.items.length, 'שורה אחת', 'שורות'));
+        bits.push(countText(rowsOf(f).length, 'שורה אחת', 'שורות'));
         if (cust) bits.push(cust);
         if (f.createdAt) bits.push('הועלה ' + fmtDay(f.createdAt));
         return '<div class="file-chip' + warn + '">' +
@@ -4010,7 +4212,7 @@
     function fileSpan(f) {
       if (f._span) return f._span;
       const span = { min: 0, max: 0, noDoc: 0, noDocMin: 0, noDocMax: 0 };
-      (f.items || []).forEach(it => {
+      rowsOf(f).forEach(it => {
         const key = dateKey(it.date);
         const hasDoc = !!docKey(it);
         if (!hasDoc) span.noDoc++;
@@ -4036,7 +4238,7 @@
     function fileDocs(f) {
       if (!f._docs) {
         const docs = new Set();
-        (f.items || []).forEach(it => { const k = docKey(it); if (k) docs.add(k); });
+        rowsOf(f).forEach(it => { const k = docKey(it); if (k) docs.add(k); });
         f._docs = docs;
       }
       return f._docs;
@@ -4502,6 +4704,7 @@
       renderFileList('shipped');
       renderFileList('returns');
       renderTrash();
+      renderExclusions();
       updateBadges();
       renderCustomerPicker();
       updateReportScope();
@@ -4641,11 +4844,12 @@
         .sort((a, b) => String(a.doc).localeCompare(String(b.doc), 'he', { numeric: true }));
     }
 
+    // all the lines of one document, also when it was taken out of the reports
     function collectDocLines(kind, doc) {
       const lines = [];
       const files = kind === 'returns' ? state.returns : state.shipped;
       files.forEach(f => {
-        f.items.forEach(item => {
+        rowsOf(f).forEach(item => {
           if (!customerMatches(item.customerId)) return;
           if (!dateInRange(item.date, kind)) return;
           if ((item.doc || 'ללא מספר תעודה') !== doc) return;
@@ -4730,7 +4934,9 @@
       document.getElementById('docModalSub').textContent = (date ? date + ' · ' : '') + lines.length + ' שורות';
       const total = lines.reduce((s, r) => s + (Number(r.qty) || 0), 0);
       const body = document.getElementById('docModalBody');
-      body.innerHTML = '<div class="doc-detail-bar"><button type="button" class="btn btn-ghost btn-sm" data-doc-back>חזרה לרשימה</button></div>' +
+      ctx.openDoc = doc;
+      body.innerHTML = '<div class="doc-detail-bar"><button type="button" class="btn btn-ghost btn-sm" data-doc-back>חזרה לרשימה</button>' +
+        exclButtonHtml(ctx.kind, doc, 'doc') + '</div>' + exclBannerHtml(ctx.kind, doc, 'doc') +
         '<table><thead><tr><th>מק״ט</th><th>תאור מוצר</th><th>כמות</th></tr></thead><tbody>' +
         (lines.length ? lines.map(r =>
           '<tr><td class="doc-no">' + escapeHtml(r.sku) + '</td><td>' + escapeHtml(r.desc || '—') + '</td><td class="num">' + fmtNum(r.qty) + '</td></tr>'
@@ -4738,10 +4944,18 @@
         '</tbody><tfoot><tr><td colspan="2">סה״כ</td><td class="num">' + fmtNum(total) + '</td></tr></tfoot></table>';
     }
 
-    function openDocModal(title, subtitle, rows, kind) {
-      // remember whose documents these are, so opening one shows the same customers' lines
-      docModalCtx = { title, subtitle, rows, kind, ids: state.selectedIds ? Array.from(state.selectedIds) : null };
+    function openDocModal(title, subtitle, rows, kind, filter) {
+      // remember whose documents these are, so opening one shows the same customers' lines,
+      // and the filter, so the list can be built again after a document is taken out
+      docModalCtx = { title, subtitle, rows, kind, filter, ids: state.selectedIds ? Array.from(state.selectedIds) : null };
       renderDocList();
+    }
+
+    // The list again, after a document was taken out of the reports or brought back
+    function refreshDocList() {
+      const ctx = docModalCtx;
+      if (!ctx || !ctx.filter) return;
+      ctx.rows = ctx.ids ? withCustomers(ctx.ids, () => collectDocs(ctx.kind, ctx.filter)) : collectDocs(ctx.kind, ctx.filter);
     }
 
     function closeDocModal() {
@@ -4755,18 +4969,20 @@
       const title = isReturn ? 'תעודות החזרה' : 'תעודות משלוח';
       let rows;
       let subtitle = '';
+      let filter;
       if (sku) {
-        rows = collectDocs(kind, { sku });
+        filter = { sku };
         const reportRow = buildReport().find(r => r.sku.toLowerCase() === String(sku).toLowerCase());
         subtitle = (reportRow ? reportRow.sku + (reportRow.desc ? ' · ' + reportRow.desc : '') : sku);
       } else {
         const skus = buildReport()
           .filter(r => (r.family || 'ללא משפחה') === family)
           .map(r => r.sku);
-        rows = collectDocs(kind, { skus });
+        filter = { skus };
         subtitle = 'משפחה: ' + (family || 'ללא משפחה');
       }
-      openDocModal(title, subtitle, rows, kind);
+      rows = collectDocs(kind, filter);
+      openDocModal(title, subtitle, rows, kind, filter);
     }
 
     let highReturnList = [];
@@ -4807,14 +5023,18 @@
       modal.classList.add('show');
     }
 
+    let highOpenDoc = null;
+
     function renderHighReturnLines(index) {
-      const doc = highReturnList[index];
+      const doc = typeof index === 'number' ? highReturnList[index] : index;
       if (!doc) return;
+      highOpenDoc = doc;
       document.getElementById('highReturnTitle').textContent = doc.doc;
       document.getElementById('highReturnSub').textContent =
         (doc.date ? doc.date + ' · ' : '') + doc.customerName + ' · ' + fmtPct(doc.pct);
       const body = document.getElementById('highReturnBody');
-      body.innerHTML = '<div class="doc-detail-bar"><button type="button" class="btn btn-ghost btn-sm" data-high-back>חזרה לרשימה</button></div>' +
+      body.innerHTML = '<div class="doc-detail-bar"><button type="button" class="btn btn-ghost btn-sm" data-high-back>חזרה לרשימה</button>' +
+        exclButtonHtml('shipped', doc.doc, 'high') + '</div>' + exclBannerHtml('shipped', doc.doc, 'high') +
         '<table class="stack-sm"><thead><tr><th>מק״ט</th><th>תאור מוצר</th><th>נשלח בתעודה</th><th>חזר אצל הלקוח</th><th>אחוז</th></tr></thead><tbody>' +
         doc.lines.map(r =>
           '<tr><td class="doc-no">' + escapeHtml(r.sku) + '</td><td>' + escapeHtml(r.desc || '—') + '</td>' +
@@ -5066,7 +5286,11 @@
         el.textContent = '';
       } else {
         el.hidden = false;
-        el.innerHTML = 'מוצג עכשיו: <span>' + escapeHtml(label + range) + '</span><em id="scopeCount"></em>';
+        // the admin always knows when the numbers leave something out
+        const out = excludedInView();
+        el.innerHTML = 'מוצג עכשיו: <span>' + escapeHtml(label + range) + '</span>' +
+          (out ? ' <b class="excl-note">· ' + (out === 1 ? 'הוצאה תעודה אחת מהדוח' : 'הוצאו ' + out + ' תעודות מהדוח') + '</b>' : '') +
+          '<em id="scopeCount"></em>';
       }
       let printH = document.getElementById('printScopeHeader');
       if (!printH) {
@@ -5147,6 +5371,7 @@
         overlay.classList.remove('show');
       }
       if (ok) toast(ok === 1 ? 'הקובץ הועלה לשרת' : 'הועלו ' + ok + ' קבצים לשרת', 'ok');
+      applyExclusions();
       renderAll();
       refreshQuietly();
     }
@@ -6007,10 +6232,10 @@ renderTable();
     async function restoreFile(file) {
       try {
         await loadRows([file], true);
-        const ov = overlapWith(file.items, state[file.kind]);
+        const ov = overlapWith(rowsOf(file), state[file.kind]);
         let choice = 'all';
         if (ov.dup.size) choice = await askOverlap({ verb: 'restore', name: file.name, ov });
-        const fresh = file.items.filter(it => !ov.dup.has(docKey(it)));
+        const fresh = rowsOf(file).filter(it => !ov.dup.has(docKey(it)));
         if (choice === 'cancel' || (choice === 'new' && !fresh.length)) return;
         if (choice === 'new') {
           // a copy with the new documents only; the full file stays in the trash
@@ -6026,6 +6251,7 @@ renderTable();
           state.trash = state.trash.filter(f => f.id !== file.id);
           state[file.kind].push(file);
         }
+        applyExclusions();
         renderAll();
         toast('«' + fileDisplayName(file) + '» חזר לדוחות', 'ok');
         refreshQuietly();
@@ -6072,7 +6298,7 @@ renderTable();
 
     function openFileEdit(file) {
       editFile = file;
-      document.getElementById('fileEditSub').textContent = kindLabel(file.kind) + ' · ' + countText(file.items.length, 'שורה אחת', 'שורות');
+      document.getElementById('fileEditSub').textContent = kindLabel(file.kind) + ' · ' + countText(rowsOf(file).length, 'שורה אחת', 'שורות');
       document.getElementById('feTitle').value = fileDisplayName(file);
       document.getElementById('feNote').value = file.note || '';
       document.getElementById('feOriginal').textContent = file.name;
@@ -6122,10 +6348,10 @@ renderTable();
     async function moveFile(file, target) {
       const pkg = state.packages.find(p => p.id === target);
       const there = await fetchPackage(target, true);
-      const ov = overlapWith(file.items, there[file.kind]);
+      const ov = overlapWith(rowsOf(file), there[file.kind]);
       let choice = 'all';
       if (ov.dup.size) choice = await askOverlap({ verb: 'move', name: file.name, ov });
-      const fresh = file.items.filter(it => !ov.dup.has(docKey(it)));
+      const fresh = rowsOf(file).filter(it => !ov.dup.has(docKey(it)));
       if (choice === 'cancel' || (choice === 'new' && !fresh.length)) { renderAll(); return; }
       if (choice === 'new') {
         // the new documents go over as a copy; the full file goes to this package's trash
@@ -6862,7 +7088,11 @@ renderTable();
     });
     document.getElementById('docModalBody').addEventListener('click', (e) => {
       if (e.target.closest('[data-doc-back]')) {
-        if (docModalCtx) renderDocList();
+        if (docModalCtx) {
+          docModalCtx.openDoc = null;
+          refreshDocList();
+          renderDocList();
+        }
         return;
       }
       const open = e.target.closest('[data-open-doc]');
@@ -6939,6 +7169,8 @@ renderTable();
     });
     document.getElementById('highReturnBody').addEventListener('click', (e) => {
       if (e.target.closest('[data-high-back]')) {
+        highOpenDoc = null;
+        highReturnList = highReturnDocs();
         renderHighReturnList();
         return;
       }
