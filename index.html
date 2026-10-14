@@ -363,6 +363,12 @@
     .file-chip button:hover { background: #ffd0d0; color: var(--danger-hover); }
     .file-chip.warn { border-color: #ffd8a8; background: var(--amber-light); }
     .file-list:empty { display: none; }
+    /* nothing is cut off: the name takes up to two lines, the details wrap as needed */
+    .file-chip .name {
+      white-space: normal; text-overflow: clip; overflow-wrap: anywhere;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .file-chip .meta { white-space: normal; text-overflow: clip; overflow: visible; line-height: 1.5; }
     .file-chip .chip-acts { display: flex; gap: 5px; flex-shrink: 0; }
     .file-chip button.chip-edit { background: #eef2f8; color: var(--navy); font-size: 0.85rem; }
     .file-chip button.chip-edit:hover { background: var(--accent-light); color: var(--accent); }
@@ -393,21 +399,89 @@
     details.hint[open] > summary::after { content: ' ▴'; }
     details.hint > div { padding: 0 12px 10px; }
 
-    /* packages: one chip per period, the open one filled */
-    .pkg-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-    .pkg-bar .pkg-label { font-size: 0.8rem; font-weight: 800; color: var(--navy); margin-inline-end: 2px; }
-    .pkg-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; min-height: 34px;
-      border: 1px solid #d3dae8; border-radius: 999px; background: #fff;
-      font: inherit; font-size: 0.84rem; font-weight: 700; color: var(--navy); cursor: pointer;
+    /* packages: one button with the open package; its list opens under it, however many there are */
+    .pkg-bar { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pkg-picker { position: relative; flex: 1 1 280px; min-width: 0; max-width: 460px; }
+    .pkg-current {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 8px 14px; min-height: 42px;
+      border: 1px solid #c9d3e6; border-radius: 12px; background: #fff;
+      font: inherit; font-size: 0.9rem; color: var(--navy); text-align: right; cursor: pointer;
     }
-    .pkg-chip:hover { border-color: #b7c4f0; background: var(--accent-light); }
-    .pkg-chip.active { background: var(--navy); border-color: var(--navy); color: #fff; }
-    .pkg-chip .pkg-tag { font-size: 0.68rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: #eef2f8; color: var(--muted); }
-    .pkg-chip.active .pkg-tag { background: rgba(255,255,255,0.18); color: #fff; }
-    .pkg-chip.add { border-style: dashed; color: var(--accent); }
-    .pkg-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-inline-start: auto; }
+    .pkg-current:hover { border-color: #b7c4f0; background: #fbfcff; }
+    .pkg-current .pkg-k { color: var(--muted); font-weight: 700; flex-shrink: 0; }
+    .pkg-current b { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .pkg-current .chev { margin-inline-start: auto; color: var(--muted); }
+    .pkg-tag { font-size: 0.68rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: #eef2f8; color: var(--muted); flex-shrink: 0; }
+    .pkg-tag.main { background: var(--navy); color: #fff; }
+    .menu-pop.pkg-pop { position: static; margin-top: 6px; min-width: 0; max-height: 320px; overflow-y: auto; box-shadow: 0 8px 22px rgba(20,40,80,0.12); }
+    .pkg-pop .pkg-search {
+      font: inherit; font-size: 0.86rem; padding: 8px 10px; margin-bottom: 4px;
+      border: 1px solid #d3dae8; border-radius: 9px; outline: none; width: 100%;
+    }
+    .pkg-pop button.pkg-opt { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pkg-pop button.pkg-opt.on { background: var(--accent-light); color: var(--accent); }
+    .pkg-pop .pkg-count { margin-inline-start: auto; color: var(--muted); font-size: 0.74rem; font-weight: 600; }
+    .pkg-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pkg-tools .btn { min-height: 42px; }
+    .drawer .pkg-picker { max-width: none; flex: none; margin-bottom: 4px; }
+    .drawer .pkg-current { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); color: #fff; }
+    .drawer .pkg-current .pkg-k, .drawer .pkg-current .chev { color: #9fb0cc; }
+    .drawer .pkg-current:hover { background: rgba(255,255,255,0.1); }
+    .drawer .pkg-current .pkg-tag { background: rgba(255,255,255,0.16); color: #fff; }
+
+    /* "seen": a mark on stores and customers whose report this user has opened */
+    .seen-mark {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px; padding: 0 5px; margin-inline-start: 6px;
+      border-radius: 999px; background: var(--success-light); color: var(--success);
+      font-size: 0.72rem; font-weight: 800; vertical-align: middle; cursor: pointer;
+    }
+    .seen-mark.upd { background: var(--amber-light); color: var(--amber); }
+    .seen-mark:hover { background: var(--danger-light); color: var(--danger); }
+    .seen-bar {
+      display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap;
+      margin-top: 10px; padding: 8px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); background: #f8fafc;
+      font-size: 0.82rem; font-weight: 700; color: var(--navy);
+    }
+    .seen-bar .seen-count { flex: 1 1 auto; }
+    .seen-bar .seen-count small { color: var(--amber); font-weight: 700; margin-inline-start: 6px; }
+    .seen-bar .check-line { font-size: 0.82rem; }
+    .seen-bar .linkish { border: none; background: none; font: inherit; font-size: 0.78rem; font-weight: 700; color: var(--muted); cursor: pointer; text-decoration: underline; }
+
+    /* the admin's view of everyone's progress */
+    .track-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 18px 4px; }
+    .track-bar select { font: inherit; font-size: 0.9rem; padding: 8px 10px; min-height: 40px; border: 1px solid #d3dae8; border-radius: 10px; background: #fff; flex: 1 1 200px; }
+    .seg { display: inline-flex; border: 1px solid #d3dae8; border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; background: #fff; padding: 8px 14px; min-height: 40px; font: inherit; font-size: 0.84rem; font-weight: 700; color: var(--navy); cursor: pointer; }
+    .seg button.on { background: var(--navy); color: #fff; }
+    .track-note { padding: 4px 18px 0; color: var(--muted); font-size: 0.76rem; font-weight: 600; }
+    #trackBody { padding-bottom: 14px; }
+    .track-head { cursor: pointer; }
+    .track-prog { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; font-size: 0.82rem; font-weight: 700; color: var(--navy); }
+    .track-prog .bar { flex: 1; height: 8px; border-radius: 99px; background: #e9edf5; overflow: hidden; min-width: 60px; }
+    .track-prog .bar i { display: block; height: 100%; background: var(--success); border-radius: 99px; }
+    .track-meta { flex: 1 1 100%; color: var(--muted); font-size: 0.76rem; font-weight: 600; }
+    .track-meta .upd { color: var(--amber); font-weight: 700; }
+    .track-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--border); }
+    .track-lists > div { padding: 10px 14px; min-width: 0; }
+    .track-lists > div + div { border-inline-start: 1px solid var(--border); }
+    .track-lists h4 { font-size: 0.8rem; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+    .track-lists ul { list-style: none; max-height: 260px; overflow-y: auto; font-size: 0.82rem; }
+    .track-lists li { padding: 3px 0; display: flex; justify-content: space-between; gap: 8px; }
+    .track-lists li span { color: var(--muted); font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
+    .track-lists li.upd span { color: var(--amber); }
+    .track-cust { padding: 9px 14px; border-top: 1px solid var(--border); font-size: 0.84rem; }
+    .track-cust b { color: var(--navy); }
+    .track-cust div { color: var(--muted); font-size: 0.76rem; font-weight: 600; margin-top: 2px; }
+    .track-cust .none { color: var(--danger); }
+    @media (max-width: 560px) { .track-lists { grid-template-columns: 1fr; } .track-lists > div + div { border-inline-start: none; border-top: 1px solid var(--border); } }
+
+    /* "בחירת לקוח" opens the same window without the upload part */
+    .import-modal.pick-only .upload-part { display: none !important; }
+
+    .drawer-item .sub { display: block; font-size: 0.72rem; font-weight: 500; color: #9fb0cc; margin-top: 1px; }
 
     /* the trash: files taken out of the reports, kept until the admin deletes them */
     details.trash-box { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fbfcfe; }
@@ -1368,8 +1442,8 @@
     }
     .drawer-item:hover { background: rgba(255,255,255,0.09); }
     .drawer-item:focus-visible, .drawer-close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(120,150,255,0.5); }
-    .drawer-nav .drawer-item:first-child { background: #3b5bdb; color: #fff; }
-    .drawer-nav .drawer-item:first-child:hover { background: #4c6ef5; }
+    .drawer-nav .drawer-item.primary { background: #3b5bdb; color: #fff; }
+    .drawer-nav .drawer-item.primary:hover { background: #4c6ef5; }
     .drawer-item .manage-count { margin-inline-start: auto; }
     .drawer-foot .drawer-item { border-color: rgba(255,255,255,0.16); justify-content: center; }
     .drawer .user-chip { border: none; padding: 2px 6px 6px; flex-direction: row; gap: 8px; align-items: baseline; }
@@ -1689,7 +1763,9 @@
       .import-modal .modal-body { padding: 12px 12px 4px; }
       .drop-zone { padding: 10px 10px; }
       .drop-zone p { display: none; }
-      .pkg-tools { margin-inline-start: 0; width: 100%; }
+      .pkg-picker { flex-basis: 100%; max-width: none; }
+      .pkg-tools { width: 100%; }
+      .pkg-tools .btn { flex: 1 1 0; }
       .picker-actions { width: 100%; }
       .picker-actions .btn { flex: 1 1 auto; }
       .store-grid, .store-strip, .cust-groups { grid-template-columns: 1fr; }
@@ -1828,12 +1904,17 @@
         <button type="button" class="drawer-close" id="drawerClose" aria-label="סגור תפריט">×</button>
       </div>
       <nav class="drawer-nav">
-        <button type="button" class="drawer-item" id="btnManageFiles" data-icon="folder">
+        <div id="drawerPkg"></div>
+        <button type="button" class="drawer-item primary" id="btnManageFiles" data-icon="folder">
           <span id="manageLabel">ניהול והעלאת קבצים</span>
           <span class="manage-count" id="manageFileCount" hidden>0</span>
         </button>
-        <button type="button" class="drawer-item" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">רענון נתונים</button>
+        <button type="button" class="drawer-item admin-only" id="btnPickCustomer">בחירת לקוח</button>
+        <button type="button" class="drawer-item" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">
+          <span>רענון נתונים<small class="sub" id="syncAgo"></small></span>
+        </button>
         <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים ומכשירים<span class="manage-count" id="usersBadge" hidden title="מכשירים שממתינים לאישור"></span></button>
+        <button type="button" class="drawer-item admin-only" id="btnTrack">מעקב צפייה</button>
         <label class="drawer-switch admin-only">
           <span>הצגת סינונים למשתמשים
             <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
@@ -1949,7 +2030,7 @@
       </div>
       <div class="modal-body">
         <div class="pkg-bar" id="pkgBar" hidden></div>
-        <div class="import-grid admin-only">
+        <div class="import-grid admin-only upload-part">
           <div class="drop-zone" id="dropShipped" data-kind="shipped">
             <input type="file" id="fileShipped" accept=".xlsx,.xls,.xlsm,.csv" multiple>
             <div class="dz-row">
@@ -1977,11 +2058,11 @@
             <div class="file-list" id="listReturns"></div>
           </div>
         </div>
-        <details class="trash-box admin-only" id="trashBox" hidden>
+        <details class="trash-box admin-only upload-part" id="trashBox" hidden>
           <summary id="trashTitle">קבצים שנמחקו</summary>
           <div id="trashList"></div>
         </details>
-        <details class="hint admin-only">
+        <details class="hint admin-only upload-part">
           <summary>איזה קבצים אפשר להעלות?</summary>
           <div>
             הקבצים נשמרים בשרת, וכל המשתמשים רואים אותם. העמודות מזוהות אוטומטית: <b>מק״ט</b>, <b>תאור מוצר</b>, <b>כמות</b> / <b>כמות שהוחזרה</b>,
@@ -2006,12 +2087,17 @@
             <button type="button" class="btn btn-ghost btn-sm" id="btnCustPct" data-icon="percent">אחוזי החזרה לכל לקוח</button>
             <button type="button" class="btn btn-danger btn-sm" id="btnOverReturn" data-icon="return"><span id="btnOverReturnLabel">החזרות מעל 100%</span></button>
           </div>
+          <div class="seen-bar" id="seenBar">
+            <span class="seen-count" id="seenCount"></span>
+            <label class="check-line"><input type="checkbox" id="onlyUnseen"> רק מה שעוד לא ראיתי</label>
+            <button type="button" class="linkish" id="seenReset">אפס סימונים</button>
+          </div>
           <p class="cust-pick-hint" id="custPickHint"></p>
           <div id="customerPicker"></div>
         </div>
       </div>
       <div class="import-foot">
-        <button type="button" class="btn btn-danger admin-only" id="btnClear">נקה הכל</button>
+        <button type="button" class="btn btn-danger admin-only upload-part" id="btnClear">נקה הכל</button>
         <button type="button" class="btn btn-primary" id="importModalDone">סגור והצג דוח</button>
       </div>
     </div>
@@ -2150,6 +2236,28 @@
       </form>
     </div>
   </div>
+  <div class="modal-backdrop no-print" id="trackModal">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="trackTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="trackTitle">מעקב צפייה</h3>
+          <p>מי פתח את הדוח של כל חנות ולקוח, בכל חבילה בנפרד.</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="track-bar">
+          <select id="trackPkg" aria-label="חבילה"></select>
+          <div class="seg" role="group" aria-label="תצוגה">
+            <button type="button" data-track-view="user" class="on">לפי עובד</button>
+            <button type="button" data-track-view="cust">לפי לקוח</button>
+          </div>
+        </div>
+        <p class="track-note">«נצפה» אומר שהדוח נפתח. «עודכן מאז» אומר שהועלה קובץ חדש עם נתונים של הלקוח אחרי הצפייה.</p>
+        <div id="trackBody"></div>
+      </div>
+    </div>
+  </div>
   <div class="modal-backdrop no-print" id="overlapModal">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="overlapTitle">
       <div class="modal-head">
@@ -2278,6 +2386,8 @@
       packages: [],   // the periods the admin made; reports come from one of them (pkgId)
       pkgId: null,
       trash: [],      // admin: files of the open package that are in its trash (no rows loaded)
+      seen: new Map(),  // this user's "seen" marks in the open package: customer unit key → when
+      onlyUnseen: false,
       ready: false
     };
 
@@ -2551,6 +2661,10 @@
       state.trash = [];
       state.packages = [];
       state.pkgId = null;
+      state.seen.clear();
+      state.onlyUnseen = false;
+      document.getElementById('onlyUnseen').checked = false;
+      lastSeenSig = '';
       fileCache.clear();
       state.hiddenSkus.clear();
       state.selectedIds = null;
@@ -2731,12 +2845,15 @@
         state.pkgId = main ? main.id : null;
       }
       const next = state.pkgId ? await fetchPackage(state.pkgId, showOverlay) : { shipped: [], returns: [], trash: [] };
+      const seen = state.pkgId ? await call('svr_seen_list', { p_package: state.pkgId }) || {} : {};
       const sig = (s) => [s.shipped, s.returns, s.trash].map(list =>
         list.map(f => f.id + ':' + f.title + ':' + f.note).join(',')).join('|');
-      const changed = sig(next) !== sig(state);
+      const seenChanged = JSON.stringify(seen) !== JSON.stringify(Object.fromEntries(state.seen));
+      const changed = sig(next) !== sig(state) || seenChanged;
       state.shipped = next.shipped;
       state.returns = next.returns;
       state.trash = next.trash;
+      state.seen = new Map(Object.entries(seen));
       lastSync = Date.now();
       if (changed || settingsChanged || pkgChanged) renderAll();
       return changed;
@@ -2750,6 +2867,8 @@
       state.shipped = [];
       state.returns = [];
       state.trash = [];
+      state.seen = new Map();
+      lastSeenSig = '';
       renderAll();
       try {
         await syncData(true);
@@ -3289,6 +3408,7 @@
         '<input type="checkbox" data-cust="' + escapeHtml(key) + '"' + (checked ? ' checked' : '') + (empty ? ' disabled' : '') + '>' +
         '<span>' + escapeHtml(row.type) +
         (row.id ? ' <span class="id">' + escapeHtml(row.id) + '</span>' : '') +
+        (row.id && !CUSTOMERS[row.id] ? seenMarkHtml('id:' + row.id) : '') +
         '<span class="count">' + (countBits.join(' · ') || 'אין נתונים בקבצים') + '</span></span></label>';
     }
 
@@ -3365,7 +3485,7 @@
         rows.sort((a, b) => a.type.localeCompare(b.type, 'he'));
 
         if (isLimited) {
-          if (!custGroupMatches(rows, q).length) return;
+          if (!custGroupMatches(unseenOnly(rows), q).length) return;
           shown++;
           groupHtml += '<div class="store-box' + (isBoth ? ' both-box' : '') + '">' +
             '<h3><span>' + escapeHtml(store) + ' <span class="id">(' + rows.length + ')</span></span>' +
@@ -3376,6 +3496,7 @@
 
         // A store is one customer: its row opens the merged report of both customer numbers
         const storeIds = rows.map(r => r.id);
+        if (state.onlyUnseen && seenStatus('store:' + store) === 'seen') return;
         const nameHit = !q || ('חנות ' + store).toLowerCase().includes(q);
         const rowHits = custGroupMatches(rows, q);
         if (!nameHit && !rowHits.length) return;
@@ -3393,7 +3514,7 @@
         html = '<div class="store-box' + (merged ? ' active' : '') + (open ? ' is-open' : '') + '">' +
           '<div class="store-row">' +
           '<button type="button" class="store-pick" data-merge-store="' + escapeHtml(store) + '"' + (empty ? ' disabled' : '') + '>' +
-          '<b>חנות ' + escapeHtml(store) + '</b>' +
+          '<b>חנות ' + escapeHtml(store) + seenMarkHtml('store:' + store) + '</b>' +
           '<span class="count">' + (countBits.join(' · ') || 'אין נתונים בקבצים') + '</span></button>' +
           '<button type="button" class="store-chev' + (open ? ' open' : '') + '" data-toggle-store="' + escapeHtml(store) + '"' +
           ' aria-expanded="' + open + '" title="מספרי הלקוח של החנות" aria-label="מספרי הלקוח של החנות">▾</button>' +
@@ -3410,8 +3531,13 @@
           '<div class="store-strip">' + storeHtml + '</div></div>';
       }
       if (groupHtml) html += '<div class="cust-groups">' + groupHtml + '</div>';
-      if (!shown) html = '<div class="extra-empty">לא נמצא לקוח או חנות שמתאימים לחיפוש.</div>';
+      if (!shown) {
+        html = '<div class="extra-empty">' + (state.onlyUnseen && !q
+          ? 'ראית את כל החנויות והלקוחות בחבילה הזו. כבו את «רק מה שעוד לא ראיתי» כדי לראות את כולם.'
+          : 'לא נמצא לקוח או חנות שמתאימים לחיפוש.') + '</div>';
+      }
       box.innerHTML = html;
+      renderSeenBar();
       fillLimitedCustList('extraCustList', byStore.get('לקוחות נוספים') || [], selected, 'extra');
       fillLimitedCustList('bothCustList', byStore.get(BOTH_GROUP) || [], selected, 'both');
       const storesAll = box.querySelector('[data-select-all="stores"]');
@@ -3445,9 +3571,16 @@
         ((row.name || '') + ' ' + (row.type || '') + ' ' + (row.id || '')).toLowerCase().includes(q));
     }
 
+    // With "רק מה שעוד לא ראיתי": customers already seen drop out (those updated since stay)
+    function unseenOnly(rows) {
+      if (!state.onlyUnseen) return rows;
+      return rows.filter(row => !row.id || seenStatus('id:' + row.id) !== 'seen');
+    }
+
     function fillLimitedCustList(listId, rows, selected, kind) {
       const list = document.getElementById(listId);
       if (!list) return;
+      rows = unseenOnly(rows);
       const q = state.custQ;
       const allBox = document.querySelector('[data-select-all="' + kind + '"]');
       if (allBox) {
@@ -4008,32 +4141,147 @@
       ).join('');
     }
 
-    // The packages as chips. Users see it only when there is more than one; admins always,
-    // with the buttons to make and set up packages.
+    // The packages: one button with the open package, and the list of all of them under it.
+    // It stays one row however many packages there are.
+    function pkgTagsHtml(p) {
+      const tags = [];
+      if (isAdmin() && p.main) tags.push('<span class="pkg-tag main">ראשית</span>');
+      if (p.hidden) tags.push('<span class="pkg-tag">מוסתרת</span>');
+      return tags.join('');
+    }
+
+    function pkgPickerHtml() {
+      const cur = currentPackage();
+      const pkgs = state.packages;
+      return '<div class="pkg-picker">' +
+        '<button type="button" class="pkg-current" data-menu-toggle data-keep-drawer aria-haspopup="true">' +
+          '<span class="pkg-k">חבילה:</span><b>' + escapeHtml(cur ? cur.name : '') + '</b>' + (cur ? pkgTagsHtml(cur) : '') +
+          '<span class="chev">▾</span></button>' +
+        '<div class="menu-pop pkg-pop" hidden>' +
+          (pkgs.length > 6 ? '<input type="search" class="pkg-search" placeholder="חיפוש חבילה..." data-pkg-search>' : '') +
+          pkgs.map(p =>
+            '<button type="button" class="pkg-opt' + (p.id === state.pkgId ? ' on' : '') + '" data-pkg="' + escapeHtml(p.id) + '" data-name="' + escapeHtml(p.name.toLowerCase()) + '">' +
+              escapeHtml(p.name) + pkgTagsHtml(p) +
+              '<span class="pkg-count">' + fileCountText(p.files || 0) + '</span></button>'
+          ).join('') +
+        '</div></div>';
+    }
+
+    // In the files window (users: only with more than one package) and at the top of the side menu
     function renderPkgBar() {
       const bar = document.getElementById('pkgBar');
       const admin = isAdmin();
       const pkgs = state.packages;
       bar.hidden = !(admin ? pkgs.length > 0 : pkgs.length > 1);
-      if (bar.hidden) { bar.innerHTML = ''; return; }
-      bar.innerHTML = '<span class="pkg-label">חבילה:</span>' + pkgs.map(p => {
-        const tags = [];
-        if (admin && p.main) tags.push('ראשית');
-        if (p.hidden) tags.push('מוסתרת');
-        return '<button type="button" class="pkg-chip' + (p.id === state.pkgId ? ' active' : '') + '" data-pkg="' + escapeHtml(p.id) + '">' +
-          escapeHtml(p.name) + tags.map(t => '<span class="pkg-tag">' + t + '</span>').join('') + '</button>';
-      }).join('') +
-      (admin
-        ? '<span class="pkg-tools">' +
-            '<button type="button" class="pkg-chip add" data-pkg-new>+ חבילה חדשה</button>' +
-            '<button type="button" class="btn btn-ghost btn-sm" data-pkg-edit>הגדרות החבילה</button>' +
-          '</span>'
-        : '');
+      bar.innerHTML = bar.hidden ? '' : pkgPickerHtml() +
+        (admin
+          ? '<span class="pkg-tools upload-part">' +
+              '<button type="button" class="btn btn-ghost" data-pkg-new>+ חבילה חדשה</button>' +
+              '<button type="button" class="btn btn-ghost" data-pkg-edit>הגדרות החבילה</button>' +
+            '</span>'
+          : '');
+      const side = document.getElementById('drawerPkg');
+      side.innerHTML = pkgs.length > 1 ? pkgPickerHtml() : '';
     }
 
     function packageName() {
       const p = currentPackage();
       return p ? p.name : '';
+    }
+
+    // ---------- "seen": which stores and customers this user has opened ----------
+    // A unit is what the customer picker shows as one row: a store (both of its numbers) or one
+    // customer number. Rows without a customer number are not tracked.
+    // For each unit in these files: its name and when a file with its rows was last uploaded.
+    function unitsOfFiles(files) {
+      const units = new Map();
+      files.forEach(f => {
+        const at = Date.parse(f.createdAt) || 0;
+        (f.items || []).forEach(it => {
+          const id = it.customerId || '';
+          if (!id) return;
+          const key = custUnitKey(id);
+          let u = units.get(key);
+          if (!u) {
+            const known = CUSTOMERS[id];
+            u = { key, name: known ? 'חנות ' + known.store : '', updated: 0 };
+            units.set(key, u);
+          }
+          if (!CUSTOMERS[id]) {
+            const name = String(it.customerName || '').trim();
+            if (name.length > u.name.length) u.name = name;
+          }
+          if (at > u.updated) u.updated = at;
+        });
+      });
+      units.forEach((u, key) => { if (!u.name) u.name = 'לקוח ' + key.slice(3); });
+      return units;
+    }
+
+    let unitsCache = null;
+
+    function packageUnits() {
+      if (!unitsCache) unitsCache = unitsOfFiles(state.shipped.concat(state.returns));
+      return unitsCache;
+    }
+
+    // '' (not seen), 'seen', or 'updated' (seen, and a file with its rows came in after that)
+    function seenStatus(key, seenMap, units) {
+      const at = (seenMap || state.seen).get(key);
+      if (!at) return '';
+      const u = (units || packageUnits()).get(key);
+      return u && u.updated > Date.parse(at) ? 'updated' : 'seen';
+    }
+
+    function seenMarkHtml(key) {
+      const st = seenStatus(key);
+      if (!st) return '';
+      const when = fmtWhen(state.seen.get(key));
+      return st === 'updated'
+        ? '<span class="seen-mark upd" data-unseen="' + escapeHtml(key) + '" title="נצפה ב־' + escapeHtml(when) + ', ומאז הועלו נתונים חדשים. לחיצה: סמן כלא נצפה">עודכן</span>'
+        : '<span class="seen-mark" data-unseen="' + escapeHtml(key) + '" title="נצפה ב־' + escapeHtml(when) + '. לחיצה: סמן כלא נצפה">✓</span>';
+    }
+
+    // The units of the report on screen: in separate reports only the one being looked at
+    let lastSeenSig = '';
+
+    function shownUnits(people) {
+      if (state.allCust || !state.selectedIds) return [];
+      const ids = people
+        ? (people.find(p => p.key === state.focusStoreId) || people[0]).ids
+        : Array.from(state.selectedIds);
+      return Array.from(new Set(ids.filter(Boolean).map(custUnitKey)));
+    }
+
+    // Called when a report is shown. The same report shown again (a filter, a sort) is not sent
+    // again, so "סמן כלא נצפה" on the open report holds until another customer is picked.
+    function markShown(keys) {
+      if (!state.pkgId || !keys.length) return;
+      const sig = state.pkgId + '|' + keys.join(',');
+      if (sig === lastSeenSig) return;
+      lastSeenSig = sig;
+      const due = keys.filter(k => seenStatus(k) !== 'seen');
+      if (!due.length) return;
+      const now = new Date().toISOString();
+      due.forEach(k => state.seen.set(k, now));
+      renderCustomerPicker();
+      call('svr_seen_set', { p_package: state.pkgId, p_keys: due, p_action: 'mark' })
+        .catch(err => { if (err.code !== 'AUTH') console.warn('seen mark failed', err); });
+    }
+
+    function renderSeenBar() {
+      const units = packageUnits();
+      let seen = 0;
+      let upd = 0;
+      units.forEach((u, key) => {
+        const st = seenStatus(key);
+        if (st) seen++;
+        if (st === 'updated') upd++;
+      });
+      document.getElementById('seenBar').hidden = units.size === 0;
+      document.getElementById('seenCount').innerHTML = 'ראית ' + fmtNum(seen) + ' מתוך ' + fmtNum(units.size) +
+        (upd ? '<small>' + (upd === 1 ? 'אחד עודכן מאז' : fmtNum(upd) + ' עודכנו מאז') + '</small>' : '');
+      document.getElementById('seenReset').hidden = seen === 0;
     }
 
     function updateActionButtons(visibleCount) {
@@ -4248,6 +4496,7 @@
 
     function renderAll() {
       custNamesCache = null;
+      unitsCache = null;
       applyDateInputLimits();
       renderPkgBar();
       renderFileList('shipped');
@@ -4273,7 +4522,7 @@
           '<h3>בחרו לקוח כדי לראות דוח</h3>' +
           '<p>הדוח יוצג אחרי שתבחרו לקוח או חנות מהרשימה.' +
           (state.packages.length > 1 ? '<br>חבילה: <b>' + escapeHtml(packageName()) + '</b>' : '') + '</p>' +
-          '<button type="button" class="btn btn-primary" data-open-import>בחירת לקוח</button>' +
+          '<button type="button" class="btn btn-primary" data-open-import="pick">בחירת לקוח</button>' +
           '</div>';
         return;
       }
@@ -4367,6 +4616,7 @@
       // on phones the same count rides on the "showing now" line instead of its own row
       const scopeCount = document.getElementById('scopeCount');
       if (scopeCount) scopeCount.textContent = ' · ' + status;
+      markShown(shownUnits(people));
     }
 
     function collectDocs(kind, filter) {
@@ -4999,8 +5249,16 @@
       });
     }
 
-    function openImportModal() {
+    // mode 'pick': the same window without the upload part, for picking a customer
+    function openImportModal(mode) {
       const modal = document.getElementById('importModal');
+      const pick = mode === 'pick' && isAdmin();
+      modal.querySelector('.import-modal').classList.toggle('pick-only', pick);
+      const title = !isAdmin() ? 'בחירת לקוח ודוחות' : pick ? 'בחירת לקוח' : 'ניהול והעלאת קבצים';
+      document.getElementById('importModalTitle').textContent = title;
+      document.getElementById('importModalSub').textContent = !isAdmin()
+        ? 'בחרו לקוח לדוח, או פתחו את הרשימות המרוכזות.'
+        : pick ? 'לחיצה על חנות או על לקוח מציגה את הדוח שלו.' : 'גררו קבצי אקסל, או לחצו לבחירה. אחר כך בחרו לקוח לדוח.';
       modal.classList.add('show');
       modal.setAttribute('aria-hidden', 'false');
       document.body.classList.add('modal-open');
@@ -5983,11 +6241,198 @@ renderTable();
       }
     });
 
-    document.getElementById('pkgBar').addEventListener('click', (e) => {
-      const chip = e.target.closest('[data-pkg]');
-      if (chip) { switchPackage(chip.dataset.pkg); return; }
-      if (e.target.closest('[data-pkg-new]')) { openPkgModal(null); return; }
-      if (e.target.closest('[data-pkg-edit]')) openPkgModal(currentPackage());
+    ['pkgBar', 'drawerPkg'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-pkg]');
+        if (chip) { switchPackage(chip.dataset.pkg); return; }
+        if (e.target.closest('[data-pkg-new]')) { openPkgModal(null); return; }
+        if (e.target.closest('[data-pkg-edit]')) openPkgModal(currentPackage());
+      });
+      el.addEventListener('input', (e) => {
+        const box = e.target.closest('[data-pkg-search]');
+        if (!box) return;
+        const q = box.value.trim().toLowerCase();
+        box.parentElement.querySelectorAll('[data-pkg]').forEach(b => { b.hidden = !!q && !b.dataset.name.includes(q); });
+      });
+    });
+
+    // ---------- "seen" marks in the customer picker ----------
+    // The mark sits inside the row's button, so it is caught before the row is picked
+    document.getElementById('customerPicker').addEventListener('click', (e) => {
+      const mark = e.target.closest('[data-unseen]');
+      if (!mark) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const key = mark.dataset.unseen;
+      state.seen.delete(key);
+      renderCustomerPicker();
+      toast('סומן כלא נצפה', 'ok');
+      call('svr_seen_set', { p_package: state.pkgId, p_keys: [key], p_action: 'unmark' })
+        .catch(err => { if (err.code !== 'AUTH') toast(errText(err), 'err'); });
+    }, true);
+
+    document.getElementById('onlyUnseen').addEventListener('change', (e) => {
+      state.onlyUnseen = e.currentTarget.checked;
+      renderCustomerPicker();
+    });
+
+    document.getElementById('seenReset').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (!btn.dataset.armed) {
+        btn.dataset.armed = '1';
+        btn.textContent = 'לחצו שוב לאיפוס כל הסימונים בחבילה';
+        clearTimeout(btn._t);
+        btn._t = setTimeout(() => { delete btn.dataset.armed; btn.textContent = 'אפס סימונים'; }, 4000);
+        return;
+      }
+      clearTimeout(btn._t);
+      delete btn.dataset.armed;
+      btn.textContent = 'אפס סימונים';
+      try {
+        await call('svr_seen_set', { p_package: state.pkgId, p_keys: [], p_action: 'reset' });
+        state.seen.clear();
+        lastSeenSig = '';
+        renderCustomerPicker();
+        toast('הסימונים אופסו', 'ok');
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+
+    // ---------- "עודכן לפני X דקות" under "רענון נתונים" ----------
+    function updateSyncAgo() {
+      const el = document.getElementById('syncAgo');
+      if (!lastSync) { el.textContent = ''; return; }
+      const min = Math.floor((Date.now() - lastSync) / 60000);
+      el.textContent = min < 1 ? 'עודכן עכשיו'
+        : min === 1 ? 'עודכן לפני דקה'
+        : min < 60 ? 'עודכן לפני ' + min + ' דקות'
+        : 'עודכן ב־' + new Date(lastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    }
+    document.getElementById('btnMenu').addEventListener('click', updateSyncAgo);
+    setInterval(() => { if (document.getElementById('drawer').classList.contains('open')) updateSyncAgo(); }, 30000);
+
+    document.getElementById('btnPickCustomer').addEventListener('click', () => openImportModal('pick'));
+
+    // ---------- admin: everyone's progress ("מעקב צפייה") ----------
+    const track = { view: 'user', open: new Set() };
+
+    async function openTrack() {
+      const sel = document.getElementById('trackPkg');
+      sel.innerHTML = state.packages.map(p =>
+        '<option value="' + escapeHtml(p.id) + '"' + (p.id === state.pkgId ? ' selected' : '') + '>' +
+        escapeHtml(p.name) + (p.hidden ? ' (מוסתרת)' : '') + '</option>').join('');
+      track.open.clear();
+      document.getElementById('trackModal').classList.add('show');
+      await renderTrack();
+    }
+
+    async function renderTrack() {
+      const body = document.getElementById('trackBody');
+      const pkgId = document.getElementById('trackPkg').value;
+      body.innerHTML = '<div class="dev-none">טוען...</div>';
+      try {
+        const [users, report, data] = await Promise.all([
+          call('svr_users_list'),
+          call('svr_seen_report', { p_package: pkgId }),
+          pkgId === state.pkgId ? Promise.resolve({ shipped: state.shipped, returns: state.returns }) : fetchPackage(pkgId, true)
+        ]);
+        usersCache = users || [];
+        track.data = {
+          users: usersCache.filter(u => u.active),
+          units: unitsOfFiles(data.shipped.concat(data.returns)),
+          seen: new Map()   // user id → Map(unit key → when)
+        };
+        (report || []).forEach(r => {
+          if (!track.data.seen.has(r.user_id)) track.data.seen.set(r.user_id, new Map());
+          track.data.seen.get(r.user_id).set(r.key, r.at);
+        });
+        drawTrack();
+      } catch (err) {
+        if (err.code !== 'AUTH') body.innerHTML = '<div class="dev-none">' + escapeHtml(errText(err)) + '</div>';
+      }
+    }
+
+    function drawTrack() {
+      const body = document.getElementById('trackBody');
+      const d = track.data;
+      if (!d) return;
+      document.querySelectorAll('[data-track-view]').forEach(b => b.classList.toggle('on', b.dataset.trackView === track.view));
+      const units = Array.from(d.units.values()).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+      if (!units.length) { body.innerHTML = '<div class="dev-none">אין עדיין קבצים בחבילה הזו.</div>'; return; }
+      const statusOf = (map, u) => {
+        const at = map && map.get(u.key);
+        if (!at) return '';
+        return u.updated > Date.parse(at) ? 'updated' : 'seen';
+      };
+      if (track.view === 'user') {
+        body.innerHTML = d.users.map(user => {
+          const map = d.seen.get(user.id) || new Map();
+          const seenUnits = units.filter(u => statusOf(map, u));
+          const notSeen = units.filter(u => !statusOf(map, u));
+          const upd = seenUnits.filter(u => statusOf(map, u) === 'updated').length;
+          const pct = Math.round(seenUnits.length / units.length * 100);
+          let last = '';
+          map.forEach(at => { if (at > last) last = at; });
+          const open = track.open.has(user.id);
+          return '<div class="user-card">' +
+            '<div class="user-head track-head" data-track-user="' + escapeHtml(user.id) + '">' +
+              '<div class="user-name"><b>' + escapeHtml(user.name || user.username) + '</b>' +
+                (user.role === 'admin' ? '<span class="role-pill admin">מנהל</span>' : '') + '</div>' +
+              '<div class="track-prog"><div class="bar"><i style="width:' + pct + '%"></i></div>' +
+                fmtNum(seenUnits.length) + ' מתוך ' + fmtNum(units.length) + ' (' + pct + '%) ' + (open ? '▴' : '▾') + '</div>' +
+              '<div class="track-meta">' + (last ? 'צפייה אחרונה: ' + escapeHtml(fmtWhen(last)) : 'עוד לא צפה באף לקוח בחבילה הזו') +
+                (upd ? ' · <span class="upd">' + (upd === 1 ? 'אחד עודכן מאז' : upd + ' עודכנו מאז') + '</span>' : '') + '</div>' +
+            '</div>' +
+            (open
+              ? '<div class="track-lists">' +
+                  '<div><h4>נצפו (' + seenUnits.length + ')</h4><ul>' + (seenUnits.map(u => {
+                    const upd1 = statusOf(map, u) === 'updated';
+                    return '<li' + (upd1 ? ' class="upd"' : '') + '>' + escapeHtml(u.name) + '<span>' +
+                      (upd1 ? 'עודכן מאז · ' : '') + escapeHtml(fmtWhen(map.get(u.key))) + '</span></li>';
+                  }).join('') || '<li>—</li>') + '</ul></div>' +
+                  '<div><h4>לא נצפו (' + notSeen.length + ')</h4><ul>' +
+                    (notSeen.map(u => '<li>' + escapeHtml(u.name) + '</li>').join('') || '<li>—</li>') + '</ul></div>' +
+                '</div>'
+              : '') +
+            '</div>';
+        }).join('');
+        return;
+      }
+      // by customer: who opened it and when, and who has not; the least seen first
+      const rows = units.map(u => {
+        const viewers = [];
+        const missing = [];
+        d.users.forEach(user => {
+          const map = d.seen.get(user.id);
+          const st = statusOf(map, u);
+          if (st) viewers.push({ user, at: map.get(u.key), upd: st === 'updated' });
+          else missing.push(user);
+        });
+        return { u, viewers, missing };
+      }).sort((a, b) => a.viewers.length - b.viewers.length || a.u.name.localeCompare(b.u.name, 'he'));
+      body.innerHTML = '<div class="user-card">' + rows.map(r =>
+        '<div class="track-cust"><b>' + escapeHtml(r.u.name) + '</b>' +
+          '<div>' + (r.viewers.length
+            ? 'צפו: ' + r.viewers.map(v => escapeHtml(v.user.name || v.user.username) + ' ב־' + escapeHtml(fmtWhen(v.at)) + (v.upd ? ' (עודכן מאז)' : '')).join(' · ')
+            : '<span class="none">אף אחד עוד לא צפה</span>') + '</div>' +
+          (r.missing.length && r.viewers.length ? '<div>לא צפו: ' + r.missing.map(m => escapeHtml(m.name || m.username)).join(', ') + '</div>' : '') +
+        '</div>').join('') + '</div>';
+    }
+
+    document.getElementById('btnTrack').addEventListener('click', openTrack);
+    document.getElementById('trackPkg').addEventListener('change', () => { track.open.clear(); renderTrack(); });
+    document.getElementById('trackModal').addEventListener('click', (e) => {
+      const v = e.target.closest('[data-track-view]');
+      if (v) { track.view = v.dataset.trackView; drawTrack(); return; }
+      const head = e.target.closest('[data-track-user]');
+      if (head) {
+        const id = head.dataset.trackUser;
+        if (track.open.has(id)) track.open.delete(id);
+        else track.open.add(id);
+        drawTrack();
+      }
     });
 
     document.getElementById('overlapModal').addEventListener('click', (e) => {
@@ -5996,7 +6441,7 @@ renderTable();
       else if (e.target.id === 'overlapModal') finishOverlap('cancel');
     });
 
-    ['fileEditModal', 'pkgModal'].forEach(id => {
+    ['fileEditModal', 'pkgModal', 'trackModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', (e) => {
         if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
@@ -6042,8 +6487,9 @@ renderTable();
         else printOneStore(one.closest('.store-report'));
         return;
       }
-      if (e.target.closest('[data-open-import]')) {
-        openImportModal();
+      const openImport = e.target.closest('[data-open-import]');
+      if (openImport) {
+        openImportModal(openImport.dataset.openImport);
         return;
       }
       if (e.target.closest('[data-refresh]')) {
@@ -6155,9 +6601,10 @@ renderTable();
 
     document.getElementById('btnMenu').addEventListener('click', openDrawer);
     document.getElementById('drawerScrim').addEventListener('click', closeDrawer);
-    // every entry in the menu does its job and gets out of the way; the switch stays open
+    // every entry in the menu does its job and gets out of the way; the switch and the
+    // package button (which only opens its list) keep it open
     document.getElementById('drawer').addEventListener('click', (e) => {
-      if (e.target.closest('button')) closeDrawer();
+      if (e.target.closest('button') && !e.target.closest('[data-keep-drawer]')) closeDrawer();
     });
 
     // ---------- filters the admin can show or hide for everyone ----------
@@ -6200,6 +6647,7 @@ renderTable();
 
     // ---------- small pop-up menus (export) and the folded date filter ----------
     document.addEventListener('click', (e) => {
+      if (e.target.closest('.menu-pop input')) return;   // typing in a list's search box keeps it open
       const toggle = e.target.closest('[data-menu-toggle]');
       const pop = toggle ? toggle.parentElement.querySelector('.menu-pop') : null;
       const wasOpen = pop && !pop.hidden;
@@ -6397,7 +6845,7 @@ renderTable();
       closeImportModal();
       toast('מוצג הדוח של חנות ' + store, 'ok');
     });
-    document.getElementById('btnManageFiles').addEventListener('click', openImportModal);
+    document.getElementById('btnManageFiles').addEventListener('click', () => openImportModal());
     document.getElementById('importModalClose').addEventListener('click', closeImportModal);
     document.getElementById('importModalDone').addEventListener('click', closeImportModal);
     document.getElementById('importModal').addEventListener('click', (e) => {
@@ -6443,7 +6891,7 @@ renderTable();
         finishOverlap('cancel');
         return;
       }
-      const top = ['fileEditModal', 'pkgModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
