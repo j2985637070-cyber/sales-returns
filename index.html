@@ -8044,9 +8044,9 @@ renderTable();
       storeToken();
       clearLocalData();
       showAuth('login');
-      // signing out on purpose also stops this device's notifications (signing out after an idle
-      // hour does not); then the session is closed
-      disablePush(old).catch(() => {}).then(() => rpc('svr_logout', { p_token: old }).catch(() => {}));
+      // the device keeps getting this user's notifications (only the switch in the menu turns them
+      // off); if someone else signs in here, they move to that user (syncPushSub)
+      rpc('svr_logout', { p_token: old }).catch(() => {});
     });
 
     document.getElementById('btnRefresh').addEventListener('click', () => {
