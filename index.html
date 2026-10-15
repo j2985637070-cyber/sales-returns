@@ -478,6 +478,46 @@
     .track-cust .none { color: var(--danger); }
     @media (max-width: 560px) { .track-lists { grid-template-columns: 1fr; } .track-lists > div + div { border-inline-start: none; border-top: 1px solid var(--border); } }
 
+    /* customers and agents (admin) */
+    .cl-upload {
+      display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+      margin: 14px 18px 0; padding: 12px 14px;
+      border: 1.5px dashed #cfd7e8; border-radius: var(--radius-sm); background: #fff;
+    }
+    .cl-upload.drag-over { border-color: var(--accent); border-style: solid; background: var(--accent-light); }
+    .cl-meta { flex: 1 1 220px; min-width: 0; }
+    .cl-meta b { display: block; color: var(--navy); font-weight: 800; }
+    .cl-meta span { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+    #clConfirm:not(:empty) {
+      margin: 10px 18px 0; padding: 12px 14px; border-radius: var(--radius-sm);
+      background: var(--amber-light); border: 1px solid #ffd8a8; font-size: 0.86rem; font-weight: 600; color: #6b3e00;
+    }
+    #clConfirm .form-actions { margin-top: 10px; }
+    .cl-agents { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 18px 0; }
+    .cl-agent {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; min-height: 32px;
+      border: 1px solid #d3dae8; border-radius: 999px; background: #fff;
+      font: inherit; font-size: 0.82rem; font-weight: 700; color: var(--navy); cursor: pointer;
+    }
+    .cl-agent span { color: var(--muted); font-weight: 600; }
+    .cl-agent:hover, .cl-agent.on { border-color: #b7c4f0; background: var(--accent-light); color: var(--accent); }
+    .cl-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 18px 0; }
+    .cl-filter { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 18px 8px; }
+    .cl-filter input, .cl-filter select {
+      font: inherit; font-size: 0.88rem; padding: 8px 10px; min-height: 40px;
+      border: 1px solid #d3dae8; border-radius: 10px; background: #fff; outline: none;
+    }
+    .cl-filter input { flex: 2 1 220px; min-width: 0; }
+    .cl-filter select { flex: 1 1 150px; }
+    #clTable { padding: 0 18px 16px; }
+    #clTable table { width: 100%; border-collapse: collapse; }
+    #clTable td.cl-id { direction: ltr; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); white-space: nowrap; }
+    #clTable td.cl-act { white-space: nowrap; text-align: left; width: 1%; }
+    #clTable .cl-act button { border: none; background: #eef2f8; color: var(--navy); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-weight: 800; }
+    #clTable .cl-act button + button { margin-inline-start: 4px; background: var(--danger-light); color: var(--danger); }
+    #clTable .cl-act button[data-armed] { width: auto; padding: 0 8px; }
+    .cl-count { padding: 0 18px 6px; color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+
     /* "בחירת לקוח" opens the same window without the upload part */
     .import-modal.pick-only .upload-part { display: none !important; }
 
@@ -1663,6 +1703,7 @@
       .dash-header { padding: 8px 10px; gap: 10px; margin-bottom: 10px; border-radius: 14px; }
       .dash-header h1 { font-size: 1.12rem; }
       .dash-header p { display: none; }
+      .dash-header p#dataFresh.has-data { display: block; font-size: 0.72rem; margin-top: 2px; line-height: 1.35; }
       .brand { gap: 10px; }
       .brand-mark { width: 36px; height: 36px; border-radius: 10px; box-shadow: none; }
       .brand-mark svg { width: 20px; height: 20px; }
@@ -1918,7 +1959,7 @@
         <span class="brand-mark" data-icon="chart"></span>
         <div>
           <h1>מכירות מול החזרות</h1>
-          <p>השוואה בין מה שנשלח לחנות לבין מה שחזר</p>
+          <p id="dataFresh">השוואה בין מה שנשלח לחנות לבין מה שחזר</p>
         </div>
       </div>
     </header>
@@ -1941,6 +1982,7 @@
         </button>
         <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים ומכשירים<span class="manage-count" id="usersBadge" hidden title="מכשירים שממתינים לאישור"></span></button>
         <button type="button" class="drawer-item admin-only" id="btnTrack">מעקב צפייה</button>
+        <button type="button" class="drawer-item admin-only" id="btnCustomers">לקוחות וסוכנים</button>
         <label class="drawer-switch admin-only">
           <span>הצגת סינונים למשתמשים
             <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
@@ -2269,6 +2311,60 @@
           <button type="button" class="btn btn-danger" id="pkgDelete" hidden>מחיקת החבילה</button>
         </div>
       </form>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="custListModal">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="custListTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="custListTitle">לקוחות וסוכנים</h3>
+          <p>כל הלקוחות והסוכן של כל אחד. הרשימה לא שייכת לחבילה: היא אותה רשימה בכל עונה.</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="cl-upload" id="clDrop">
+          <input type="file" id="clFile" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+          <div class="cl-meta">
+            <b>קובץ הלקוחות</b>
+            <span id="clFileMeta">עוד לא הועלה קובץ</span>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="clPick">העלאת קובץ לקוחות</button>
+        </div>
+        <div id="clConfirm"></div>
+        <div class="cl-agents" id="clAgents"></div>
+        <div class="cl-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="clToggleTable">הצגת טבלה</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="clAdd">+ הוספת לקוח</button>
+        </div>
+        <form class="form-grid" id="clForm" autocomplete="off" hidden>
+          <div class="field">
+            <label for="clId">מספר לקוח</label>
+            <input type="text" id="clId" inputmode="numeric" maxlength="40">
+          </div>
+          <div class="field">
+            <label for="clName">שם לקוח</label>
+            <input type="text" id="clName" maxlength="200">
+          </div>
+          <div class="field">
+            <label for="clAgent">סוכן</label>
+            <input type="text" id="clAgent" list="clAgentList" maxlength="80" placeholder="בחרו מהרשימה או כתבו שם חדש">
+            <datalist id="clAgentList"></datalist>
+          </div>
+          <div class="form-error wide" id="clFormError" hidden></div>
+          <div class="form-actions wide">
+            <button type="submit" class="btn btn-primary" id="clSave">הוספת הלקוח</button>
+            <button type="button" class="btn btn-ghost" id="clCancel">ביטול</button>
+          </div>
+        </form>
+        <div id="clTableWrap" hidden>
+          <div class="cl-filter">
+            <input type="search" id="clSearch" placeholder="חיפוש לפי מספר, שם או סוכן...">
+            <select id="clAgentFilter" aria-label="סינון לפי סוכן"></select>
+          </div>
+          <div id="clTable"></div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="modal-backdrop no-print" id="trackModal">
@@ -4391,6 +4487,29 @@
       return p ? p.name : '';
     }
 
+    // Under the title: the open package and how fresh its data is ("נשלח עד 30.09.26 · עודכן 12.10.26")
+    function renderFreshness() {
+      const el = document.getElementById('dataFresh');
+      const files = state.shipped.concat(state.returns);
+      if (!files.length) {
+        el.textContent = 'השוואה בין מה שנשלח לחנות לבין מה שחזר';
+        el.classList.remove('has-data');
+        return;
+      }
+      const lastDate = list => list.reduce((m, f) => Math.max(m, fileSpan(f).max || 0), 0);
+      const ship = lastDate(state.shipped);
+      const ret = lastDate(state.returns);
+      const uploaded = files.reduce((m, f) => Math.max(m, Date.parse(f.createdAt) || 0), 0);
+      const bits = [];
+      if (packageName()) bits.push(packageName());
+      if (ship) bits.push('נשלח עד ' + shortDate(ship));
+      if (ret) bits.push('החזרות עד ' + shortDate(ret));
+      if (uploaded) bits.push('עודכן ' + fmtDay(new Date(uploaded).toISOString()));
+      el.textContent = bits.join(' · ');
+      el.title = 'התאריך האחרון שמופיע בקבצים של החבילה, ומתי הועלה הקובץ האחרון';
+      el.classList.add('has-data');
+    }
+
     // ---------- "seen": which stores and customers this user has opened ----------
     // A unit is what the customer picker shows as one row: a store (both of its numbers) or one
     // customer number. Rows without a customer number are not tracked.
@@ -4701,6 +4820,7 @@
       unitsCache = null;
       applyDateInputLimits();
       renderPkgBar();
+      renderFreshness();
       renderFileList('shipped');
       renderFileList('returns');
       renderTrash();
@@ -6648,6 +6768,246 @@ renderTable();
     }
 
     document.getElementById('btnTrack').addEventListener('click', openTrack);
+
+    // ---------- admin: the customers list and the agent of each ----------
+    const cl = { rows: [], file: null, showTable: false, editId: null, pending: null };
+
+    async function openCustList() {
+      cl.pending = null;
+      document.getElementById('clConfirm').innerHTML = '';
+      document.getElementById('clForm').hidden = true;
+      document.getElementById('custListModal').classList.add('show');
+      await loadCustList();
+    }
+
+    async function loadCustList() {
+      try {
+        const res = await call('svr_customers_list') || {};
+        cl.rows = res.rows || [];
+        cl.file = res.file || null;
+        renderCustList();
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    }
+
+    function agentCounts(rows) {
+      const counts = new Map();
+      rows.forEach(r => counts.set(r.agent || 'ללא סוכן', (counts.get(r.agent || 'ללא סוכן') || 0) + 1));
+      return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    }
+
+    function renderCustList() {
+      const f = cl.file;
+      document.getElementById('clFileMeta').textContent = f
+        ? '«' + cleanFileName(f.name) + '» · הועלה ' + fmtWhen(f.at) + (f.by ? ' · ' + f.by : '') + ' · ' + fmtNum(cl.rows.length) + ' לקוחות ברשימה'
+        : (cl.rows.length ? fmtNum(cl.rows.length) + ' לקוחות ברשימה' : 'עוד לא הועלה קובץ');
+      const filter = document.getElementById('clAgentFilter');
+      const current = filter.value;
+      const counts = agentCounts(cl.rows);
+      document.getElementById('clAgents').innerHTML = counts.map(([agent, n]) =>
+        '<button type="button" class="cl-agent' + (cl.showTable && current === agent ? ' on' : '') + '" data-cl-agent="' + escapeHtml(agent) + '">' +
+        escapeHtml(agent) + ' <span>' + fmtNum(n) + '</span></button>').join('');
+      filter.innerHTML = '<option value="">כל הסוכנים</option>' + counts.map(([agent]) =>
+        '<option value="' + escapeHtml(agent) + '"' + (agent === current ? ' selected' : '') + '>' + escapeHtml(agent) + '</option>').join('');
+      document.getElementById('clAgentList').innerHTML = counts.filter(([a]) => a !== 'ללא סוכן')
+        .map(([agent]) => '<option value="' + escapeHtml(agent) + '">').join('');
+      document.getElementById('clToggleTable').textContent = cl.showTable ? 'הסתרת הטבלה' : 'הצגת טבלה';
+      document.getElementById('clToggleTable').hidden = !cl.rows.length;
+      document.getElementById('clTableWrap').hidden = !cl.showTable;
+      if (cl.showTable) renderCustTable();
+    }
+
+    function renderCustTable() {
+      const q = document.getElementById('clSearch').value.trim().toLowerCase();
+      const agent = document.getElementById('clAgentFilter').value;
+      const rows = cl.rows.filter(r =>
+        (!agent || (r.agent || 'ללא סוכן') === agent) &&
+        (!q || (r.id + ' ' + r.name + ' ' + r.agent).toLowerCase().includes(q)));
+      document.getElementById('clTable').innerHTML =
+        '<div class="cl-count">' + (rows.length === cl.rows.length ? fmtNum(rows.length) + ' לקוחות' : 'מוצגים ' + fmtNum(rows.length) + ' מתוך ' + fmtNum(cl.rows.length)) + '</div>' +
+        (rows.length
+          ? '<table><thead><tr><th>מספר לקוח</th><th>שם לקוח</th><th>סוכן</th><th></th></tr></thead><tbody>' +
+            rows.map(r => '<tr><td class="cl-id">' + escapeHtml(r.id) + '</td><td>' + escapeHtml(r.name) +
+              (r.manual ? ' <span class="pkg-tag">נוסף ידנית</span>' : '') + '</td><td>' + escapeHtml(r.agent || '—') + '</td>' +
+              '<td class="cl-act"><button type="button" data-cl-edit="' + escapeHtml(r.id) + '" title="עריכה" aria-label="עריכה">✎</button>' +
+              '<button type="button" data-cl-del="' + escapeHtml(r.id) + '" title="מחיקה" aria-label="מחיקה">×</button></td></tr>').join('') +
+            '</tbody></table>'
+          : '<div class="dev-none">לא נמצא לקוח מתאים.</div>');
+    }
+
+    // Reads the customers Excel: the columns "מס. לקוח", "שם לקוח" and "שם סוכן", wherever they are
+    async function parseCustomersFile(file) {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const grid = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
+      for (let h = 0; h < Math.min(grid.length, 15); h++) {
+        const norms = grid[h].map(normalizeHeader);
+        const idCol = norms.findIndex(n => ['מסלקוח', 'מספרלקוח', 'קודלקוח'].includes(n));
+        const nameCol = norms.findIndex(n => n === 'שםלקוח' || n === 'שם');
+        const agentCol = norms.findIndex(n => n.includes('סוכן'));
+        if (idCol < 0 || agentCol < 0) continue;
+        const rows = [];
+        grid.slice(h + 1).forEach(line => {
+          let id = String(line[idCol] || '').trim();
+          if (/^[\d,]+$/.test(id)) id = id.replace(/,/g, '');
+          if (!id) return;
+          rows.push({ id, name: nameCol >= 0 ? String(line[nameCol] || '').trim() : '', agent: String(line[agentCol] || '').trim() });
+        });
+        return rows;
+      }
+      return null;
+    }
+
+    async function pickCustomersFile(file) {
+      if (!file) return;
+      if (typeof XLSX === 'undefined') { toast('ספריית האקסל לא נטענה — בדקו חיבור לאינטרנט ורעננו', 'err'); return; }
+      let rows;
+      try { rows = await parseCustomersFile(file); } catch (e) { rows = null; }
+      if (!rows || !rows.length) {
+        toast('לא נמצאו בקובץ העמודות «מס. לקוח» ו«שם סוכן»', 'err');
+        return;
+      }
+      // what the new file changes, before anything is replaced
+      const now = new Map(cl.rows.map(r => [r.id, r]));
+      const inFile = new Set(rows.map(r => r.id));
+      const added = rows.filter(r => !now.has(r.id)).length;
+      const updated = rows.filter(r => now.has(r.id) && (now.get(r.id).name !== r.name || now.get(r.id).agent !== r.agent)).length;
+      const removed = cl.rows.filter(r => !r.manual && !inFile.has(r.id)).length;
+      const kept = cl.rows.filter(r => r.manual && !inFile.has(r.id)).length;
+      const noAgent = rows.filter(r => !r.agent).length;
+      cl.pending = { rows, name: file.name };
+      document.getElementById('clConfirm').innerHTML =
+        'בקובץ «' + escapeHtml(cleanFileName(file.name)) + '» יש ' + fmtNum(rows.length) + ' לקוחות.' +
+        (cl.rows.length
+          ? ' יתווספו ' + fmtNum(added) + ', יעודכנו ' + fmtNum(updated) + ', יוסרו ' + fmtNum(removed) + '.' +
+            (kept ? (kept === 1 ? ' לקוח אחד שהוספת ידנית יישאר.' : ' ' + fmtNum(kept) + ' לקוחות שהוספת ידנית יישארו.') : '')
+          : '') +
+        (noAgent ? (noAgent === 1 ? ' ללקוח אחד אין סוכן בקובץ.' : ' ל־' + fmtNum(noAgent) + ' לקוחות אין סוכן בקובץ.') : '') +
+        '<div class="form-actions"><button type="button" class="btn btn-primary btn-sm" data-cl-import>' +
+        (cl.rows.length ? 'אישור והחלפת הרשימה' : 'אישור וקליטת הרשימה') + '</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-cl-import-cancel>ביטול</button></div>';
+    }
+
+    function openCustForm(row) {
+      cl.editId = row ? row.id : null;
+      document.getElementById('clId').value = row ? row.id : '';
+      document.getElementById('clId').disabled = !!row;
+      document.getElementById('clName').value = row ? row.name : '';
+      document.getElementById('clAgent').value = row ? row.agent : '';
+      document.getElementById('clSave').textContent = row ? 'שמירת השינויים' : 'הוספת הלקוח';
+      setFormError('clFormError', '');
+      const form = document.getElementById('clForm');
+      form.hidden = false;
+      form.scrollIntoView({ block: 'nearest' });
+      document.getElementById(row ? 'clName' : 'clId').focus();
+    }
+
+    document.getElementById('btnCustomers').addEventListener('click', openCustList);
+    document.getElementById('clPick').addEventListener('click', () => document.getElementById('clFile').click());
+    document.getElementById('clFile').addEventListener('change', (e) => {
+      pickCustomersFile(e.target.files && e.target.files[0]);
+      e.target.value = '';
+    });
+    (() => {
+      const zone = document.getElementById('clDrop');
+      zone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove('drag-over');
+        pickCustomersFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+      });
+    })();
+    document.getElementById('clToggleTable').addEventListener('click', () => {
+      cl.showTable = !cl.showTable;
+      renderCustList();
+    });
+    document.getElementById('clAdd').addEventListener('click', () => openCustForm(null));
+    document.getElementById('clCancel').addEventListener('click', () => { document.getElementById('clForm').hidden = true; });
+    document.getElementById('clSearch').addEventListener('input', renderCustTable);
+    document.getElementById('clAgentFilter').addEventListener('change', renderCustList);
+
+    document.getElementById('custListModal').addEventListener('click', async (e) => {
+      const chip = e.target.closest('[data-cl-agent]');
+      if (chip) {
+        // an agent opens the table with that agent's customers; a second click shows everyone again
+        const filter = document.getElementById('clAgentFilter');
+        const same = cl.showTable && filter.value === chip.dataset.clAgent;
+        filter.value = same ? '' : chip.dataset.clAgent;
+        cl.showTable = true;
+        renderCustList();
+        return;
+      }
+      if (e.target.closest('[data-cl-import-cancel]')) {
+        cl.pending = null;
+        document.getElementById('clConfirm').innerHTML = '';
+        return;
+      }
+      const imp = e.target.closest('[data-cl-import]');
+      if (imp && cl.pending) {
+        imp.disabled = true;
+        try {
+          const res = await call('svr_customers_import', { p_rows: cl.pending.rows, p_file: cl.pending.name }) || {};
+          cl.pending = null;
+          document.getElementById('clConfirm').innerHTML = '';
+          toast('נקלטו ' + fmtNum(res.count) + ' לקוחות: ' + fmtNum(res.added) + ' חדשים, ' + fmtNum(res.updated) + ' עודכנו, ' + fmtNum(res.removed) + ' הוסרו', 'ok');
+          await loadCustList();
+        } catch (err) {
+          imp.disabled = false;
+          if (err.code !== 'AUTH') toast(errText(err), 'err');
+        }
+        return;
+      }
+      const edit = e.target.closest('[data-cl-edit]');
+      if (edit) {
+        openCustForm(cl.rows.find(r => r.id === edit.dataset.clEdit));
+        return;
+      }
+      const del = e.target.closest('[data-cl-del]');
+      if (del) {
+        if (!del.dataset.armed) {
+          del.dataset.armed = '1';
+          del.textContent = 'למחוק?';
+          setTimeout(() => { if (del.isConnected) { delete del.dataset.armed; del.textContent = '×'; } }, 4000);
+          return;
+        }
+        del.disabled = true;
+        try {
+          await call('svr_customer_delete', { p_id: del.dataset.clDel });
+          cl.rows = cl.rows.filter(r => r.id !== del.dataset.clDel);
+          renderCustList();
+          toast('הלקוח נמחק מהרשימה', 'ok');
+        } catch (err) {
+          del.disabled = false;
+          if (err.code !== 'AUTH') toast(errText(err), 'err');
+        }
+      }
+    });
+
+    document.getElementById('clForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('clId').value.trim();
+      const name = document.getElementById('clName').value.trim();
+      const agent = document.getElementById('clAgent').value.trim();
+      if (!id) { setFormError('clFormError', 'צריך מספר לקוח'); return; }
+      if (!cl.editId && cl.rows.some(r => r.id === id)) {
+        setFormError('clFormError', 'הלקוח ' + id + ' כבר ברשימה. אפשר לערוך אותו מהטבלה');
+        return;
+      }
+      const save = document.getElementById('clSave');
+      save.disabled = true;
+      try {
+        await call('svr_customer_save', { p_id: cl.editId || id, p_name: name, p_agent: agent });
+        document.getElementById('clForm').hidden = true;
+        toast(cl.editId ? 'הפרטים נשמרו' : 'הלקוח נוסף לרשימה', 'ok');
+        await loadCustList();
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('clFormError', errText(err));
+      } finally {
+        save.disabled = false;
+      }
+    });
     document.getElementById('trackPkg').addEventListener('change', () => { track.open.clear(); renderTrack(); });
     document.getElementById('trackModal').addEventListener('click', (e) => {
       const v = e.target.closest('[data-track-view]');
@@ -6667,7 +7027,7 @@ renderTable();
       else if (e.target.id === 'overlapModal') finishOverlap('cancel');
     });
 
-    ['fileEditModal', 'pkgModal', 'trackModal'].forEach(id => {
+    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', (e) => {
         if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
@@ -6794,6 +7154,8 @@ renderTable();
     });
 
     window.addEventListener('dragenter', (e) => {
+      // a file dragged onto the customers window goes there, not to the files window
+      if (document.getElementById('custListModal').classList.contains('show')) return;
       if (isAdmin() && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) openImportModal();
     });
     ['dragover', 'drop'].forEach(type => {
@@ -7121,7 +7483,7 @@ renderTable();
         finishOverlap('cancel');
         return;
       }
-      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
