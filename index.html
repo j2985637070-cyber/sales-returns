@@ -478,6 +478,11 @@
     .track-cust .none { color: var(--danger); }
     @media (max-width: 560px) { .track-lists { grid-template-columns: 1fr; } .track-lists > div + div { border-inline-start: none; border-top: 1px solid var(--border); } }
 
+    .uf-agents { display: flex; gap: 6px 14px; flex-wrap: wrap; padding: 2px 26px 0 0; }
+    .uf-agents .check-line { font-size: 0.86rem; }
+    .uf-agents.off { opacity: 0.45; pointer-events: none; }
+    .role-pill.scope { background: var(--success-light); color: var(--success); }
+
     /* customers and agents (admin) */
     .cl-upload {
       display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
@@ -2212,6 +2217,13 @@
               <option value="admin">מנהל (גם העלאת קבצים ומשתמשים)</option>
             </select>
           </div>
+          <div class="field wide" id="ufScopeField">
+            <label>אילו לקוחות הוא רואה</label>
+            <label class="check-line"><input type="radio" name="ufScope" value="all" checked> כל הלקוחות</label>
+            <label class="check-line"><input type="radio" name="ufScope" value="some"> רק הלקוחות של הסוכנים שמסומנים:</label>
+            <div class="uf-agents" id="ufAgents"></div>
+            <small id="ufScopeHint"></small>
+          </div>
           <label class="check-line wide"><input type="checkbox" id="ufActive" checked> משתמש פעיל (יכול להיכנס)</label>
           <div class="form-error wide" id="userFormError" hidden></div>
           <div class="form-actions wide">
@@ -2788,6 +2800,7 @@
     }
 
     function clearLocalData() {
+      forgetView();
       state.shipped = [];
       state.returns = [];
       state.trash = [];
@@ -2841,6 +2854,7 @@
       document.getElementById('authScreen').hidden = true;
       document.getElementById('appRoot').hidden = false;
       applyRole();
+      restoreView();
       renderAll();
       try {
         await syncData(true);
@@ -3798,6 +3812,8 @@
         const nameHit = !q || ('חנות ' + store).toLowerCase().includes(q);
         const rowHits = custGroupMatches(rows, q);
         if (!nameHit && !rowHits.length) return;
+        // a user limited to some agents does not get empty tiles of stores that are not his
+        if (!isAdmin() && me && Array.isArray(me.agents) && !rows.some(r => r.sentRows + r.returnRows > 0)) return;
         shown++;
         const sentRows = rows.reduce((s, r) => s + r.sentRows, 0);
         const returnRows = rows.reduce((s, r) => s + r.returnRows, 0);
@@ -4487,7 +4503,7 @@
       return p ? p.name : '';
     }
 
-    // Under the title: the open package and how fresh its data is ("נשלח עד 30.09.26 · עודכן 12.10.26")
+    // Under the title: the open package and when its last file was uploaded ("ראש השנה 2026 · עודכן 12.10.26")
     function renderFreshness() {
       const el = document.getElementById('dataFresh');
       const files = state.shipped.concat(state.returns);
@@ -4496,18 +4512,53 @@
         el.classList.remove('has-data');
         return;
       }
-      const lastDate = list => list.reduce((m, f) => Math.max(m, fileSpan(f).max || 0), 0);
-      const ship = lastDate(state.shipped);
-      const ret = lastDate(state.returns);
       const uploaded = files.reduce((m, f) => Math.max(m, Date.parse(f.createdAt) || 0), 0);
       const bits = [];
       if (packageName()) bits.push(packageName());
-      if (ship) bits.push('נשלח עד ' + shortDate(ship));
-      if (ret) bits.push('החזרות עד ' + shortDate(ret));
       if (uploaded) bits.push('עודכן ' + fmtDay(new Date(uploaded).toISOString()));
       el.textContent = bits.join(' · ');
-      el.title = 'התאריך האחרון שמופיע בקבצים של החבילה, ומתי הועלה הקובץ האחרון';
+      el.title = 'מתי הועלה הקובץ האחרון של החבילה';
       el.classList.add('has-data');
+    }
+
+    // ---------- a refresh keeps the screen ----------
+    // What is on screen (package, customer, view, sort, deleted rows) is kept for this tab only
+    // (sessionStorage): a refresh comes back to it; closing the tab or signing out forgets it.
+    const VIEW_KEY = 'svr-view';
+
+    function saveView() {
+      if (!me) return;
+      try {
+        sessionStorage.setItem(VIEW_KEY, JSON.stringify({
+          user: me.id, pkg: state.pkgId,
+          sel: state.selectedIds ? Array.from(state.selectedIds) : null,
+          merged: Array.from(state.mergedStores), combine: state.combineStores, all: state.allCust,
+          multi: state.multiCust, focus: state.focusStoreId, view: state.view,
+          sortKey: state.sortKey, sortDir: state.sortDir, hidden: Array.from(state.hiddenSkus)
+        }));
+      } catch (e) {}
+    }
+
+    function restoreView() {
+      let v = null;
+      try { v = JSON.parse(sessionStorage.getItem(VIEW_KEY) || 'null'); } catch (e) {}
+      if (!v || !me || v.user !== me.id) return;
+      state.pkgId = v.pkg || null;
+      state.selectedIds = Array.isArray(v.sel) && v.sel.length ? new Set(v.sel) : null;
+      state.mergedStores = new Set(v.merged || []);
+      state.combineStores = !!v.combine;
+      state.allCust = !!v.all && isAdmin();
+      state.multiCust = !!v.multi;
+      state.focusStoreId = v.focus || '';
+      if (v.view === 'sku' || v.view === 'family') state.view = v.view;
+      if (v.sortKey) state.sortKey = v.sortKey;
+      if (v.sortDir === 'asc' || v.sortDir === 'desc') state.sortDir = v.sortDir;
+      state.hiddenSkus = new Set(v.hidden || []);
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === state.view));
+    }
+
+    function forgetView() {
+      try { sessionStorage.removeItem(VIEW_KEY); } catch (e) {}
     }
 
     // ---------- "seen": which stores and customers this user has opened ----------
@@ -4818,6 +4869,7 @@
     function renderAll() {
       custNamesCache = null;
       unitsCache = null;
+      saveView();
       applyDateInputLimits();
       renderPkgBar();
       renderFreshness();
@@ -6679,15 +6731,17 @@ renderTable();
       const pkgId = document.getElementById('trackPkg').value;
       body.innerHTML = '<div class="dev-none">טוען...</div>';
       try {
-        const [users, report, data] = await Promise.all([
+        const [users, report, data, custs] = await Promise.all([
           call('svr_users_list'),
           call('svr_seen_report', { p_package: pkgId }),
-          pkgId === state.pkgId ? Promise.resolve({ shipped: state.shipped, returns: state.returns }) : fetchPackage(pkgId, true)
+          pkgId === state.pkgId ? Promise.resolve({ shipped: state.shipped, returns: state.returns }) : fetchPackage(pkgId, true),
+          call('svr_customers_list')
         ]);
         usersCache = users || [];
         track.data = {
           users: usersCache.filter(u => u.active),
           units: unitsOfFiles(data.shipped.concat(data.returns)),
+          agentOf: new Map(((custs || {}).rows || []).map(r => [r.id, r.agent])),
           seen: new Map()   // user id → Map(unit key → when)
         };
         (report || []).forEach(r => {
@@ -6705,8 +6759,14 @@ renderTable();
       const d = track.data;
       if (!d) return;
       document.querySelectorAll('[data-track-view]').forEach(b => b.classList.toggle('on', b.dataset.trackView === track.view));
-      const units = Array.from(d.units.values()).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-      if (!units.length) { body.innerHTML = '<div class="dev-none">אין עדיין קבצים בחבילה הזו.</div>'; return; }
+      const allUnits = Array.from(d.units.values()).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+      if (!allUnits.length) { body.innerHTML = '<div class="dev-none">אין עדיין קבצים בחבילה הזו.</div>'; return; }
+      // a user limited to some agents is measured only against the customers he can see
+      const agentOfUnit = (key) => key.startsWith('store:')
+        ? idsForStore(key.slice(6)).map(id => d.agentOf.get(id)).find(Boolean)
+        : d.agentOf.get(key.slice(3));
+      const canSee = (user, u) => user.role === 'admin' || !Array.isArray(user.agents) || user.agents.includes(agentOfUnit(u.key));
+      const unitsFor = (user) => allUnits.filter(u => canSee(user, u));
       const statusOf = (map, u) => {
         const at = map && map.get(u.key);
         if (!at) return '';
@@ -6715,17 +6775,19 @@ renderTable();
       if (track.view === 'user') {
         body.innerHTML = d.users.map(user => {
           const map = d.seen.get(user.id) || new Map();
+          const units = unitsFor(user);
           const seenUnits = units.filter(u => statusOf(map, u));
           const notSeen = units.filter(u => !statusOf(map, u));
           const upd = seenUnits.filter(u => statusOf(map, u) === 'updated').length;
-          const pct = Math.round(seenUnits.length / units.length * 100);
+          const pct = units.length ? Math.round(seenUnits.length / units.length * 100) : 0;
           let last = '';
           map.forEach(at => { if (at > last) last = at; });
           const open = track.open.has(user.id);
           return '<div class="user-card">' +
             '<div class="user-head track-head" data-track-user="' + escapeHtml(user.id) + '">' +
               '<div class="user-name"><b>' + escapeHtml(user.name || user.username) + '</b>' +
-                (user.role === 'admin' ? '<span class="role-pill admin">מנהל</span>' : '') + '</div>' +
+                (user.role === 'admin' ? '<span class="role-pill admin">מנהל</span>' : '') +
+                (user.role !== 'admin' && Array.isArray(user.agents) ? '<span class="role-pill scope">' + escapeHtml(scopeText(user)) + '</span>' : '') + '</div>' +
               '<div class="track-prog"><div class="bar"><i style="width:' + pct + '%"></i></div>' +
                 fmtNum(seenUnits.length) + ' מתוך ' + fmtNum(units.length) + ' (' + pct + '%) ' + (open ? '▴' : '▾') + '</div>' +
               '<div class="track-meta">' + (last ? 'צפייה אחרונה: ' + escapeHtml(fmtWhen(last)) : 'עוד לא צפה באף לקוח בחבילה הזו') +
@@ -6747,10 +6809,11 @@ renderTable();
         return;
       }
       // by customer: who opened it and when, and who has not; the least seen first
-      const rows = units.map(u => {
+      const rows = allUnits.map(u => {
         const viewers = [];
         const missing = [];
         d.users.forEach(user => {
+          if (!canSee(user, u)) return;
           const map = d.seen.get(user.id);
           const st = statusOf(map, u);
           if (st) viewers.push({ user, at: map.get(u.key), upd: st === 'updated' });
@@ -7662,8 +7725,42 @@ renderTable();
       del.hidden = !user || user.id === me.id;
       delete del.dataset.armed;
       del.textContent = 'מחיקת המשתמש';
+      const limited = !!(user && Array.isArray(user.agents));
+      document.querySelector('input[name="ufScope"][value="' + (limited ? 'some' : 'all') + '"]').checked = true;
+      renderUfAgents(limited ? user.agents : []);
+      syncUfScope();
       setFormError('userFormError', '');
     }
+
+    // ---------- which customers a user sees (by agent) ----------
+    let agentNames = [];   // the agents in the customers list, most customers first
+
+    function renderUfAgents(selected) {
+      const names = agentNames.slice();
+      (selected || []).forEach(a => { if (!names.includes(a)) names.push(a); });
+      document.getElementById('ufAgents').innerHTML = names.map(a =>
+        '<label class="check-line"><input type="checkbox" value="' + escapeHtml(a) + '"' +
+        ((selected || []).includes(a) ? ' checked' : '') + '> ' + escapeHtml(a) + '</label>').join('');
+    }
+
+    function syncUfScope() {
+      const admin = document.getElementById('ufRole').value === 'admin';
+      document.getElementById('ufScopeField').hidden = admin;
+      const some = document.querySelector('input[name="ufScope"]:checked').value === 'some';
+      document.getElementById('ufAgents').classList.toggle('off', !some);
+      document.getElementById('ufScopeHint').textContent = !agentNames.length
+        ? 'כדי להגביל לפי סוכן, העלו קודם את קובץ הלקוחות ב«לקוחות וסוכנים».'
+        : some ? 'הוא יראה רק את הלקוחות של הסוכנים שסימנתם. לקוח שלא מופיע ברשימת הלקוחות לא יוצג לו.' : '';
+      document.querySelector('input[name="ufScope"][value="some"]').disabled = !agentNames.length;
+    }
+
+    function scopeText(u) {
+      if (u.role === 'admin' || !Array.isArray(u.agents)) return 'רואה הכול';
+      return u.agents.length ? 'רואה: ' + u.agents.join(', ') : 'לא רואה לקוחות';
+    }
+
+    document.getElementById('ufRole').addEventListener('change', syncUfScope);
+    document.querySelectorAll('input[name="ufScope"]').forEach(r => r.addEventListener('change', syncUfScope));
 
     let devicesCache = [];
 
@@ -7729,6 +7826,7 @@ renderTable();
           '<div class="user-pills">' +
           '<span class="role-pill' + (u.role === 'admin' ? ' admin' : '') + '">' + (u.role === 'admin' ? 'מנהל' : 'משתמש') + '</span>' +
           '<span class="role-pill' + (u.active ? '' : ' off') + '">' + (u.active ? 'פעיל' : 'לא פעיל') + '</span>' +
+          '<span class="role-pill scope">' + escapeHtml(scopeText(u)) + '</span>' +
           '<button type="button" class="btn btn-ghost btn-sm" data-edit-user="' + escapeHtml(u.id) + '">עריכה</button>' +
           '</div></div>' +
           (devs.length
@@ -7740,9 +7838,15 @@ renderTable();
 
     async function loadUsers() {
       try {
-        const lists = await Promise.all([call('svr_users_list'), call('svr_devices_list')]);
+        const lists = await Promise.all([call('svr_users_list'), call('svr_devices_list'), call('svr_customers_list')]);
         usersCache = lists[0] || [];
         devicesCache = lists[1] || [];
+        agentNames = agentCounts(((lists[2] || {}).rows || []).filter(r => r.agent)).map(([a]) => a);
+        // the form was drawn before the agents arrived
+        const editing = editUserId ? usersCache.find(u => u.id === editUserId) : null;
+        const checked = Array.from(document.querySelectorAll('#ufAgents input:checked')).map(i => i.value);
+        renderUfAgents(editing && Array.isArray(editing.agents) && !checked.length ? editing.agents : checked);
+        syncUfScope();
         updatePendingBadges();
         renderUsers();
       } catch (err) {
@@ -7790,6 +7894,13 @@ renderTable();
     document.getElementById('ufCancel').addEventListener('click', () => fillUserForm(null));
     document.getElementById('userForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const role = document.getElementById('ufRole').value;
+      const some = role !== 'admin' && document.querySelector('input[name="ufScope"]:checked').value === 'some';
+      const agents = some ? Array.from(document.querySelectorAll('#ufAgents input:checked')).map(i => i.value) : null;
+      if (some && !agents.length) {
+        setFormError('userFormError', 'סמנו לפחות סוכן אחד, או בחרו «כל הלקוחות»');
+        return;
+      }
       const btn = document.getElementById('ufSave');
       btn.disabled = true;
       setFormError('userFormError', '');
@@ -7799,9 +7910,10 @@ renderTable();
           p_id: editUserId,
           p_username: document.getElementById('ufUsername').value,
           p_name: document.getElementById('ufName').value,
-          p_role: document.getElementById('ufRole').value,
+          p_role: role,
           p_active: document.getElementById('ufActive').checked,
-          p_password: document.getElementById('ufPassword').value || null
+          p_password: document.getElementById('ufPassword').value || null,
+          p_agents: agents
         });
         toast(wasEdit ? 'המשתמש עודכן' : 'המשתמש נוסף', 'ok');
         if (wasEdit === me.id) {
