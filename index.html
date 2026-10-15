@@ -7636,37 +7636,39 @@ renderTable();
       return Object.assign({ app: 'sales-vs-returns', version: BACKUP_VERSION, at: new Date().toISOString(), by: me.name || me.username }, meta);
     }
 
-    // On a computer (Chrome / Edge) a "save as" window opens in the folder used last time;
-    // elsewhere the file goes to the downloads folder
-    async function saveBackupFile(name, blob) {
-      if (window.showSaveFilePicker && !IN_VIEWER) {
-        let handle;
-        try {
-          handle = await window.showSaveFilePicker({
-            id: 'svr-backup', suggestedName: name, startIn: 'documents',
-            types: [{ description: 'גיבוי מכירות מול החזרות', accept: { 'application/json': ['.json'] } }]
-          });
-        } catch (e) {
-          if (e && e.name === 'AbortError') return false;
-          handle = null;
-        }
-        if (handle) {
-          const w = await handle.createWritable();
-          await w.write(blob);
-          await w.close();
-          return true;
-        }
+    // On a computer (Chrome / Edge) a "save as" window opens in the folder used last time. The
+    // browser allows it only right at the click, so it opens before the backup is prepared.
+    // Elsewhere the file goes to the downloads folder.
+    // Returns a file handle, null (no such window here: download instead), or 'cancel'.
+    async function pickBackupTarget(name) {
+      if (!window.showSaveFilePicker || IN_VIEWER) return null;
+      try {
+        return await window.showSaveFilePicker({
+          id: 'svr-backup', suggestedName: name, startIn: 'documents',
+          types: [{ description: 'גיבוי מכירות מול החזרות', accept: { 'application/json': ['.json'] } }]
+        });
+      } catch (e) {
+        return e && e.name === 'AbortError' ? 'cancel' : null;
+      }
+    }
+
+    async function writeBackup(target, name, blob) {
+      if (target && target !== 'cancel') {
+        const w = await target.createWritable();
+        await w.write(blob);
+        await w.close();
+        return;
       }
       await saveFile(name, blob);
-      return true;
     }
 
     document.getElementById('btnBackup').addEventListener('click', async () => {
       try {
-        const data = await makeBackup();
         const name = 'גיבוי-מכירות-מול-החזרות-' + new Date().toISOString().slice(0, 10) + '.json';
-        const saved = await saveBackupFile(name, new Blob([JSON.stringify(data)], { type: 'application/json' }));
-        if (!saved) return;
+        const target = await pickBackupTarget(name);
+        if (target === 'cancel') return;
+        const data = await makeBackup();
+        await writeBackup(target, name, new Blob([JSON.stringify(data)], { type: 'application/json' }));
         await call('svr_backup_mark');
         loadBackupStatus();
         const rows = (data.files || []).reduce((s, f) => s + (f.items || []).length, 0);
