@@ -478,6 +478,11 @@
     .track-cust .none { color: var(--danger); }
     @media (max-width: 560px) { .track-lists { grid-template-columns: 1fr; } .track-lists > div + div { border-inline-start: none; border-top: 1px solid var(--border); } }
 
+    /* amounts under the quantities in the report */
+    small.amt { display: block; margin-top: 1px; font-size: 0.72rem; font-weight: 600; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    small.amt.none { color: var(--amber); white-space: normal; }
+    .pct-col small.amt { text-align: right; margin-top: 3px; }
+
     /* the bell and the messages */
     .bell-btn { margin-inline-start: auto; font-size: 1.1rem; }
     .msg-row {
@@ -519,11 +524,15 @@
     .cl-meta { flex: 1 1 220px; min-width: 0; }
     .cl-meta b { display: block; color: var(--navy); font-weight: 800; }
     .cl-meta span { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+    .it-vat { align-items: center; }
+    .it-vat label { font-weight: 800; color: var(--navy); font-size: 0.88rem; }
+    .it-vat input { width: 80px; font: inherit; padding: 6px 8px; min-height: 34px; border: 1px solid #d3dae8; border-radius: 9px; }
+    #itConfirm:not(:empty),
     #clConfirm:not(:empty) {
       margin: 10px 18px 0; padding: 12px 14px; border-radius: var(--radius-sm);
       background: var(--amber-light); border: 1px solid #ffd8a8; font-size: 0.86rem; font-weight: 600; color: #6b3e00;
     }
-    #clConfirm .form-actions { margin-top: 10px; }
+    #clConfirm .form-actions, #itConfirm .form-actions { margin-top: 10px; }
     .cl-agents { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 18px 0; }
     .cl-agent {
       display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; min-height: 32px;
@@ -2021,6 +2030,7 @@
             <span>רענון נתונים<small class="sub" id="syncAgo"></small></span>
           </button>
           <button type="button" class="drawer-item admin-only" id="btnCustomers">לקוחות וסוכנים</button>
+          <button type="button" class="drawer-item admin-only" id="btnItems">מוצרים ומחירים</button>
           <button type="button" class="drawer-item admin-only" id="btnBackup">
             <span>הורדת גיבוי מלא<small class="sub" id="backupAgo"></small></span>
           </button>
@@ -2452,6 +2462,74 @@
       </form>
     </div>
   </div>
+  <div class="modal-backdrop no-print" id="itemsModal">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="itemsTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="itemsTitle">מוצרים ומחירים</h3>
+          <p>מחיר כל מוצר לפני מע״מ. בדוחות: מחיר + מע״מ − ההנחה של הלקוח (לקוח בלי הנחה: המחיר בלבד, בלי מע״מ).</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="cl-upload" id="itDrop">
+          <input type="file" id="itFile" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+          <div class="cl-meta">
+            <b>קובץ המוצרים</b>
+            <span id="itFileMeta">עוד לא הועלה קובץ</span>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="itPick">העלאת קובץ מוצרים</button>
+        </div>
+        <div id="itConfirm" class="cl-confirm-box"></div>
+        <div class="cl-actions it-vat">
+          <label for="itVat">מע״מ</label>
+          <input type="number" id="itVat" min="0" max="50" step="0.5" inputmode="decimal">
+          <span>%</span>
+          <button type="button" class="btn btn-ghost btn-sm" id="itVatSave">שמירה</button>
+        </div>
+        <div class="cl-agents" id="itStats"></div>
+        <div class="cl-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="itToggleTable">הצגת טבלה</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="itAdd">+ הוספת מוצר</button>
+        </div>
+        <form class="form-grid" id="itForm" autocomplete="off" hidden>
+          <div class="field">
+            <label for="itSku">מק״ט</label>
+            <input type="text" id="itSku" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="itPrice">מחיר לפני מע״מ</label>
+            <input type="number" id="itPrice" min="0" step="0.01" inputmode="decimal">
+          </div>
+          <div class="field wide">
+            <label for="itDesc">תאור</label>
+            <input type="text" id="itDesc" maxlength="300">
+          </div>
+          <div class="field wide">
+            <label for="itFamily">תאור משפחה</label>
+            <input type="text" id="itFamily" maxlength="120">
+          </div>
+          <div class="form-error wide" id="itFormError" hidden></div>
+          <div class="form-actions wide">
+            <button type="submit" class="btn btn-primary" id="itSave">הוספת המוצר</button>
+            <button type="button" class="btn btn-ghost" id="itCancel">ביטול</button>
+          </div>
+        </form>
+        <div id="itTableWrap" hidden>
+          <div class="cl-filter">
+            <input type="search" id="itSearch" placeholder="חיפוש לפי מק״ט או תאור...">
+            <select id="itFilter" aria-label="סינון">
+              <option value="">כל המוצרים</option>
+              <option value="zero">מחיר 0</option>
+              <option value="missing">מק״טים בדוחות בלי מחיר</option>
+              <option value="manual">נוספו ידנית</option>
+            </select>
+          </div>
+          <div id="itTable"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="modal-backdrop no-print" id="custListModal">
     <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="custListTitle">
       <div class="modal-head">
@@ -2489,6 +2567,11 @@
             <label for="clAgent">סוכן</label>
             <input type="text" id="clAgent" list="clAgentList" maxlength="80" placeholder="בחרו מהרשימה או כתבו שם חדש">
             <datalist id="clAgentList"></datalist>
+          </div>
+          <div class="field">
+            <label for="clDiscount">הנחה (%)</label>
+            <input type="number" id="clDiscount" min="0" max="100" step="0.5" inputmode="decimal" placeholder="למשל 40">
+            <small>ריק או 0: נספר לפי המחיר, בלי מע״מ</small>
           </div>
           <div class="form-error wide" id="clFormError" hidden></div>
           <div class="form-actions wide">
@@ -2877,7 +2960,11 @@
       NOT_IN_TRASH: 'אפשר למחוק לצמיתות רק קובץ שנמצא בסל',
       EMPTY_MESSAGE: 'כתבו את ההודעה',
       NO_RECIPIENTS: 'אף אחד מהנמענים שבחרתם לא פעיל',
-      BAD_SUBSCRIPTION: 'הדפדפן לא החזיר פרטי התראות תקינים. נסו שוב'
+      BAD_SUBSCRIPTION: 'הדפדפן לא החזיר פרטי התראות תקינים. נסו שוב',
+      BAD_DISCOUNT: 'הנחה צריכה להיות בין 0 ל־100',
+      BAD_PRICE: 'המחיר לא יכול להיות שלילי',
+      BAD_VAT: 'מע״מ צריך להיות בין 0 ל־50',
+      BAD_ID: 'חסר מספר מזהה'
     };
 
     function errText(err) {
@@ -2938,6 +3025,10 @@
       state.pkgId = null;
       state.seen.clear();
       state.excluded.clear();
+      pricing.prices = new Map();
+      pricing.discounts = new Map();
+      pricing.loaded = false;
+      pricing.sig = '';
       state.onlyUnseen = false;
       document.getElementById('onlyUnseen').checked = false;
       lastSeenSig = '';
@@ -3118,6 +3209,9 @@
       if (isAdmin()) await loadDevices();
       await loadMessages();
       await loadBackupStatus();
+      const pricingBefore = pricing.sig;
+      await loadPricing();
+      const pricingChanged = pricing.sig !== pricingBefore;
       const packages = await call('svr_packages_list') || [];
       const pkgChanged = JSON.stringify(packages) !== JSON.stringify(state.packages);
       state.packages = packages;
@@ -3141,7 +3235,7 @@
       state.excluded = new Map(excluded.map(e => [exclKey(e.kind, e.doc), e]));
       applyExclusions();
       lastSync = Date.now();
-      if (changed || settingsChanged || pkgChanged) renderAll();
+      if (changed || settingsChanged || pkgChanged || pricingChanged) renderAll();
       return changed;
     }
 
@@ -4143,6 +4237,51 @@
       });
     }
 
+    // ---------- money ----------
+    // Price (before VAT) from "מוצרים ומחירים", plus VAT, minus the customer's discount. A customer
+    // with no discount is counted at the price itself, without VAT (the user's rule).
+    const pricing = { vat: 18, prices: new Map(), discounts: new Map(), loaded: false };
+
+    async function loadPricing() {
+      try {
+        const r = await call('svr_pricing') || {};
+        pricing.vat = Number(r.vat);
+        if (!isFinite(pricing.vat)) pricing.vat = 18;
+        pricing.prices = new Map(Object.entries(r.prices || {}).map(([k, v]) => [k, Number(v)]));
+        pricing.discounts = new Map(Object.entries(r.discounts || {}).map(([k, v]) => [k, Number(v)]));
+        pricing.loaded = pricing.prices.size > 0;
+        const sum = m => Array.from(m.values()).reduce((s, v) => s + v, 0);
+        pricing.sig = [pricing.vat, pricing.prices.size, sum(pricing.prices), pricing.discounts.size, sum(pricing.discounts)].join('|');
+      } catch (err) {
+        if (err.code === 'AUTH') throw err;
+      }
+    }
+
+    // the value of one unit of this row for its customer, or null when the product has no price
+    function unitValue(item) {
+      const price = pricing.prices.get(String(item.sku || '').trim().toLowerCase());
+      if (!price) return null;
+      const d = pricing.discounts.get(item.customerId || '') || 0;
+      if (!d) return price;
+      return price * (1 + pricing.vat / 100) * (1 - d / 100);
+    }
+
+    function fmtMoney(n) {
+      return '₪' + Math.round(Number(n) || 0).toLocaleString('he-IL');
+    }
+
+    // the amount under a quantity in the report ("₪1,234", or "אין מחיר")
+    function amtHtml(value, row) {
+      if (!pricing.loaded) return '';
+      if (row.noPrice && !value) return '<small class="amt none">אין מחיר</small>';
+      return '<small class="amt">' + fmtMoney(value) + '</small>';
+    }
+
+    function amtPctHtml(row) {
+      if (!pricing.loaded || (row.noPrice && !row.sentAmt && !row.retAmt)) return '';
+      return '<small class="amt">בכסף: ' + (row.sentAmt > 0 ? fmtPct(row.pctAmt) : '—') + '</small>';
+    }
+
     function buildReport() {
       const map = new Map();
 
@@ -4152,13 +4291,20 @@
         const key = item.sku.toLowerCase();
         let row = map.get(key);
         if (!row) {
-          row = { sku: item.sku, desc: '', family: '', sent: 0, returned: 0 };
+          row = { sku: item.sku, desc: '', family: '', sent: 0, returned: 0, sentAmt: 0, retAmt: 0, noPrice: false };
           map.set(key, row);
         }
         row.desc = pickText(row.desc, item.desc, true);
         row.family = pickText(row.family, item.family, false);
-        if (kind === 'shipped') row.sent += item.qty;
-        else row.returned += item.qty;
+        const unit = pricing.loaded ? unitValue(item) : null;
+        if (pricing.loaded && unit === null) row.noPrice = true;
+        if (kind === 'shipped') {
+          row.sent += item.qty;
+          if (unit !== null) row.sentAmt += unit * item.qty;
+        } else {
+          row.returned += item.qty;
+          if (unit !== null) row.retAmt += unit * item.qty;
+        }
       };
 
       state.shipped.forEach(f => f.items.forEach(item => add(item, 'shipped')));
@@ -4167,7 +4313,8 @@
       return Array.from(map.values()).map(row => ({
         ...row,
         net: row.sent - row.returned,
-        pct: calcPct(row.sent, row.returned)
+        pct: calcPct(row.sent, row.returned),
+        pctAmt: calcPct(row.sentAmt, row.retAmt)
       })).filter(row => !state.hiddenSkus.has(row.sku.toLowerCase()));
     }
 
@@ -4283,17 +4430,21 @@
         const name = row.family || 'ללא משפחה';
         let fam = map.get(name);
         if (!fam) {
-          fam = { family: name, sent: 0, returned: 0, count: 0 };
+          fam = { family: name, sent: 0, returned: 0, count: 0, sentAmt: 0, retAmt: 0, noPrice: false, noPriceCount: 0 };
           map.set(name, fam);
         }
         fam.sent += row.sent;
         fam.returned += row.returned;
+        fam.sentAmt += row.sentAmt || 0;
+        fam.retAmt += row.retAmt || 0;
+        if (row.noPrice) { fam.noPrice = true; fam.noPriceCount++; }
         fam.count += 1;
       });
       return Array.from(map.values()).map(row => ({
         ...row,
         net: row.sent - row.returned,
-        pct: calcPct(row.sent, row.returned)
+        pct: calcPct(row.sent, row.returned),
+        pctAmt: calcPct(row.sentAmt, row.retAmt)
       }));
     }
 
@@ -4845,22 +4996,22 @@
           '<td class="sku">' + escapeHtml(r.sku) + '</td>' +
           '<td class="text-col">' + escapeHtml(r.desc || '—') + '</td>' +
           (showFamily ? '<td class="text-col fam-col">' + escapeHtml(r.family || '—') + '</td>' : '') +
-          '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button></td>' +
-          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
+          '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button>' + amtHtml(r.sentAmt, r) + '</td>' +
+          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button>' + amtHtml(r.retAmt, r) + '</td>' +
           '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
-          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td>' +
+          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + amtPctHtml(r) + '</td>' +
           '<td class="col-act no-print"><button type="button" class="row-del" data-sku="' + escapeHtml(r.sku) + '" title="מחק שורה" aria-label="מחק שורה">×</button></td>' +
           '<td class="col-fill"></td>' +
           '</tr>';
       });
 
       html += '</tbody><tfoot><tr>' +
-        '<td>סה״כ</td><td class="text-col">' + rows.length + ' מק״טים</td>' +
+        '<td>סה״כ</td><td class="text-col">' + rows.length + ' מק״טים' + noPriceNote(totals) + '</td>' +
         (showFamily ? '<td class="text-col"></td>' : '') +
-        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + '</td>' +
-        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + '</td>' +
+        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + amtHtml(totals.sentAmt, totals) + '</td>' +
+        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + amtHtml(totals.retAmt, totals) + '</td>' +
         '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
-        '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td>' +
+        '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + amtPctHtml(totals) + '</td>' +
         '<td class="col-act no-print"></td>' +
         '<td class="col-fill"></td>' +
         '</tr></tfoot></table></div>';
@@ -4887,22 +5038,22 @@
         html += '<tr>' +
           '<td class="text-col">' + escapeHtml(r.family) + '</td>' +
           '<td class="num" data-label="מק״טים">' + fmtNum(r.count) + '</td>' +
-          '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button></td>' +
-          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button></td>' +
+          '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button>' + amtHtml(r.sentAmt, r) + '</td>' +
+          '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-family="' + escapeHtml(r.family) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button>' + amtHtml(r.retAmt, r) + '</td>' +
           '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
-          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td>' +
+          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + amtPctHtml(r) + '</td>' +
           '<td class="col-act no-print"><button type="button" class="row-del" data-family="' + escapeHtml(r.family) + '" title="מחק משפחה" aria-label="מחק משפחה">×</button></td>' +
           '<td class="col-fill"></td>' +
           '</tr>';
       });
 
       html += '</tbody><tfoot><tr>' +
-        '<td>סה״כ</td>' +
+        '<td>סה״כ' + noPriceNote(totals) + '</td>' +
         '<td class="num" data-label="מק״טים">' + fmtNum(totals.count) + '</td>' +
-        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + '</td>' +
-        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + '</td>' +
+        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + amtHtml(totals.sentAmt, totals) + '</td>' +
+        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + amtHtml(totals.retAmt, totals) + '</td>' +
         '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
-        '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td>' +
+        '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + amtPctHtml(totals) + '</td>' +
         '<td class="col-act no-print"></td>' +
         '<td class="col-fill"></td>' +
         '</tr></tfoot></table></div>';
@@ -4953,10 +5104,11 @@
         '<div class="value">' + value + '</div><div class="sub">' + sub + '</div></div></div>';
       return '<div class="stats store-stats">' +
         card('box', 'מק״טים בדוח', 'מק״טים', fmtNum(rows.length), skuSub) +
-        card('send', 'סה״כ נשלח', 'נשלח', fmtNum(totals.sent), ship.files + ' קבצי משלוח') +
-        card('return', 'סה״כ חזר', 'חזר', fmtNum(totals.returned), ret.files + ' קבצי החזרה') +
-        card('net', 'יתרה', 'יתרה', (net > 0 ? '+' : '') + fmtNum(net), 'נשלח פחות חזר', net < 0 ? ' bad' : '') +
-        card('percent', 'אחוז החזרה כולל', '% החזרה', fmtPct(totals.pct), 'מכל הכמות שנשלחה', pctCls) +
+        card('send', 'סה״כ נשלח', 'נשלח', fmtNum(totals.sent), pricing.loaded ? fmtMoney(totals.sentAmt) : ship.files + ' קבצי משלוח') +
+        card('return', 'סה״כ חזר', 'חזר', fmtNum(totals.returned), pricing.loaded ? fmtMoney(totals.retAmt) : ret.files + ' קבצי החזרה') +
+        card('net', 'יתרה', 'יתרה', (net > 0 ? '+' : '') + fmtNum(net), pricing.loaded ? fmtMoney(totals.sentAmt - totals.retAmt) : 'נשלח פחות חזר', net < 0 ? ' bad' : '') +
+        card('percent', 'אחוז החזרה כולל', '% החזרה', fmtPct(totals.pct),
+          pricing.loaded && totals.sentAmt > 0 ? 'בכסף: ' + fmtPct(totals.pctAmt) : 'מכל הכמות שנשלחה', pctCls) +
         '</div>';
     }
 
@@ -4998,7 +5150,16 @@
       const sent = rows.reduce((s, r) => s + r.sent, 0);
       const returned = rows.reduce((s, r) => s + r.returned, 0);
       const count = rows.reduce((s, r) => s + (r.count || 1), 0);
-      return { sent, returned, count, pct: calcPct(sent, returned) };
+      const sentAmt = rows.reduce((s, r) => s + (r.sentAmt || 0), 0);
+      const retAmt = rows.reduce((s, r) => s + (r.retAmt || 0), 0);
+      // products without a price are left out of the amounts; how many is shown with the total
+      const noPriceCount = rows.reduce((s, r) => s + (r.noPriceCount != null ? r.noPriceCount : (r.noPrice ? 1 : 0)), 0);
+      return { sent, returned, count, pct: calcPct(sent, returned), sentAmt, retAmt, pctAmt: calcPct(sentAmt, retAmt), noPriceCount, noPrice: false };
+    }
+
+    function noPriceNote(totals) {
+      if (!pricing.loaded || !totals.noPriceCount) return '';
+      return '<small class="amt none">' + (totals.noPriceCount === 1 ? 'מק״ט אחד בלי מחיר לא נכלל בסכומים' : totals.noPriceCount + ' מק״טים בלי מחיר לא נכללים בסכומים') + '</small>';
     }
 
     function renderAll() {
@@ -5828,8 +5989,19 @@
       return n;
     }
 
+    // the money columns, when there are prices (an empty value for a product without a price)
+    function moneyCols(r) {
+      if (!pricing.loaded) return {};
+      const none = r.noPrice && !r.sentAmt && !r.retAmt;
+      return {
+        'נשלח ₪': none ? '' : Math.round(r.sentAmt),
+        'חזר ₪': none ? '' : Math.round(r.retAmt),
+        'אחוז החזרה בכסף': none || r.pctAmt === null ? '' : Math.round(r.pctAmt * 10) / 10
+      };
+    }
+
     function skuSheetRows(rows) {
-      const skuRows = sortRows(rows, state.sortKey, state.sortDir).map(r => ({
+      const skuRows = sortRows(rows, state.sortKey, state.sortDir).map(r => Object.assign({
         'מק״ט': r.sku,
         'תיאור מוצר': r.desc,
         'תאור משפחה': r.family,
@@ -5837,9 +6009,9 @@
         'חזר': r.returned,
         'יתרה': r.sent - r.returned,
         'אחוז החזרה': r.pct === null ? '' : Math.round(r.pct * 10) / 10
-      }));
+      }, moneyCols(r)));
       const skuTotals = totalsOf(rows);
-      skuRows.push({
+      skuRows.push(Object.assign({
         'מק״ט': 'סה״כ',
         'תיאור מוצר': rows.length + ' מק״טים',
         'תאור משפחה': '',
@@ -5847,7 +6019,7 @@
         'חזר': skuTotals.returned,
         'יתרה': skuTotals.sent - skuTotals.returned,
         'אחוז החזרה': skuTotals.pct === null ? '' : Math.round(skuTotals.pct * 10) / 10
-      });
+      }, moneyCols(skuTotals)));
       return skuRows;
     }
 
@@ -7028,9 +7200,10 @@ renderTable();
       document.getElementById('clTable').innerHTML =
         '<div class="cl-count">' + (rows.length === cl.rows.length ? fmtNum(rows.length) + ' לקוחות' : 'מוצגים ' + fmtNum(rows.length) + ' מתוך ' + fmtNum(cl.rows.length)) + '</div>' +
         (rows.length
-          ? '<table><thead><tr><th>מספר לקוח</th><th>שם לקוח</th><th>סוכן</th><th></th></tr></thead><tbody>' +
+          ? '<table><thead><tr><th>מספר לקוח</th><th>שם לקוח</th><th>סוכן</th><th>הנחה</th><th></th></tr></thead><tbody>' +
             rows.map(r => '<tr><td class="cl-id">' + escapeHtml(r.id) + '</td><td>' + escapeHtml(r.name) +
               (r.manual ? ' <span class="pkg-tag">נוסף ידנית</span>' : '') + '</td><td>' + escapeHtml(r.agent || '—') + '</td>' +
+              '<td>' + (r.discount ? escapeHtml(String(Number(r.discount))) + '%' : '<span class="seen-mark upd" style="cursor:default">בלי הנחה</span>') + '</td>' +
               '<td class="cl-act"><button type="button" data-cl-edit="' + escapeHtml(r.id) + '" title="עריכה" aria-label="עריכה">✎</button>' +
               '<button type="button" data-cl-del="' + escapeHtml(r.id) + '" title="מחיקה" aria-label="מחיקה">×</button></td></tr>').join('') +
             '</tbody></table>'
@@ -7046,13 +7219,18 @@ renderTable();
         const idCol = norms.findIndex(n => ['מסלקוח', 'מספרלקוח', 'קודלקוח'].includes(n));
         const nameCol = norms.findIndex(n => n === 'שםלקוח' || n === 'שם');
         const agentCol = norms.findIndex(n => n.includes('סוכן'));
+        const discCol = norms.findIndex(n => n.includes('הנחה'));
         if (idCol < 0 || agentCol < 0) continue;
         const rows = [];
         grid.slice(h + 1).forEach(line => {
           let id = String(line[idCol] || '').trim();
           if (/^[\d,]+$/.test(id)) id = id.replace(/,/g, '');
           if (!id) return;
-          rows.push({ id, name: nameCol >= 0 ? String(line[nameCol] || '').trim() : '', agent: String(line[agentCol] || '').trim() });
+          const disc = discCol >= 0 ? parseFloat(String(line[discCol] || '').replace('%', '').trim()) : NaN;
+          rows.push({
+            id, name: nameCol >= 0 ? String(line[nameCol] || '').trim() : '', agent: String(line[agentCol] || '').trim(),
+            discount: isFinite(disc) ? disc : null
+          });
         });
         return rows;
       }
@@ -7072,7 +7250,8 @@ renderTable();
       const now = new Map(cl.rows.map(r => [r.id, r]));
       const inFile = new Set(rows.map(r => r.id));
       const added = rows.filter(r => !now.has(r.id)).length;
-      const updated = rows.filter(r => now.has(r.id) && (now.get(r.id).name !== r.name || now.get(r.id).agent !== r.agent)).length;
+      const updated = rows.filter(r => now.has(r.id) && (now.get(r.id).name !== r.name || now.get(r.id).agent !== r.agent ||
+        (now.get(r.id).discount ?? null) !== (r.discount ?? null))).length;
       const removed = cl.rows.filter(r => !r.manual && !inFile.has(r.id)).length;
       const kept = cl.rows.filter(r => r.manual && !inFile.has(r.id)).length;
       const noAgent = rows.filter(r => !r.agent).length;
@@ -7095,6 +7274,7 @@ renderTable();
       document.getElementById('clId').disabled = !!row;
       document.getElementById('clName').value = row ? row.name : '';
       document.getElementById('clAgent').value = row ? row.agent : '';
+      document.getElementById('clDiscount').value = row && row.discount != null ? Number(row.discount) : '';
       document.getElementById('clSave').textContent = row ? 'שמירת השינויים' : 'הוספת הלקוח';
       setFormError('clFormError', '');
       const form = document.getElementById('clForm');
@@ -7154,6 +7334,8 @@ renderTable();
           document.getElementById('clConfirm').innerHTML = '';
           toast('נקלטו ' + fmtNum(res.count) + ' לקוחות: ' + fmtNum(res.added) + ' חדשים, ' + fmtNum(res.updated) + ' עודכנו, ' + fmtNum(res.removed) + ' הוסרו', 'ok');
           await loadCustList();
+          await loadPricing();
+          renderAll();
         } catch (err) {
           imp.disabled = false;
           if (err.code !== 'AUTH') toast(errText(err), 'err');
@@ -7191,7 +7373,10 @@ renderTable();
       const id = document.getElementById('clId').value.trim();
       const name = document.getElementById('clName').value.trim();
       const agent = document.getElementById('clAgent').value.trim();
+      const discText = document.getElementById('clDiscount').value.trim();
+      const discount = discText === '' ? null : Number(discText);
       if (!id) { setFormError('clFormError', 'צריך מספר לקוח'); return; }
+      if (discount !== null && (!isFinite(discount) || discount < 0 || discount > 100)) { setFormError('clFormError', 'הנחה צריכה להיות בין 0 ל־100'); return; }
       if (!cl.editId && cl.rows.some(r => r.id === id)) {
         setFormError('clFormError', 'הלקוח ' + id + ' כבר ברשימה. אפשר לערוך אותו מהטבלה');
         return;
@@ -7199,10 +7384,12 @@ renderTable();
       const save = document.getElementById('clSave');
       save.disabled = true;
       try {
-        await call('svr_customer_save', { p_id: cl.editId || id, p_name: name, p_agent: agent });
+        await call('svr_customer_save', { p_id: cl.editId || id, p_name: name, p_agent: agent, p_discount: discount });
         document.getElementById('clForm').hidden = true;
         toast(cl.editId ? 'הפרטים נשמרו' : 'הלקוח נוסף לרשימה', 'ok');
         await loadCustList();
+        await loadPricing();
+        renderAll();
       } catch (err) {
         if (err.code !== 'AUTH') setFormError('clFormError', errText(err));
       } finally {
@@ -7226,6 +7413,262 @@ renderTable();
       const btn = e.target.closest('[data-ov]');
       if (btn) finishOverlap(btn.dataset.ov);
       else if (e.target.id === 'overlapModal') finishOverlap('cancel');
+    });
+
+    // ---------- admin: products and prices ----------
+    const it = { rows: [], file: null, showTable: false, editSku: null, pending: null };
+
+    async function openItems() {
+      it.pending = null;
+      document.getElementById('itConfirm').innerHTML = '';
+      document.getElementById('itForm').hidden = true;
+      document.getElementById('itVat').value = pricing.vat;
+      document.getElementById('itemsModal').classList.add('show');
+      await loadItems();
+    }
+
+    async function loadItems() {
+      try {
+        const res = await call('svr_items_list') || {};
+        it.rows = (res.rows || []).map(r => Object.assign(r, { price: Number(r.price) || 0 }));
+        it.file = res.file || null;
+        renderItems();
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    }
+
+    // SKUs in the open package's files that have no price (not in the list, or price 0)
+    function skusWithoutPrice() {
+      const bySku = new Map(it.rows.map(r => [String(r.sku).toLowerCase(), r]));
+      const out = new Map();
+      state.shipped.concat(state.returns).forEach(f => rowsOf(f).forEach(item => {
+        const key = String(item.sku || '').trim().toLowerCase();
+        if (!key || out.has(key)) return;
+        const row = bySku.get(key);
+        if (!row || !row.price) out.set(key, { sku: item.sku, desc: item.desc || (row && row.desc) || '', family: item.family || '', price: row ? row.price : null, inList: !!row });
+      }));
+      return Array.from(out.values());
+    }
+
+    function renderItems() {
+      const f = it.file;
+      document.getElementById('itFileMeta').textContent = f
+        ? '«' + cleanFileName(f.name) + '» · הועלה ' + fmtWhen(f.at) + (f.by ? ' · ' + f.by : '') + ' · ' + fmtNum(it.rows.length) + ' מוצרים ברשימה'
+        : (it.rows.length ? fmtNum(it.rows.length) + ' מוצרים ברשימה' : 'עוד לא הועלה קובץ');
+      const zero = it.rows.filter(r => !r.price).length;
+      const missing = skusWithoutPrice();
+      const chip = (filter, text, n) => '<button type="button" class="cl-agent" data-it-filter="' + filter + '">' + text + ' <span>' + fmtNum(n) + '</span></button>';
+      document.getElementById('itStats').innerHTML =
+        chip('', 'מוצרים', it.rows.length) + (zero ? chip('zero', 'מחיר 0', zero) : '') +
+        (state.pkgId ? chip('missing', 'בחבילה «' + escapeHtml(packageName()) + '» בלי מחיר', missing.length) : '');
+      document.getElementById('itToggleTable').textContent = it.showTable ? 'הסתרת הטבלה' : 'הצגת טבלה';
+      document.getElementById('itTableWrap').hidden = !it.showTable;
+      if (it.showTable) renderItemsTable();
+    }
+
+    function renderItemsTable() {
+      const q = document.getElementById('itSearch').value.trim().toLowerCase();
+      const filter = document.getElementById('itFilter').value;
+      const rows = filter === 'missing' ? skusWithoutPrice()
+        : it.rows.filter(r => !filter || (filter === 'zero' && !r.price) || (filter === 'manual' && r.manual));
+      const shown = rows.filter(r => !q || (r.sku + ' ' + (r.desc || '') + ' ' + (r.family || '')).toLowerCase().includes(q));
+      document.getElementById('itTable').innerHTML =
+        '<div class="cl-count">' + (filter === 'missing'
+          ? (shown.length ? 'מק״טים שמופיעים בקבצי החבילה ואין להם מחיר. ✎ מוסיף להם מחיר.' : 'לכל המק״טים בחבילה הזו יש מחיר.')
+          : (shown.length === it.rows.length ? fmtNum(shown.length) + ' מוצרים' : 'מוצגים ' + fmtNum(shown.length) + ' מתוך ' + fmtNum(it.rows.length))) + '</div>' +
+        (shown.length
+          ? '<table><thead><tr><th>מק״ט</th><th>תאור</th><th>משפחה</th><th>מחיר לפני מע״מ</th><th></th></tr></thead><tbody>' +
+            shown.slice(0, 1500).map(r => '<tr><td class="cl-id">' + escapeHtml(r.sku) + '</td><td>' + escapeHtml(r.desc || '') +
+              (r.manual ? ' <span class="pkg-tag">נוסף ידנית</span>' : '') + (r.inList === false ? ' <span class="pkg-tag">לא ברשימה</span>' : '') +
+              '</td><td>' + escapeHtml(r.family || '') + '</td><td>' +
+              (r.price ? fmtNum(r.price) : '<span class="seen-mark upd" style="cursor:default">אין מחיר</span>') + '</td>' +
+              '<td class="cl-act"><button type="button" data-it-edit="' + escapeHtml(r.sku) + '" title="עריכה" aria-label="עריכה">✎</button>' +
+              (r.inList === false ? '' : '<button type="button" data-it-del="' + escapeHtml(r.sku) + '" title="מחיקה" aria-label="מחיקה">×</button>') +
+              '</td></tr>').join('') + '</tbody></table>'
+          : '');
+    }
+
+    // Reads the items Excel: "מק״ט", "תאור", "מחיר" and (optional) "תאור משפחה"
+    async function parseItemsFile(file) {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const grid = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+      for (let h = 0; h < Math.min(grid.length, 15); h++) {
+        const norms = grid[h].map(normalizeHeader);
+        const skuCol = norms.findIndex(n => n === 'מקט' || n === 'מקט' || n === 'קודפריט' || n === 'מספרפריט');
+        const priceCol = norms.findIndex(n => n.startsWith('מחיר'));
+        const famCol = norms.findIndex(n => n.includes('משפחה'));
+        const descCol = norms.findIndex((n, i) => i !== famCol && (n === 'תאור' || n === 'תיאור' || n.startsWith('תאורמוצר') || n.startsWith('תיאורמוצר') || n.startsWith('תאורפריט')));
+        if (skuCol < 0 || priceCol < 0) continue;
+        const rows = [];
+        grid.slice(h + 1).forEach(line => {
+          const sku = String(line[skuCol] ?? '').trim();
+          if (!sku) return;
+          const price = parseFloat(String(line[priceCol] ?? '').replace(/[,₪\s]/g, ''));
+          rows.push({ sku, desc: descCol >= 0 ? String(line[descCol] ?? '').trim() : '', price: isFinite(price) ? price : 0,
+            family: famCol >= 0 ? String(line[famCol] ?? '').trim() : '' });
+        });
+        return rows;
+      }
+      return null;
+    }
+
+    async function pickItemsFile(file) {
+      if (!file) return;
+      if (typeof XLSX === 'undefined') { toast('ספריית האקסל לא נטענה — בדקו חיבור לאינטרנט ורעננו', 'err'); return; }
+      let rows;
+      try { rows = await parseItemsFile(file); } catch (e) { rows = null; }
+      if (!rows || !rows.length) { toast('לא נמצאו בקובץ העמודות «מק״ט» ו«מחיר»', 'err'); return; }
+      const now = new Map(it.rows.map(r => [r.sku, r]));
+      const inFile = new Set(rows.map(r => r.sku));
+      const added = rows.filter(r => !now.has(r.sku)).length;
+      const updated = rows.filter(r => now.has(r.sku) && (now.get(r.sku).price !== r.price || now.get(r.sku).desc !== r.desc || (now.get(r.sku).family || '') !== r.family)).length;
+      const removed = it.rows.filter(r => !r.manual && !inFile.has(r.sku)).length;
+      const zero = rows.filter(r => !r.price).length;
+      const noFamily = !rows.some(r => r.family);
+      it.pending = { rows, name: file.name };
+      document.getElementById('itConfirm').innerHTML =
+        'בקובץ «' + escapeHtml(cleanFileName(file.name)) + '» יש ' + fmtNum(rows.length) + ' מוצרים.' +
+        (it.rows.length ? ' יתווספו ' + fmtNum(added) + ', יעודכנו ' + fmtNum(updated) + ', יוסרו ' + fmtNum(removed) + '.' : '') +
+        (zero ? ' ל־' + fmtNum(zero) + ' מוצרים רשום מחיר 0, והם לא ייכנסו לסכומים.' : '') +
+        (noFamily ? ' אין בקובץ עמודת «תאור משפחה».' : '') +
+        '<div class="form-actions"><button type="button" class="btn btn-primary btn-sm" data-it-import>' +
+        (it.rows.length ? 'אישור והחלפת הרשימה' : 'אישור וקליטת הרשימה') + '</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-it-import-cancel>ביטול</button></div>';
+    }
+
+    function openItemForm(row) {
+      it.editSku = row && row.inList !== false ? row.sku : null;
+      document.getElementById('itSku').value = row ? row.sku : '';
+      document.getElementById('itSku').disabled = !!it.editSku;
+      document.getElementById('itDesc').value = row ? row.desc || '' : '';
+      document.getElementById('itPrice').value = row && row.price ? row.price : '';
+      document.getElementById('itFamily').value = row ? row.family || '' : '';
+      document.getElementById('itSave').textContent = it.editSku ? 'שמירת השינויים' : 'הוספת המוצר';
+      setFormError('itFormError', '');
+      const form = document.getElementById('itForm');
+      form.hidden = false;
+      form.scrollIntoView({ block: 'nearest' });
+      document.getElementById(row ? 'itPrice' : 'itSku').focus();
+    }
+
+    async function pricesChanged() {
+      await loadPricing();
+      renderAll();
+    }
+
+    document.getElementById('btnItems').addEventListener('click', openItems);
+    document.getElementById('itPick').addEventListener('click', () => document.getElementById('itFile').click());
+    document.getElementById('itFile').addEventListener('change', (e) => {
+      pickItemsFile(e.target.files && e.target.files[0]);
+      e.target.value = '';
+    });
+    (() => {
+      const zone = document.getElementById('itDrop');
+      zone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove('drag-over');
+        pickItemsFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+      });
+    })();
+    document.getElementById('itToggleTable').addEventListener('click', () => { it.showTable = !it.showTable; renderItems(); });
+    document.getElementById('itAdd').addEventListener('click', () => openItemForm(null));
+    document.getElementById('itCancel').addEventListener('click', () => { document.getElementById('itForm').hidden = true; });
+    document.getElementById('itSearch').addEventListener('input', renderItemsTable);
+    document.getElementById('itFilter').addEventListener('change', renderItemsTable);
+    document.getElementById('itVatSave').addEventListener('click', async () => {
+      const vat = Number(document.getElementById('itVat').value);
+      if (!isFinite(vat) || vat < 0 || vat > 50) { toast('מע״מ צריך להיות בין 0 ל־50', 'err'); return; }
+      try {
+        await call('svr_setting_set', { p_key: 'vat', p_value: vat });
+        toast('המע״מ עודכן ל־' + vat + '%', 'ok');
+        await pricesChanged();
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+
+    document.getElementById('itemsModal').addEventListener('click', async (e) => {
+      const chip = e.target.closest('[data-it-filter]');
+      if (chip) {
+        document.getElementById('itFilter').value = chip.dataset.itFilter;
+        it.showTable = true;
+        renderItems();
+        return;
+      }
+      if (e.target.closest('[data-it-import-cancel]')) {
+        it.pending = null;
+        document.getElementById('itConfirm').innerHTML = '';
+        return;
+      }
+      const imp = e.target.closest('[data-it-import]');
+      if (imp && it.pending) {
+        imp.disabled = true;
+        try {
+          const res = await call('svr_items_import', { p_rows: it.pending.rows, p_file: it.pending.name }) || {};
+          it.pending = null;
+          document.getElementById('itConfirm').innerHTML = '';
+          toast('נקלטו ' + fmtNum(res.count) + ' מוצרים: ' + fmtNum(res.added) + ' חדשים, ' + fmtNum(res.updated) + ' עודכנו, ' + fmtNum(res.removed) + ' הוסרו', 'ok');
+          await loadItems();
+          await pricesChanged();
+        } catch (err) {
+          imp.disabled = false;
+          if (err.code !== 'AUTH') toast(errText(err), 'err');
+        }
+        return;
+      }
+      const edit = e.target.closest('[data-it-edit]');
+      if (edit) {
+        const sku = edit.dataset.itEdit;
+        openItemForm(it.rows.find(r => r.sku === sku) || skusWithoutPrice().find(r => r.sku === sku) || { sku, inList: false });
+        return;
+      }
+      const del = e.target.closest('[data-it-del]');
+      if (del) {
+        if (!del.dataset.armed) {
+          del.dataset.armed = '1';
+          del.textContent = 'למחוק?';
+          setTimeout(() => { if (del.isConnected) { delete del.dataset.armed; del.textContent = '×'; } }, 4000);
+          return;
+        }
+        del.disabled = true;
+        try {
+          await call('svr_item_delete', { p_sku: del.dataset.itDel });
+          it.rows = it.rows.filter(r => r.sku !== del.dataset.itDel);
+          renderItems();
+          toast('המוצר נמחק מהרשימה', 'ok');
+          await pricesChanged();
+        } catch (err) {
+          del.disabled = false;
+          if (err.code !== 'AUTH') toast(errText(err), 'err');
+        }
+      }
+    });
+
+    document.getElementById('itForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const sku = document.getElementById('itSku').value.trim();
+      const price = Number(document.getElementById('itPrice').value);
+      if (!sku) { setFormError('itFormError', 'צריך מק״ט'); return; }
+      if (!isFinite(price) || price < 0) { setFormError('itFormError', 'המחיר צריך להיות מספר'); return; }
+      if (!it.editSku && it.rows.some(r => r.sku === sku)) { setFormError('itFormError', 'המק״ט ' + sku + ' כבר ברשימה. אפשר לערוך אותו מהטבלה'); return; }
+      const save = document.getElementById('itSave');
+      save.disabled = true;
+      try {
+        await call('svr_item_save', { p_sku: it.editSku || sku, p_desc: document.getElementById('itDesc').value.trim(), p_price: price,
+          p_family: document.getElementById('itFamily').value.trim() });
+        document.getElementById('itForm').hidden = true;
+        toast(it.editSku ? 'המוצר עודכן' : 'המוצר נוסף', 'ok');
+        await loadItems();
+        await pricesChanged();
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('itFormError', errText(err));
+      } finally {
+        save.disabled = false;
+      }
     });
 
     // ---------- messages: the bell ----------
@@ -7720,6 +8163,8 @@ renderTable();
       });
       const custNow = new Set((((await call('svr_customers_list')) || {}).rows || []).map(c => c.id));
       plan.customers = (backup.customers || []).filter(c => !custNow.has(c.id));
+      const itemsNow = new Set((((await call('svr_items_list')) || {}).rows || []).map(i => i.sku));
+      plan.items = (backup.items || []).filter(i => !itemsNow.has(i.sku));
       const usersNow = new Set(((await call('svr_users_list')) || []).map(u => u.username));
       plan.usersMissing = (backup.users || []).filter(u => !usersNow.has(u.username));
       return plan;
@@ -7731,6 +8176,7 @@ renderTable();
       if (plan.files.length) lines.push(countText(plan.files.length, 'קובץ אחד', 'קבצים') + (plan.trashAfter ? ' (מהם ' + plan.trashAfter + ' יחזרו לסל, כמו שהיו)' : ''));
       if (plan.excluded.length) lines.push(countText(plan.excluded.length, 'תעודה אחת שהוצאה מהדוחות', 'תעודות שהוצאו מהדוחות'));
       if (plan.customers.length) lines.push(countText(plan.customers.length, 'לקוח אחד', 'לקוחות') + ' ברשימת הלקוחות');
+      if (plan.items.length) lines.push(countText(plan.items.length, 'מוצר אחד', 'מוצרים') + ' ברשימת המוצרים והמחירים');
       return 'גיבוי מ־' + escapeHtml(fmtWhen(backup.at)) + (backup.by ? ' (' + escapeHtml(backup.by) + ')' : '') + '.<br><br>' +
         (lines.length ? '<b>יוחזרו:</b><ul class="ov-files">' + lines.map(l => '<li>' + l + '</li>').join('') + '</ul>'
                       : '<b>כל מה שבגיבוי כבר קיים עכשיו. אין מה לשחזר.</b>') +
@@ -7765,6 +8211,7 @@ renderTable();
           if (pkg) await call('svr_excluded_set', { p_package: pkg, p_kind: e.kind, p_doc: e.doc, p_action: 'add', p_note: e.note || '' });
         }
         if (plan.customers.length) await call('svr_customers_restore', { p_rows: plan.customers });
+        if (plan.items.length) await call('svr_items_restore', { p_rows: plan.items });
       } finally {
         overlay.classList.remove('show');
       }
@@ -7784,7 +8231,7 @@ renderTable();
       try {
         restorePlan = { backup, plan: await planRestore(backup) };
         const p = restorePlan.plan;
-        const any = p.newPackages.length + p.files.length + p.excluded.length + p.customers.length > 0;
+        const any = p.newPackages.length + p.files.length + p.excluded.length + p.customers.length + p.items.length > 0;
         document.getElementById('restoreText').innerHTML = restoreSummaryHtml(backup, p);
         document.getElementById('restoreGo').hidden = !any;
         document.getElementById('restoreModal').classList.add('show');
@@ -7805,7 +8252,7 @@ renderTable();
       syncData(true).catch(() => {});
     });
 
-    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal'].forEach(id => {
+    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'itemsModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', (e) => {
         if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
@@ -7934,6 +8381,7 @@ renderTable();
     window.addEventListener('dragenter', (e) => {
       // a file dragged onto the customers window goes there, not to the files window
       if (document.getElementById('custListModal').classList.contains('show')) return;
+      if (document.getElementById('itemsModal').classList.contains('show')) return;
       if (isAdmin() && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) openImportModal();
     });
     ['dragover', 'drop'].forEach(type => {
@@ -8261,7 +8709,7 @@ renderTable();
         finishOverlap('cancel');
         return;
       }
-      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'itemsModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
