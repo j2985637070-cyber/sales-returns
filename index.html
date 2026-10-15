@@ -7600,7 +7600,8 @@ renderTable();
         const s = await call('svr_backup_status') || {};
         const el = document.getElementById('backupAgo');
         const at = s.last && s.last.at ? Date.parse(s.last.at) : 0;
-        const days = at ? Math.floor((Date.now() - at) / 86400000) : null;
+        // the server's clock may be a few seconds ahead of this device's
+        const days = at ? Math.max(0, Math.floor((Date.now() - at) / 86400000)) : null;
         el.textContent = !at ? 'עוד לא נשמר גיבוי'
           : 'גיבוי אחרון: ' + (days === 0 ? 'היום' : days === 1 ? 'אתמול' : 'לפני ' + days + ' ימים') +
             (s.newer ? ' · הועלו קבצים מאז' : '');
@@ -7664,7 +7665,9 @@ renderTable();
 
     document.getElementById('btnBackup').addEventListener('click', async () => {
       try {
-        const name = 'גיבוי-מכירות-מול-החזרות-' + new Date().toISOString().slice(0, 10) + '.json';
+        const d = new Date();   // the local date, not UTC (after midnight in Israel UTC is still yesterday)
+        const day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const name = 'גיבוי-מכירות-מול-החזרות-' + day + '.json';
         const target = await pickBackupTarget(name);
         if (target === 'cancel') return;
         const data = await makeBackup();
