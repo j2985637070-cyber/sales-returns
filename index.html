@@ -552,6 +552,11 @@
     /* "בחירת לקוח" opens the same window without the upload part */
     .import-modal.pick-only .upload-part { display: none !important; }
 
+    .drawer-group { display: flex; flex-direction: column; gap: 4px; }
+    .drawer-group + .drawer-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .drawer-group-title { padding: 0 14px 2px; font-size: 0.72rem; font-weight: 800; color: #7f91b0; letter-spacing: 0.02em; }
+    .drawer-group .drawer-switch { margin-top: 0; }
+    .drawer-item .sub.stale { color: #ffb36b; }
     .drawer-item .sub { display: block; font-size: 0.72rem; font-weight: 500; color: #9fb0cc; margin-top: 1px; }
 
     /* the trash: files taken out of the reports, kept until the admin deletes them */
@@ -2005,32 +2010,49 @@
       </div>
       <nav class="drawer-nav">
         <div id="drawerPkg"></div>
-        <button type="button" class="drawer-item primary" id="btnManageFiles" data-icon="folder">
-          <span id="manageLabel">ניהול והעלאת קבצים</span>
-          <span class="manage-count" id="manageFileCount" hidden>0</span>
-        </button>
-        <button type="button" class="drawer-item admin-only" id="btnPickCustomer">בחירת לקוח</button>
-        <button type="button" class="drawer-item" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">
-          <span>רענון נתונים<small class="sub" id="syncAgo"></small></span>
-        </button>
-        <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים ומכשירים<span class="manage-count" id="usersBadge" hidden title="מכשירים שממתינים לאישור"></span></button>
-        <button type="button" class="drawer-item admin-only" id="btnTrack">מעקב צפייה</button>
-        <button type="button" class="drawer-item admin-only" id="btnCustomers">לקוחות וסוכנים</button>
-        <button type="button" class="drawer-item admin-only" id="btnSendMsg">שליחת הודעה</button>
-        <button type="button" class="drawer-item admin-only" id="btnSentMsgs">התראות שנשלחו</button>
-        <label class="drawer-switch" id="pushSwitchWrap">
-          <span>קבלת התראות
-            <small id="pushHint">הודעות מהמנהל ועדכוני נתונים, גם כשהאפליקציה סגורה</small>
-          </span>
-          <input type="checkbox" id="pushSwitch">
-        </label>
-        <button type="button" class="drawer-item" id="btnPushTest" hidden>שליחת התראת ניסיון אליי</button>
-        <label class="drawer-switch admin-only">
-          <span>הצגת סינונים למשתמשים
-            <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
-          </span>
-          <input type="checkbox" id="showFiltersSwitch">
-        </label>
+        <div class="drawer-group">
+          <div class="drawer-group-title">נתונים</div>
+          <button type="button" class="drawer-item primary" id="btnManageFiles" data-icon="folder">
+            <span id="manageLabel">ניהול והעלאת קבצים</span>
+            <span class="manage-count" id="manageFileCount" hidden>0</span>
+          </button>
+          <button type="button" class="drawer-item admin-only" id="btnPickCustomer">בחירת לקוח</button>
+          <button type="button" class="drawer-item" id="btnRefresh" title="טעינת הנתונים העדכניים מהשרת">
+            <span>רענון נתונים<small class="sub" id="syncAgo"></small></span>
+          </button>
+          <button type="button" class="drawer-item admin-only" id="btnCustomers">לקוחות וסוכנים</button>
+          <button type="button" class="drawer-item admin-only" id="btnBackup">
+            <span>הורדת גיבוי מלא<small class="sub" id="backupAgo"></small></span>
+          </button>
+          <button type="button" class="drawer-item admin-only" id="btnBackupRestore">שחזור מגיבוי</button>
+          <input type="file" id="backupFile" accept=".json,application/json" hidden>
+        </div>
+        <div class="drawer-group admin-only">
+          <div class="drawer-group-title">משתמשים</div>
+          <button type="button" class="drawer-item" id="btnUsers">משתמשים ומכשירים<span class="manage-count" id="usersBadge" hidden title="מכשירים שממתינים לאישור"></span></button>
+          <button type="button" class="drawer-item" id="btnTrack">מעקב צפייה</button>
+        </div>
+        <div class="drawer-group">
+          <div class="drawer-group-title">התראות</div>
+          <label class="drawer-switch" id="pushSwitchWrap">
+            <span>קבלת התראות
+              <small id="pushHint">הודעות מהמנהל ועדכוני נתונים, גם כשהאפליקציה סגורה</small>
+            </span>
+            <input type="checkbox" id="pushSwitch">
+          </label>
+          <button type="button" class="drawer-item" id="btnPushTest" hidden>שליחת התראת ניסיון אליי</button>
+          <button type="button" class="drawer-item admin-only" id="btnSendMsg">שליחת הודעה</button>
+          <button type="button" class="drawer-item admin-only" id="btnSentMsgs">התראות שנשלחו</button>
+        </div>
+        <div class="drawer-group admin-only">
+          <div class="drawer-group-title">תצוגה</div>
+          <label class="drawer-switch">
+            <span>הצגת סינונים למשתמשים
+              <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
+            </span>
+            <input type="checkbox" id="showFiltersSwitch">
+          </label>
+        </div>
       </nav>
       <div class="drawer-foot">
         <div class="user-chip"><b id="userName"></b><span id="userRole"></span></div>
@@ -2373,6 +2395,22 @@
         <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
       </div>
       <div class="modal-body" id="inboxList"></div>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="restoreModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="restoreTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="restoreTitle">שחזור מגיבוי</h3>
+          <p>השחזור רק מחזיר מה שחסר עכשיו. שום דבר שקיים לא נמחק ולא משתנה.</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <div class="modal-text" id="restoreText"></div>
+      <div class="form-actions" style="padding: 0 18px 16px;">
+        <button type="button" class="btn btn-primary" id="restoreGo">שחזור</button>
+        <button type="button" class="btn btn-ghost" data-close-modal>ביטול</button>
+      </div>
     </div>
   </div>
   <div class="modal-backdrop no-print" id="sentModal">
@@ -3079,6 +3117,7 @@
       const settingsChanged = await loadSettings();
       if (isAdmin()) await loadDevices();
       await loadMessages();
+      await loadBackupStatus();
       const packages = await call('svr_packages_list') || [];
       const pkgChanged = JSON.stringify(packages) !== JSON.stringify(state.packages);
       state.packages = packages;
@@ -7550,7 +7589,218 @@ renderTable();
       } catch (e) {}
     }
 
-    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal'].forEach(id => {
+    // ---------- backup (admin) ----------
+    // One file with everything: packages, files with all their rows (trash included), names and notes,
+    // documents taken out, customers and agents, users and their limits, settings. No passwords.
+    const BACKUP_VERSION = 1;
+
+    async function loadBackupStatus() {
+      if (!isAdmin()) return;
+      try {
+        const s = await call('svr_backup_status') || {};
+        const el = document.getElementById('backupAgo');
+        const at = s.last && s.last.at ? Date.parse(s.last.at) : 0;
+        const days = at ? Math.floor((Date.now() - at) / 86400000) : null;
+        el.textContent = !at ? 'עוד לא נשמר גיבוי'
+          : 'גיבוי אחרון: ' + (days === 0 ? 'היום' : days === 1 ? 'אתמול' : 'לפני ' + days + ' ימים') +
+            (s.newer ? ' · הועלו קבצים מאז' : '');
+        el.classList.toggle('stale', !at || days > 14 || !!s.newer);
+      } catch (err) {
+        if (err.code === 'AUTH') throw err;
+      }
+    }
+
+    async function makeBackup() {
+      const overlay = document.getElementById('loadingOverlay');
+      const msg = document.getElementById('loadingMsg');
+      const meta = await call('svr_backup_export') || {};
+      const files = meta.files || [];
+      const total = files.reduce((s, f) => s + (f.chunks || 0), 0);
+      let done = 0;
+      msg.textContent = 'מכין גיבוי...';
+      overlay.classList.add('show');
+      try {
+        for (const f of files) {
+          const rows = [];
+          for (let seq = 0; seq < (f.chunks || 0); seq++) {
+            const part = await call('svr_file_chunk', { p_file: f.id, p_seq: seq }) || [];
+            part.forEach(r => rows.push(r));
+            done++;
+            msg.textContent = 'מכין גיבוי... ' + Math.round(done / Math.max(1, total) * 100) + '%';
+          }
+          f.items = rows;
+        }
+      } finally {
+        overlay.classList.remove('show');
+      }
+      return Object.assign({ app: 'sales-vs-returns', version: BACKUP_VERSION, at: new Date().toISOString(), by: me.name || me.username }, meta);
+    }
+
+    // On a computer (Chrome / Edge) a "save as" window opens in the folder used last time;
+    // elsewhere the file goes to the downloads folder
+    async function saveBackupFile(name, blob) {
+      if (window.showSaveFilePicker && !IN_VIEWER) {
+        let handle;
+        try {
+          handle = await window.showSaveFilePicker({
+            id: 'svr-backup', suggestedName: name, startIn: 'documents',
+            types: [{ description: 'גיבוי מכירות מול החזרות', accept: { 'application/json': ['.json'] } }]
+          });
+        } catch (e) {
+          if (e && e.name === 'AbortError') return false;
+          handle = null;
+        }
+        if (handle) {
+          const w = await handle.createWritable();
+          await w.write(blob);
+          await w.close();
+          return true;
+        }
+      }
+      await saveFile(name, blob);
+      return true;
+    }
+
+    document.getElementById('btnBackup').addEventListener('click', async () => {
+      try {
+        const data = await makeBackup();
+        const name = 'גיבוי-מכירות-מול-החזרות-' + new Date().toISOString().slice(0, 10) + '.json';
+        const saved = await saveBackupFile(name, new Blob([JSON.stringify(data)], { type: 'application/json' }));
+        if (!saved) return;
+        await call('svr_backup_mark');
+        loadBackupStatus();
+        const rows = (data.files || []).reduce((s, f) => s + (f.items || []).length, 0);
+        toast('הגיבוי נשמר: ' + (data.packages || []).length + ' חבילות, ' + (data.files || []).length + ' קבצים, ' + fmtNum(rows) + ' שורות', 'ok');
+      } catch (err) {
+        if (err && err.code !== 'AUTH') toast(err.code ? errText(err) : 'שמירת הגיבוי נכשלה', 'err');
+      }
+    });
+
+    // ---------- restore: brings back only what is missing now ----------
+    let restorePlan = null;
+
+    async function planRestore(backup) {
+      const packages = await call('svr_packages_list') || [];
+      const byName = new Map(packages.map(p => [p.name.trim().toLowerCase(), p]));
+      const plan = { newPackages: [], files: [], trashAfter: 0, excluded: [], customers: [], usersMissing: [], pkgMap: new Map() };
+      // packages are matched by name
+      (backup.packages || []).forEach(p => {
+        const hit = byName.get(String(p.name).trim().toLowerCase());
+        if (hit) plan.pkgMap.set(p.id, hit.id);
+        else plan.newPackages.push(p);
+      });
+      // what each existing package holds now
+      const nowFiles = [];
+      const nowExcluded = new Set();
+      for (const p of packages) {
+        const [list, excl] = await Promise.all([
+          call('svr_files_list', { p_package: p.id }),
+          call('svr_excluded_list', { p_package: p.id })
+        ]);
+        (list || []).forEach(f => nowFiles.push({ pkg: p.id, kind: f.kind, name: f.name, rows: f.rows }));
+        (excl || []).forEach(e => nowExcluded.add(p.id + '|' + e.kind + '|' + e.doc));
+      }
+      // a file counts as there when the same package has a file of the same kind, name and row count
+      (backup.files || []).forEach(f => {
+        const pkg = plan.pkgMap.get(f.package_id);
+        const there = pkg && nowFiles.some(x => x.pkg === pkg && x.kind === f.kind && x.name === f.name && x.rows === (f.items || []).length);
+        if (!there) {
+          plan.files.push(f);
+          if (f.deleted_at) plan.trashAfter++;
+        }
+      });
+      (backup.excluded || []).forEach(e => {
+        const pkg = plan.pkgMap.get(e.package_id);
+        if (!pkg || !nowExcluded.has(pkg + '|' + e.kind + '|' + e.doc)) plan.excluded.push(e);
+      });
+      const custNow = new Set((((await call('svr_customers_list')) || {}).rows || []).map(c => c.id));
+      plan.customers = (backup.customers || []).filter(c => !custNow.has(c.id));
+      const usersNow = new Set(((await call('svr_users_list')) || []).map(u => u.username));
+      plan.usersMissing = (backup.users || []).filter(u => !usersNow.has(u.username));
+      return plan;
+    }
+
+    function restoreSummaryHtml(backup, plan) {
+      const lines = [];
+      if (plan.newPackages.length) lines.push(countText(plan.newPackages.length, 'חבילה אחת', 'חבילות') + ': ' + plan.newPackages.map(p => '«' + escapeHtml(p.name) + '»').join(', '));
+      if (plan.files.length) lines.push(countText(plan.files.length, 'קובץ אחד', 'קבצים') + (plan.trashAfter ? ' (מהם ' + plan.trashAfter + ' יחזרו לסל, כמו שהיו)' : ''));
+      if (plan.excluded.length) lines.push(countText(plan.excluded.length, 'תעודה אחת שהוצאה מהדוחות', 'תעודות שהוצאו מהדוחות'));
+      if (plan.customers.length) lines.push(countText(plan.customers.length, 'לקוח אחד', 'לקוחות') + ' ברשימת הלקוחות');
+      return 'גיבוי מ־' + escapeHtml(fmtWhen(backup.at)) + (backup.by ? ' (' + escapeHtml(backup.by) + ')' : '') + '.<br><br>' +
+        (lines.length ? '<b>יוחזרו:</b><ul class="ov-files">' + lines.map(l => '<li>' + l + '</li>').join('') + '</ul>'
+                      : '<b>כל מה שבגיבוי כבר קיים עכשיו. אין מה לשחזר.</b>') +
+        (plan.usersMissing.length
+          ? '<br>משתמשים שהיו בגיבוי וחסרים עכשיו: ' + plan.usersMissing.map(u => escapeHtml(u.username)).join(', ') +
+            '. אותם צריך ליצור מחדש ב«משתמשים ומכשירים», כי סיסמאות לא נשמרות בגיבוי.'
+          : '');
+    }
+
+    async function runRestore(backup, plan) {
+      const overlay = document.getElementById('loadingOverlay');
+      const msg = document.getElementById('loadingMsg');
+      overlay.classList.add('show');
+      let filesDone = 0;
+      try {
+        for (const p of plan.newPackages) {
+          msg.textContent = 'משחזר את החבילה «' + p.name + '»...';
+          // created as it was (hidden or not); creating a package sends no notification
+          const res = await call('svr_package_save', { p_id: null, p_name: p.name, p_hidden: !!p.hidden });
+          plan.pkgMap.set(p.id, res.id);
+        }
+        for (const f of plan.files) {
+          msg.textContent = 'משחזר קובץ ' + (++filesDone) + ' מתוך ' + plan.files.length + ': ' + fileDisplayName(f);
+          const up = await uploadFile({
+            pkg: plan.pkgMap.get(f.package_id), kind: f.kind, name: f.name, size: f.size, warning: f.warning,
+            title: f.title, note: f.note, items: (f.items || []).map(unpackItem)
+          });
+          if (f.deleted_at) await call('svr_file_set', { p_file: up.id, p_action: 'trash', p_title: null, p_note: null, p_package: null });
+        }
+        for (const e of plan.excluded) {
+          const pkg = plan.pkgMap.get(e.package_id);
+          if (pkg) await call('svr_excluded_set', { p_package: pkg, p_kind: e.kind, p_doc: e.doc, p_action: 'add', p_note: e.note || '' });
+        }
+        if (plan.customers.length) await call('svr_customers_restore', { p_rows: plan.customers });
+      } finally {
+        overlay.classList.remove('show');
+      }
+    }
+
+    document.getElementById('btnBackupRestore').addEventListener('click', () => document.getElementById('backupFile').click());
+    document.getElementById('backupFile').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      let backup = null;
+      try { backup = JSON.parse(await file.text()); } catch (err) {}
+      if (!backup || backup.app !== 'sales-vs-returns' || !Array.isArray(backup.files)) {
+        toast('זה לא קובץ גיבוי של הכלי הזה', 'err');
+        return;
+      }
+      try {
+        restorePlan = { backup, plan: await planRestore(backup) };
+        const p = restorePlan.plan;
+        const any = p.newPackages.length + p.files.length + p.excluded.length + p.customers.length > 0;
+        document.getElementById('restoreText').innerHTML = restoreSummaryHtml(backup, p);
+        document.getElementById('restoreGo').hidden = !any;
+        document.getElementById('restoreModal').classList.add('show');
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+    document.getElementById('restoreGo').addEventListener('click', async () => {
+      if (!restorePlan) return;
+      document.getElementById('restoreModal').classList.remove('show');
+      try {
+        await runRestore(restorePlan.backup, restorePlan.plan);
+        toast('השחזור הסתיים', 'ok');
+      } catch (err) {
+        if (err.code !== 'AUTH') toast('השחזור נעצר באמצע: ' + errText(err) + '. אפשר להריץ אותו שוב, הוא ימשיך ממה שחסר', 'err');
+      }
+      restorePlan = null;
+      syncData(true).catch(() => {});
+    });
+
+    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', (e) => {
         if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
@@ -8006,7 +8256,7 @@ renderTable();
         finishOverlap('cancel');
         return;
       }
-      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
