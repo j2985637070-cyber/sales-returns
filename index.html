@@ -490,6 +490,14 @@
     .msg-row p { color: var(--text); font-size: 0.86rem; font-weight: 500; margin-top: 2px; white-space: pre-line; }
     .msg-row span { display: block; color: var(--muted); font-size: 0.74rem; font-weight: 600; margin-top: 4px; }
     .msg-row .go { color: var(--accent); font-weight: 700; }
+    .sent-row { display: flex; gap: 10px 14px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .sent-row .info { flex: 1 1 260px; min-width: 0; }
+    .sent-row b { color: var(--navy); font-weight: 800; font-size: 0.92rem; }
+    .sent-row p { font-size: 0.86rem; margin-top: 2px; white-space: pre-line; }
+    .sent-row .meta { display: block; color: var(--muted); font-size: 0.74rem; font-weight: 600; margin-top: 4px; }
+    .sent-row .who { display: block; font-size: 0.76rem; font-weight: 600; margin-top: 3px; color: var(--text); }
+    .sent-row .who i { font-style: normal; color: var(--success); }
+    .sent-row .who u { text-decoration: none; color: var(--amber); }
     .send-to { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
     .send-to .check-line { justify-content: space-between; font-weight: 700; }
     .send-to small { color: var(--muted); font-weight: 600; font-size: 0.74rem; }
@@ -2009,6 +2017,7 @@
         <button type="button" class="drawer-item admin-only" id="btnTrack">מעקב צפייה</button>
         <button type="button" class="drawer-item admin-only" id="btnCustomers">לקוחות וסוכנים</button>
         <button type="button" class="drawer-item admin-only" id="btnSendMsg">שליחת הודעה</button>
+        <button type="button" class="drawer-item admin-only" id="btnSentMsgs">התראות שנשלחו</button>
         <label class="drawer-switch" id="pushSwitchWrap">
           <span>קבלת התראות
             <small id="pushHint">הודעות מהמנהל ועדכוני נתונים, גם כשהאפליקציה סגורה</small>
@@ -2364,6 +2373,18 @@
         <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
       </div>
       <div class="modal-body" id="inboxList"></div>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="sentModal">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="sentTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="sentTitle">התראות שנשלחו</h3>
+          <p>כל ההודעות וההתראות שיצאו: מה ששלחת, עדכוני קבצים, חבילות ובקשות מכשיר. מחיקה מוציאה את ההודעה מהפעמון אצל כולם, וההתראה נמחקת מהטלפון בפעם הבאה שפותחים את האפליקציה.</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body" id="sentList"></div>
     </div>
   </div>
   <div class="modal-backdrop no-print" id="sendModal">
@@ -2934,6 +2955,7 @@
         if (err.code !== 'AUTH') toast(errText(err), 'err');
       }
       syncPushSub().catch(() => {});
+      clearDeletedNotifications();
     }
 
     async function boot() {
@@ -7452,7 +7474,83 @@ renderTable();
       }
     });
 
-    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal'].forEach(id => {
+    // ---------- admin: every message that went out, and deleting one ----------
+    const KIND_LABEL = { manual: 'הודעה', upload: 'עדכון נתונים', 'package': 'חבילה חדשה', device: 'בקשת מכשיר', test: 'התראת ניסיון' };
+    let sentRows = [];
+
+    async function openSent() {
+      document.getElementById('sentList').innerHTML = '<div class="modal-empty">טוען...</div>';
+      document.getElementById('sentModal').classList.add('show');
+      try {
+        sentRows = await call('svr_messages_sent') || [];
+        renderSent();
+      } catch (err) {
+        if (err.code !== 'AUTH') document.getElementById('sentList').innerHTML = '<div class="modal-empty">' + escapeHtml(errText(err)) + '</div>';
+      }
+    }
+
+    function renderSent() {
+      document.getElementById('sentList').innerHTML = sentRows.length
+        ? sentRows.map(m => {
+            const to = m.to || [];
+            const read = to.filter(t => t.read);
+            const unread = to.filter(t => !t.read);
+            return '<div class="sent-row"><div class="info">' +
+              '<b>' + escapeHtml(m.title) + '</b> <span class="pkg-tag">' + escapeHtml(KIND_LABEL[m.kind] || m.kind) + '</span>' +
+              '<p>' + escapeHtml(m.body) + '</p>' +
+              '<span class="meta">' + escapeHtml(fmtWhen(m.at)) + (m.from ? ' · מאת ' + escapeHtml(m.from) : '') +
+                ' · ' + (to.length === 1 ? 'נשלח למשתמש אחד' : 'נשלח ל־' + to.length + ' משתמשים') + '</span>' +
+              (to.length
+                ? '<span class="who">' +
+                    (read.length ? '<i>קראו: ' + read.map(t => escapeHtml(t.name)).join(', ') + '</i>' : '') +
+                    (read.length && unread.length ? ' · ' : '') +
+                    (unread.length ? '<u>עוד לא: ' + unread.map(t => escapeHtml(t.name)).join(', ') + '</u>' : '') +
+                  '</span>'
+                : '') +
+              '</div><button type="button" class="btn btn-danger btn-sm" data-sent-del="' + escapeHtml(m.id) + '">מחק</button></div>';
+          }).join('')
+        : '<div class="modal-empty">עוד לא נשלחו התראות.</div>';
+    }
+
+    document.getElementById('btnSentMsgs').addEventListener('click', openSent);
+    document.getElementById('sentList').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-sent-del]');
+      if (!btn) return;
+      if (!btn.dataset.armed) {
+        btn.dataset.armed = '1';
+        btn.textContent = 'למחוק אצל כולם?';
+        setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = 'מחק'; } }, 4000);
+        return;
+      }
+      btn.disabled = true;
+      try {
+        await call('svr_message_delete', { p_id: btn.dataset.sentDel });
+        sentRows = sentRows.filter(m => m.id !== btn.dataset.sentDel);
+        renderSent();
+        toast('ההודעה נמחקה מהפעמון אצל כולם', 'ok');
+        loadMessages().catch(() => {});
+      } catch (err) {
+        btn.disabled = false;
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+
+    // Notifications still on this phone for messages that were deleted are cleared when the app opens
+    async function clearDeletedNotifications() {
+      if (!PUSH_OK) return;
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) return;
+        const shown = await reg.getNotifications();
+        const idOf = n => (String(n.tag || '').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/) || [])[0];
+        const ids = Array.from(new Set(shown.map(idOf).filter(Boolean)));
+        if (!ids.length) return;
+        const alive = new Set(await call('svr_messages_alive', { p_ids: ids }) || []);
+        shown.forEach(n => { const id = idOf(n); if (id && !alive.has(id)) n.close(); });
+      } catch (e) {}
+    }
+
+    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', (e) => {
         if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
@@ -7908,7 +8006,7 @@ renderTable();
         finishOverlap('cancel');
         return;
       }
-      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'sentModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
@@ -8061,6 +8159,7 @@ renderTable();
     setInterval(checkIdle, 30000);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) checkIdle();
+      if (!document.hidden && me) clearDeletedNotifications();
       if (document.hidden || !me || Date.now() - lastSync < 120000) return;
       syncData(false).catch(() => {});
     });
