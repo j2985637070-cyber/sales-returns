@@ -4277,9 +4277,17 @@
       return '<small class="amt">' + fmtMoney(value) + '</small>';
     }
 
+    // the return percent by money, "31.2% (₪)". Not on a single product's row: there it always
+    // equals the percent by quantity.
     function amtPctHtml(row) {
       if (!pricing.loaded || (row.noPrice && !row.sentAmt && !row.retAmt)) return '';
-      return '<small class="amt">בכסף: ' + (row.sentAmt > 0 ? fmtPct(row.pctAmt) : '—') + '</small>';
+      return '<small class="amt">' + (row.sentAmt > 0 ? fmtPct(row.pctAmt) : '—') + ' (₪)</small>';
+    }
+
+    // under the balance in the totals: what the customer kept, in money
+    function soldHtml(totals) {
+      if (!pricing.loaded) return '';
+      return '<small class="amt">מכר ' + fmtMoney(totals.sentAmt - totals.retAmt) + '</small>';
     }
 
     function buildReport() {
@@ -4999,7 +5007,7 @@
           '<td class="num" data-label="נשלח"><button type="button" class="sent-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.sent ? '' : ' disabled') + ' title="הצג תעודות משלוח">' + fmtNum(r.sent) + '</button>' + amtHtml(r.sentAmt, r) + '</td>' +
           '<td class="num" data-label="חזר"><button type="button" class="sent-link return-link" data-sku="' + escapeHtml(r.sku) + '"' + custAttr + (r.returned ? '' : ' disabled') + ' title="הצג תעודות החזרה">' + fmtNum(r.returned) + '</button>' + amtHtml(r.retAmt, r) + '</td>' +
           '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
-          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + amtPctHtml(r) + '</td>' +
+          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td>' +
           '<td class="col-act no-print"><button type="button" class="row-del" data-sku="' + escapeHtml(r.sku) + '" title="מחק שורה" aria-label="מחק שורה">×</button></td>' +
           '<td class="col-fill"></td>' +
           '</tr>';
@@ -5010,7 +5018,7 @@
         (showFamily ? '<td class="text-col"></td>' : '') +
         '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + amtHtml(totals.sentAmt, totals) + '</td>' +
         '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + amtHtml(totals.retAmt, totals) + '</td>' +
-        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
+        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + soldHtml(totals) + '</td>' +
         '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + amtPctHtml(totals) + '</td>' +
         '<td class="col-act no-print"></td>' +
         '<td class="col-fill"></td>' +
@@ -5052,7 +5060,7 @@
         '<td class="num" data-label="מק״טים">' + fmtNum(totals.count) + '</td>' +
         '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + amtHtml(totals.sentAmt, totals) + '</td>' +
         '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + amtHtml(totals.retAmt, totals) + '</td>' +
-        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
+        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + soldHtml(totals) + '</td>' +
         '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + amtPctHtml(totals) + '</td>' +
         '<td class="col-act no-print"></td>' +
         '<td class="col-fill"></td>' +
@@ -5106,9 +5114,9 @@
         card('box', 'מק״טים בדוח', 'מק״טים', fmtNum(rows.length), skuSub) +
         card('send', 'סה״כ נשלח', 'נשלח', fmtNum(totals.sent), pricing.loaded ? fmtMoney(totals.sentAmt) : ship.files + ' קבצי משלוח') +
         card('return', 'סה״כ חזר', 'חזר', fmtNum(totals.returned), pricing.loaded ? fmtMoney(totals.retAmt) : ret.files + ' קבצי החזרה') +
-        card('net', 'יתרה', 'יתרה', (net > 0 ? '+' : '') + fmtNum(net), pricing.loaded ? fmtMoney(totals.sentAmt - totals.retAmt) : 'נשלח פחות חזר', net < 0 ? ' bad' : '') +
+        card('net', 'יתרה', 'יתרה', (net > 0 ? '+' : '') + fmtNum(net), pricing.loaded ? 'מכר ' + fmtMoney(totals.sentAmt - totals.retAmt) : 'נשלח פחות חזר', net < 0 ? ' bad' : '') +
         card('percent', 'אחוז החזרה כולל', '% החזרה', fmtPct(totals.pct),
-          pricing.loaded && totals.sentAmt > 0 ? 'בכסף: ' + fmtPct(totals.pctAmt) : 'מכל הכמות שנשלחה', pctCls) +
+          pricing.loaded && totals.sentAmt > 0 ? fmtPct(totals.pctAmt) + ' (₪)' : 'מכל הכמות שנשלחה', pctCls) +
         '</div>';
     }
 
