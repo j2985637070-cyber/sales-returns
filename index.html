@@ -478,6 +478,24 @@
     .track-cust .none { color: var(--danger); }
     @media (max-width: 560px) { .track-lists { grid-template-columns: 1fr; } .track-lists > div + div { border-inline-start: none; border-top: 1px solid var(--border); } }
 
+    /* the bell and the messages */
+    .bell-btn { margin-inline-start: auto; font-size: 1.1rem; }
+    .msg-row {
+      display: block; width: 100%; text-align: right; cursor: pointer;
+      padding: 12px 18px; border: none; border-bottom: 1px solid var(--border); background: #fff; font: inherit;
+    }
+    .msg-row:hover { background: #f7f9fc; }
+    .msg-row.unread { background: var(--accent-light); }
+    .msg-row b { display: block; color: var(--navy); font-weight: 800; font-size: 0.92rem; }
+    .msg-row p { color: var(--text); font-size: 0.86rem; font-weight: 500; margin-top: 2px; white-space: pre-line; }
+    .msg-row span { display: block; color: var(--muted); font-size: 0.74rem; font-weight: 600; margin-top: 4px; }
+    .msg-row .go { color: var(--accent); font-weight: 700; }
+    .send-to { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
+    .send-to .check-line { justify-content: space-between; font-weight: 700; }
+    .send-to small { color: var(--muted); font-weight: 600; font-size: 0.74rem; }
+    .send-to small.on { color: var(--success); }
+    .send-to .all { border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 2px; }
+
     .uf-agents { display: flex; gap: 6px 14px; flex-wrap: wrap; padding: 2px 26px 0 0; }
     .uf-agents .check-line { font-size: 0.86rem; }
     .uf-agents.off { opacity: 0.45; pointer-events: none; }
@@ -1836,6 +1854,7 @@
       .drop-zone { padding: 10px 10px; }
       .drop-zone p { display: none; }
       .pkg-picker { flex-basis: 100%; max-width: none; }
+      #btnNotifyReport .lbl { display: none; }
       .pkg-tools { width: 100%; }
       .pkg-tools .btn { flex: 1 1 0; }
       .picker-actions { width: 100%; }
@@ -1967,6 +1986,7 @@
           <p id="dataFresh">השוואה בין מה שנשלח לחנות לבין מה שחזר</p>
         </div>
       </div>
+      <button type="button" class="menu-btn bell-btn" id="btnBell" aria-label="הודעות" title="הודעות">🔔<span class="menu-badge" id="bellBadge" hidden></span></button>
     </header>
 
     <div class="drawer-scrim no-print" id="drawerScrim" hidden></div>
@@ -1988,6 +2008,14 @@
         <button type="button" class="drawer-item admin-only" id="btnUsers">משתמשים ומכשירים<span class="manage-count" id="usersBadge" hidden title="מכשירים שממתינים לאישור"></span></button>
         <button type="button" class="drawer-item admin-only" id="btnTrack">מעקב צפייה</button>
         <button type="button" class="drawer-item admin-only" id="btnCustomers">לקוחות וסוכנים</button>
+        <button type="button" class="drawer-item admin-only" id="btnSendMsg">שליחת הודעה</button>
+        <label class="drawer-switch" id="pushSwitchWrap">
+          <span>קבלת התראות
+            <small id="pushHint">הודעות מהמנהל ועדכוני נתונים, גם כשהאפליקציה סגורה</small>
+          </span>
+          <input type="checkbox" id="pushSwitch">
+        </label>
+        <button type="button" class="drawer-item" id="btnPushTest" hidden>שליחת התראת ניסיון אליי</button>
         <label class="drawer-switch admin-only">
           <span>הצגת סינונים למשתמשים
             <small>משפחות, רק מוצרים שחזרו, החזרה מעל %, רמת החזרה</small>
@@ -2067,6 +2095,7 @@
           </div>
         </div>
         <div class="toolbar report-toolbar">
+          <button type="button" class="btn btn-ghost admin-only" id="btnNotifyReport" hidden title="שליחת התראה עם קישור לדוח הזה" aria-label="שליחת התראה על הדוח">🔔<span class="lbl"> שלח התראה</span></button>
           <div class="menu-wrap">
             <button type="button" class="btn btn-success" id="btnExportMenu" data-icon="download" data-menu-toggle disabled>ייצוא ▾</button>
             <div class="menu-pop" hidden>
@@ -2321,6 +2350,45 @@
           <button type="submit" class="btn btn-primary" id="pkgSave">יצירת החבילה</button>
           <button type="button" class="btn btn-ghost" data-close-modal>ביטול</button>
           <button type="button" class="btn btn-danger" id="pkgDelete" hidden>מחיקת החבילה</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="inboxModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="inboxTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="inboxTitle">הודעות</h3>
+          <p id="inboxSub">הודעות מהמנהל ועדכונים על הנתונים</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body" id="inboxList"></div>
+    </div>
+  </div>
+  <div class="modal-backdrop no-print" id="sendModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="sendTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="sendTitle">שליחת הודעה</h3>
+          <p id="sendSub">ההודעה תופיע אצלם בפעמון, ותישלח כהתראה למי שהפעיל התראות.</p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
+      </div>
+      <form class="form-grid" id="sendForm" autocomplete="off">
+        <div class="field wide">
+          <label>למי</label>
+          <div class="send-to" id="sendTo"></div>
+        </div>
+        <div class="field wide">
+          <label for="sendBody">ההודעה</label>
+          <textarea id="sendBody" maxlength="1000"></textarea>
+        </div>
+        <label class="check-line wide" id="sendLinkLine"><input type="checkbox" id="sendLink" checked> <span id="sendLinkText">לצרף קישור לדוח הזה</span></label>
+        <div class="form-error wide" id="sendError" hidden></div>
+        <div class="form-actions wide">
+          <button type="submit" class="btn btn-primary" id="sendBtn">שליחה</button>
+          <button type="button" class="btn btn-ghost" data-close-modal>ביטול</button>
         </div>
       </form>
     </div>
@@ -2747,7 +2815,10 @@
       MAIN_HIDDEN: 'החבילה הראשית לא יכולה להיות מוסתרת: היא נפתחת לכולם בכניסה',
       PACKAGE_MAIN: 'אי אפשר למחוק את החבילה הראשית. סמנו קודם חבילה אחרת כראשית',
       PACKAGE_NOT_EMPTY: 'אפשר למחוק רק חבילה ריקה. העבירו או מחקו קודם את הקבצים שלה, גם מהסל',
-      NOT_IN_TRASH: 'אפשר למחוק לצמיתות רק קובץ שנמצא בסל'
+      NOT_IN_TRASH: 'אפשר למחוק לצמיתות רק קובץ שנמצא בסל',
+      EMPTY_MESSAGE: 'כתבו את ההודעה',
+      NO_RECIPIENTS: 'אף אחד מהנמענים שבחרתם לא פעיל',
+      BAD_SUBSCRIPTION: 'הדפדפן לא החזיר פרטי התראות תקינים. נסו שוב'
     };
 
     function errText(err) {
@@ -2858,9 +2929,11 @@
       renderAll();
       try {
         await syncData(true);
+        await openPendingMessage();
       } catch (err) {
         if (err.code !== 'AUTH') toast(errText(err), 'err');
       }
+      syncPushSub().catch(() => {});
     }
 
     async function boot() {
@@ -2983,6 +3056,7 @@
     async function doSync(showOverlay) {
       const settingsChanged = await loadSettings();
       if (isAdmin()) await loadDevices();
+      await loadMessages();
       const packages = await call('svr_packages_list') || [];
       const pkgChanged = JSON.stringify(packages) !== JSON.stringify(state.packages);
       state.packages = packages;
@@ -4870,6 +4944,7 @@
       custNamesCache = null;
       unitsCache = null;
       saveView();
+      document.getElementById('btnNotifyReport').hidden = !(isAdmin() && !state.allCust && !!state.selectedIds && state.selectedIds.size > 0);
       applyDateInputLimits();
       renderPkgBar();
       renderFreshness();
@@ -5543,6 +5618,8 @@
         overlay.classList.remove('show');
       }
       if (ok) toast(ok === 1 ? 'הקובץ הועלה לשרת' : 'הועלו ' + ok + ' קבצים לשרת', 'ok');
+      // one message to everyone about the whole upload; a hidden package (tests) tells nobody
+      if (ok) call('svr_notify_upload', { p_package: pkg, p_files: ok }).catch(() => {});
       applyExclusions();
       renderAll();
       refreshQuietly();
@@ -7090,7 +7167,290 @@ renderTable();
       else if (e.target.id === 'overlapModal') finishOverlap('cancel');
     });
 
-    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal'].forEach(id => {
+    // ---------- messages: the bell ----------
+    const inbox = { rows: [], unread: 0 };
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    async function loadMessages() {
+      try {
+        const r = await call('svr_messages_list') || {};
+        inbox.rows = r.rows || [];
+        inbox.unread = r.unread || 0;
+      } catch (err) {
+        if (err.code === 'AUTH') throw err;
+      }
+      renderBell();
+      if (document.getElementById('inboxModal').classList.contains('show')) renderInbox();
+    }
+
+    function renderBell() {
+      const b = document.getElementById('bellBadge');
+      b.hidden = !inbox.unread;
+      b.textContent = inbox.unread > 99 ? '99+' : String(inbox.unread || '');
+    }
+
+    function renderInbox() {
+      document.getElementById('inboxList').innerHTML = inbox.rows.length
+        ? inbox.rows.map(m =>
+            '<button type="button" class="msg-row' + (m.read ? '' : ' unread') + '" data-msg="' + escapeHtml(m.id) + '">' +
+            '<b>' + escapeHtml(m.title) + '</b><p>' + escapeHtml(m.body) + '</p>' +
+            '<span>' + escapeHtml(fmtWhen(m.at)) + (m.from ? ' · ' + escapeHtml(m.from) : '') +
+            (m.link ? ' · <em class="go">לחיצה פותחת</em>' : '') + '</span></button>').join('')
+        : '<div class="modal-empty">אין עדיין הודעות.</div>';
+    }
+
+    async function openInbox() {
+      document.getElementById('inboxModal').classList.add('show');
+      renderInbox();
+      await loadMessages();
+      // opening the list is reading it; the unread ones stay highlighted until it closes
+      if (inbox.unread) {
+        inbox.unread = 0;
+        renderBell();
+        call('svr_messages_read', { p_ids: null }).catch(() => {});
+        inbox.rows.forEach(m => { m.read = true; });
+      }
+    }
+
+    // Where a message takes you: a package and a customer's report, or (admin) the devices waiting
+    async function openLink(link) {
+      if (!link) return;
+      if (link.open === 'users') {
+        if (isAdmin()) document.getElementById('btnUsers').click();
+        return;
+      }
+      if (link.pkg && link.pkg !== state.pkgId && state.packages.some(p => p.id === link.pkg)) await switchPackage(link.pkg);
+      if (Array.isArray(link.sel) && link.sel.length) {
+        state.selectedIds = new Set(link.sel);
+        state.mergedStores = new Set(link.merged || []);
+        state.combineStores = !!link.combine;
+        state.focusStoreId = link.focus || '';
+        state.allCust = false;
+        state.multiCust = false;
+        closeImportModal();
+        renderAll();
+      }
+    }
+
+    async function openMessageById(id) {
+      await loadMessages();
+      const m = inbox.rows.find(x => x.id === id);
+      if (!m) return;
+      if (!m.read) {
+        m.read = true;
+        inbox.unread = Math.max(0, inbox.unread - 1);
+        renderBell();
+        call('svr_messages_read', { p_ids: [id] }).catch(() => {});
+      }
+      await openLink(m.link);
+    }
+
+    // A notification tapped while the app was closed opens it with ?m=<message>
+    let pendingMsg = new URLSearchParams(location.search).get('m');
+
+    async function openPendingMessage() {
+      if (!pendingMsg) return;
+      const id = pendingMsg;
+      pendingMsg = null;
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      await openMessageById(id);
+    }
+
+    document.getElementById('btnBell').addEventListener('click', openInbox);
+    document.getElementById('inboxList').addEventListener('click', (e) => {
+      const row = e.target.closest('[data-msg]');
+      if (!row) return;
+      const m = inbox.rows.find(x => x.id === row.dataset.msg);
+      if (!m || !m.link) return;
+      document.getElementById('inboxModal').classList.remove('show');
+      openLink(m.link);
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        const d = e.data || {};
+        if (!me) return;
+        if (d.type === 'pushed') loadMessages().catch(() => {});
+        if (d.type === 'open-message') {
+          let id = null;
+          try { id = new URL(d.url).searchParams.get('m'); } catch (err) {}
+          if (id) openMessageById(id).catch(() => {});
+        }
+      });
+    }
+
+    // ---------- push notifications on this device ----------
+    const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
+
+    async function currentSub() {
+      if (!PUSH_OK) return null;
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        return reg ? await reg.pushManager.getSubscription() : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function keyBytes(b64) {
+      const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b64.length + 3) % 4));
+      return Uint8Array.from(s, c => c.charCodeAt(0));
+    }
+
+    async function saveSub(sub) {
+      const j = sub.toJSON();
+      await call('svr_push_subscribe', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_label: deviceLabel() });
+    }
+
+    async function refreshPushSwitch() {
+      const sw = document.getElementById('pushSwitch');
+      const hint = document.getElementById('pushHint');
+      const test = document.getElementById('btnPushTest');
+      if (!PUSH_OK) {
+        sw.checked = false;
+        sw.disabled = true;
+        test.hidden = true;
+        hint.textContent = /iPhone|iPad/.test(navigator.userAgent)
+          ? 'באייפון: קודם מתקינים את האתר למסך הבית (שיתוף ← "הוספה למסך הבית") ופותחים משם'
+          : 'הדפדפן הזה לא תומך בהתראות';
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        sw.checked = false;
+        sw.disabled = true;
+        test.hidden = true;
+        hint.textContent = 'ההתראות חסומות בהגדרות הדפדפן לאתר הזה. אפשר לפתוח אותן בהגדרות האתר';
+        return;
+      }
+      const sub = await currentSub();
+      sw.checked = !!sub;
+      sw.disabled = false;
+      test.hidden = !sub;
+      hint.textContent = sub ? 'מופעל במכשיר הזה' : 'הודעות מהמנהל ועדכוני נתונים, גם כשהאפליקציה סגורה';
+    }
+
+    // after signing in: a browser that already has notifications on is registered to whoever is signed in now
+    async function syncPushSub() {
+      const sub = await currentSub();
+      if (sub) await saveSub(sub).catch(() => {});
+      refreshPushSwitch();
+    }
+
+    async function enablePush() {
+      if ((await Notification.requestPermission()) !== 'granted') throw { msg: 'לא ניתן אישור להתראות במכשיר הזה' };
+      const reg = await navigator.serviceWorker.ready;
+      let key = await rpc('svr_push_public_key');
+      for (let i = 0; !key && i < 6; i++) {
+        await sleep(1500);
+        key = await rpc('svr_push_public_key');
+      }
+      if (!key) throw { msg: 'שירות ההתראות עוד לא מוכן. נסו שוב בעוד דקה' };
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+      await saveSub(sub);
+    }
+
+    async function disablePush(tok) {
+      const sub = await currentSub();
+      if (!sub) return;
+      const endpoint = sub.endpoint;
+      await sub.unsubscribe().catch(() => {});
+      await rpc('svr_push_unsubscribe', { p_token: tok || token, p_endpoint: endpoint }).catch(() => {});
+    }
+
+    document.getElementById('pushSwitch').addEventListener('change', async (e) => {
+      const sw = e.currentTarget;
+      const on = sw.checked;
+      sw.disabled = true;
+      try {
+        if (on) await enablePush();
+        else await disablePush();
+        toast(on ? 'ההתראות הופעלו במכשיר הזה' : 'ההתראות כובו במכשיר הזה', 'ok');
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(err.msg || errText(err), 'err');
+      }
+      refreshPushSwitch();
+    });
+
+    document.getElementById('btnPushTest').addEventListener('click', async () => {
+      try {
+        await call('svr_push_test');
+        toast('נשלחה התראת ניסיון. היא אמורה להגיע תוך כמה שניות', 'ok');
+        setTimeout(() => loadMessages().catch(() => {}), 1500);
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      }
+    });
+
+    // ---------- admin: sending a message ----------
+    let sendLinkData = null;
+
+    async function openSend(link, text) {
+      sendLinkData = link;
+      document.getElementById('sendTitle').textContent = link ? 'התראה על הדוח הזה' : 'שליחת הודעה';
+      document.getElementById('sendBody').value = text || '';
+      document.getElementById('sendLinkLine').hidden = !link;
+      document.getElementById('sendLink').checked = true;
+      setFormError('sendError', '');
+      document.getElementById('sendTo').innerHTML = '<span class="dev-none">טוען...</span>';
+      document.getElementById('sendModal').classList.add('show');
+      try {
+        const [users, push] = await Promise.all([call('svr_users_list'), call('svr_push_users')]);
+        usersCache = users || [];
+        const list = usersCache.filter(u => u.active && u.id !== me.id);
+        document.getElementById('sendTo').innerHTML = list.length
+          ? '<label class="check-line all"><span><input type="checkbox" data-send-all> כולם</span></label>' +
+            list.map(u => {
+              const n = (push || {})[u.id] || 0;
+              return '<label class="check-line"><span><input type="checkbox" value="' + escapeHtml(u.id) + '"> ' +
+                escapeHtml(u.name || u.username) + '</span><small class="' + (n ? 'on' : '') + '">' +
+                (n ? 'התראות מופעלות' + (n > 1 ? ' ב־' + n + ' מכשירים' : '') : 'בלי התראות: יראה בפעמון') + '</small></label>';
+            }).join('')
+          : '<span class="dev-none">אין עוד משתמשים פעילים.</span>';
+        setTimeout(() => document.getElementById('sendBody').focus(), 50);
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('sendError', errText(err));
+      }
+    }
+
+    function reportLink() {
+      return {
+        pkg: state.pkgId,
+        sel: state.selectedIds ? Array.from(state.selectedIds) : [],
+        merged: Array.from(state.mergedStores),
+        combine: state.combineStores,
+        focus: state.focusStoreId
+      };
+    }
+
+    document.getElementById('btnSendMsg').addEventListener('click', () => openSend(null, ''));
+    document.getElementById('btnNotifyReport').addEventListener('click', () => {
+      openSend(reportLink(), 'תסתכל על הדוח של ' + reportScopeLabel() + (packageName() ? ' · ' + packageName() : ''));
+    });
+    document.getElementById('sendTo').addEventListener('change', (e) => {
+      const all = e.target.closest('[data-send-all]');
+      if (all) document.querySelectorAll('#sendTo input[value]').forEach(i => { i.checked = all.checked; });
+    });
+    document.getElementById('sendForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const users = Array.from(document.querySelectorAll('#sendTo input[value]:checked')).map(i => i.value);
+      const body = document.getElementById('sendBody').value.trim();
+      if (!users.length) { setFormError('sendError', 'בחרו למי לשלוח'); return; }
+      if (!body) { setFormError('sendError', 'כתבו את ההודעה'); return; }
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+      try {
+        const link = sendLinkData && document.getElementById('sendLink').checked ? sendLinkData : null;
+        const res = await call('svr_message_send', { p_users: users, p_title: null, p_body: body, p_link: link }) || {};
+        document.getElementById('sendModal').classList.remove('show');
+        toast('ההודעה נשלחה ל־' + (res.to || users.length) + (res.push ? ' · ' + res.push + ' יקבלו גם התראה' : ''), 'ok');
+      } catch (err) {
+        if (err.code !== 'AUTH') setFormError('sendError', errText(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', (e) => {
         if (e.target.id === id || e.target.closest('[data-close-modal]')) e.currentTarget.classList.remove('show');
       });
@@ -7546,7 +7906,7 @@ renderTable();
         finishOverlap('cancel');
         return;
       }
-      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'inboxModal', 'sendModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
       if (top) {
         top.classList.remove('show');
         return;
@@ -7682,7 +8042,9 @@ renderTable();
       storeToken();
       clearLocalData();
       showAuth('login');
-      rpc('svr_logout', { p_token: old }).catch(() => {});
+      // signing out on purpose also stops this device's notifications (signing out after an idle
+      // hour does not); then the session is closed
+      disablePush(old).catch(() => {}).then(() => rpc('svr_logout', { p_token: old }).catch(() => {}));
     });
 
     document.getElementById('btnRefresh').addEventListener('click', () => {
