@@ -7269,12 +7269,14 @@ renderTable();
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (e) => {
         const d = e.data || {};
-        if (!me) return;
-        if (d.type === 'pushed') loadMessages().catch(() => {});
+        if (d.type === 'pushed' && me) loadMessages().catch(() => {});
         if (d.type === 'open-message') {
           let id = null;
           try { id = new URL(d.url).searchParams.get('m'); } catch (err) {}
-          if (id) openMessageById(id).catch(() => {});
+          if (!id) return;
+          // signed out (for example after an idle hour): it opens right after signing in again
+          if (me) openMessageById(id).catch(() => {});
+          else pendingMsg = id;
         }
       });
     }
