@@ -6409,9 +6409,17 @@
       const docDataJson = embed(docData);
       const allRowsJson = embed(initRows.map(r => ({
         sku: r.sku, desc: r.desc || '', family: r.family || '',
-        sent: r.sent, returned: r.returned, pct: r.pct
+        sent: r.sent, returned: r.returned, pct: r.pct,
+        sentAmt: Math.round(r.sentAmt || 0), retAmt: Math.round(r.retAmt || 0), noPrice: !!r.noPrice
       })));
       const linesJson = embed(lineIndex);
+      // the amounts, as in the report: under each quantity, "מכר" under the balance, "X% (₪)" in the totals
+      const money = pricing.loaded;
+      const amtLine = (v, none) => money ? '<small class="amt' + (none ? ' none' : '') + '">' + (none ? 'אין מחיר' : escapeHtml(fmtMoney(v))) + '</small>' : '';
+      const kpiAmt = (text) => money ? '<small class="kpi-amt">' + escapeHtml(text) + '</small>' : '';
+      const moneyPctText = totals.sentAmt > 0 ? fmtPct(totals.pctAmt) + ' (₪)' : '';
+      const noPriceText = money && totals.noPriceCount
+        ? (totals.noPriceCount === 1 ? 'מק״ט אחד בלי מחיר לא נכלל בסכומים' : totals.noPriceCount + ' מק״טים בלי מחיר לא נכללים בסכומים') : '';
 
       const html = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -6494,6 +6502,9 @@ table.report tfoot td{background:#eef3fb;font-weight:800;color:var(--navy);borde
 .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:10px;border:none;font:inherit;font-weight:700;font-size:.88rem;cursor:pointer}
 .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--navy)}
 .btn-ghost:hover{background:var(--accent-light);border-color:#b7c4f0;color:var(--accent)}
+small.amt{display:block;margin-top:2px;font-size:.72rem;font-weight:600;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+small.amt.none{color:var(--amber);white-space:normal}
+.kpi small.kpi-amt{display:block;margin-top:5px;font-size:.82rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -6503,11 +6514,12 @@ table.report tfoot td{background:#eef3fb;font-weight:800;color:var(--navy);borde
   <h1>${escapeHtml(clientName)}</h1>
   <p class="letter-meta">${escapeHtml(metaLine)}</p>
   <div class="kpi-row">
-    <div class="kpi"><span>נשלח</span><b>${totals.sent.toLocaleString('he-IL')}</b></div>
-    <div class="kpi kpi-ret"><span>חזר</span><b>${totals.returned.toLocaleString('he-IL')}</b></div>
-    <div class="kpi"><span>יתרה</span><b class="${netCls}">${netText}</b></div>
-    <div class="kpi"><span>אחוז החזרה</span><b class="${pctClsName}">${escapeHtml(pctText)}</b></div>
+    <div class="kpi"><span>נשלח</span><b>${totals.sent.toLocaleString('he-IL')}</b>${kpiAmt(fmtMoney(totals.sentAmt))}</div>
+    <div class="kpi kpi-ret"><span>חזר</span><b>${totals.returned.toLocaleString('he-IL')}</b>${kpiAmt(fmtMoney(totals.retAmt))}</div>
+    <div class="kpi"><span>יתרה</span><b class="${netCls}">${netText}</b>${kpiAmt('מכר ' + fmtMoney(totals.sentAmt - totals.retAmt))}</div>
+    <div class="kpi"><span>אחוז החזרה</span><b class="${pctClsName}">${escapeHtml(pctText)}</b>${moneyPctText ? kpiAmt(moneyPctText) : ''}</div>
   </div>
+  ${noPriceText ? '<p class="letter-meta">' + escapeHtml(noPriceText) + '</p>' : ''}
 </header>
 <div class="card">
   <div class="table-wrap">
@@ -6522,11 +6534,11 @@ table.report tfoot td{background:#eef3fb;font-weight:800;color:var(--navy);borde
       </tr></thead>
       <tbody id="tbody"></tbody>
       <tfoot id="tfoot"><tr>
-        <td>סה״כ</td><td class="text-col">${initRows.length} מק״טים</td>
-        <td class="num-col">${totals.sent.toLocaleString('he-IL')}</td>
-        <td class="num-col">${totals.returned.toLocaleString('he-IL')}</td>
-        <td class="num-col">${net>0?'<span class="net-cell net-pos">+':'<span class="net-cell ' + (net<0?'net-neg':'net-zero') + '">'}${net.toLocaleString('he-IL')}</span></td>
-        <td class="pct-col">${totalPctHtml}</td>
+        <td>סה״כ</td><td class="text-col">${initRows.length} מק״טים${noPriceText ? '<small class="amt none">' + escapeHtml(noPriceText) + '</small>' : ''}</td>
+        <td class="num-col">${totals.sent.toLocaleString('he-IL')}${amtLine(totals.sentAmt)}</td>
+        <td class="num-col">${totals.returned.toLocaleString('he-IL')}${amtLine(totals.retAmt)}</td>
+        <td class="num-col">${net>0?'<span class="net-cell net-pos">+':'<span class="net-cell ' + (net<0?'net-neg':'net-zero') + '">'}${net.toLocaleString('he-IL')}</span>${money ? '<small class="amt">מכר ' + escapeHtml(fmtMoney(totals.sentAmt - totals.retAmt)) + '</small>' : ''}</td>
+        <td class="pct-col">${totalPctHtml}${money && moneyPctText ? '<small class="amt">' + escapeHtml(moneyPctText) + '</small>' : ''}</td>
       </tr></tfoot>
     </table>
   </div>
@@ -6549,7 +6561,9 @@ var DATA=${docDataJson};
 var ROWS=${allRowsJson};
 var LINES=${linesJson};
 var sortKey='${initSortKey}', sortDir='${initSortDir}';
+var MONEY=${money ? 'true' : 'false'};
 var modalCtx=null;
+function amt(v,r){if(!MONEY)return'';if(r.noPrice&&!v)return'<small class="amt none">אין מחיר</small>';return'<small class="amt">₪'+fmtN(v)+'</small>';}
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtN(n){return(Number(n)||0).toLocaleString('he-IL');}
@@ -6577,8 +6591,8 @@ function renderTable() {
     html += '<tr>' +
       '<td class="sku-col">'+esc(r.sku)+'</td>' +
       '<td class="text-col">'+esc(r.desc||'—')+'</td>' +
-      '<td class="num-col"><button class="sent-link" data-sku="'+esc(r.sku)+'" data-kind="sent">'+fmtN(r.sent)+'</button></td>' +
-      '<td class="num-col"><button class="sent-link return-link" data-sku="'+esc(r.sku)+'" data-kind="ret">'+fmtN(r.returned)+'</button></td>' +
+      '<td class="num-col"><button class="sent-link" data-sku="'+esc(r.sku)+'" data-kind="sent">'+fmtN(r.sent)+'</button>'+amt(r.sentAmt,r)+'</td>' +
+      '<td class="num-col"><button class="sent-link return-link" data-sku="'+esc(r.sku)+'" data-kind="ret">'+fmtN(r.returned)+'</button>'+amt(r.retAmt,r)+'</td>' +
       '<td class="num-col"><span class="net-cell '+netCls+'">'+(net>0?'+':'')+fmtN(net)+'</span></td>' +
       '<td class="pct-col"><div class="pct-cell '+pctCls(r.pct)+'"><b>'+fmtPct(r.pct)+'</b>' +
         '<div class="pct-bar"><span class="'+barCls(r.pct)+'" style="width:'+pctW+'%"></span></div></div></td>' +
