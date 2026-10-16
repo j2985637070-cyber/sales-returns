@@ -1043,6 +1043,12 @@
     #custPctBody td.pct-col { min-width: 120px; }
     #custPctBody td:first-child { min-width: 160px; }
     #custPctBody .doc-open { text-align: right; }
+    #custPctModal .modal-box { width: min(1040px, 100%); }
+    #custPctBody td.pct-col { min-width: 110px; }
+    #custPctBody td.num small.amt { text-align: center; }
+    /* the "sort by quantity / ₪" switch is for phones; on a computer the column titles sort */
+    .cpct-mode { display: none; align-items: center; }
+    .cpct-mode .seg-label { padding: 0 10px; font-size: 0.8rem; font-weight: 700; color: var(--muted); background: #fff; display: inline-flex; align-items: center; }
     .store-switch {
       max-height: 148px; overflow: auto;
       display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
@@ -1886,6 +1892,9 @@
       .import-foot { padding: 10px 12px; }
       .import-foot .btn { flex: 1 1 auto; }
       .cust-pct-bar { flex-wrap: wrap; padding: 8px 10px; }
+      .cpct-mode:not([hidden]) { display: inline-flex; }
+      /* on a phone the switch replaces the two "% החזרה" sort chips */
+      #custPctBody th.pct-h-qty, #custPctBody th.pct-h-amt { display: none !important; }
       .cust-pct-bar .extra-search { flex: 1 1 100%; }
       .cust-pct-bar .btn { flex: 1 1 auto; }
       .form-grid { padding: 12px; }
@@ -2653,6 +2662,11 @@
       </div>
       <div class="doc-detail-bar cust-pct-bar">
         <input type="search" class="extra-search" id="custPctSearch" placeholder="חיפוש שם או מספר לקוח...">
+        <div class="seg cpct-mode" id="custPctMode" role="group" aria-label="מיון לפי" hidden>
+          <span class="seg-label">מיון לפי:</span>
+          <button type="button" data-cmode="qty" class="on">כמות</button>
+          <button type="button" data-cmode="money">₪</button>
+        </div>
         <button type="button" class="btn btn-success btn-sm" id="custPctExport">ייצוא לאקסל</button>
       </div>
       <div class="modal-body" id="custPctBody"></div>
@@ -4461,7 +4475,7 @@
       return rows.slice().sort((a, b) => {
         const av = a[key];
         const bv = b[key];
-        if (key === 'pct' || key === 'net') {
+        if (key === 'pct' || key === 'net' || key === 'pctAmt') {
           const an = av === null || av === undefined ? -Infinity : av;
           const bn = bv === null || bv === undefined ? -Infinity : bv;
           return (an - bn) * mul;
@@ -5536,18 +5550,27 @@
         let row = map.get(key);
         if (!row) {
           const unit = custUnit(item.customerId);
-          row = { id: unit.ids.join(' · '), ids: unit.ids, name: unit.name, sent: 0, returned: 0 };
+          row = { id: unit.ids.join(' · '), ids: unit.ids, name: unit.name, sent: 0, returned: 0, sentAmt: 0, retAmt: 0, noPrice: false };
           map.set(key, row);
         }
-        if (kind === 'shipped') row.sent += Number(item.qty) || 0;
-        else row.returned += Number(item.qty) || 0;
+        const qty = Number(item.qty) || 0;
+        const unitV = pricing.loaded ? unitValue(item) : null;
+        if (pricing.loaded && unitV === null) row.noPrice = true;
+        if (kind === 'shipped') {
+          row.sent += qty;
+          if (unitV !== null) row.sentAmt += unitV * qty;
+        } else {
+          row.returned += qty;
+          if (unitV !== null) row.retAmt += unitV * qty;
+        }
       };
       state.shipped.forEach(f => f.items.forEach(item => add(item, 'shipped')));
       state.returns.forEach(f => f.items.forEach(item => add(item, 'returns')));
       const rows = Array.from(map.values()).map(row => ({
         ...row,
         net: row.sent - row.returned,
-        pct: calcPct(row.sent, row.returned)
+        pct: calcPct(row.sent, row.returned),
+        pctAmt: calcPct(row.sentAmt, row.retAmt)
       }));
       const q = (document.getElementById('custPctSearch').value || '').trim().toLowerCase();
       const shown = q ? rows.filter(row => (row.name + ' ' + row.id).toLowerCase().includes(q)) : rows;
@@ -5566,27 +5589,40 @@
         return;
       }
       const totals = totalsOf(rows);
+      const money = pricing.loaded;
+      // the money percent has a column of its own, so a click on its title sorts by it
+      const pctAmtCell = (r) => money
+        ? '<td class="pct-col pct-amt" data-label="% החזרה ₪">' + (r.sentAmt > 0 || r.retAmt > 0
+            ? pctCell(r.pctAmt, r.retAmt, r.sentAmt)
+            : '<small class="amt none">אין מחיר</small>') + '</td>'
+        : '';
+      document.getElementById('custPctMode').hidden = !money;
+      document.querySelectorAll('#custPctMode [data-cmode]').forEach(b =>
+        b.classList.toggle('on', (b.dataset.cmode === 'money') === (custPct.sortKey === 'pctAmt')));
       body.innerHTML = '<table class="stack-sm sortable"><thead><tr>' +
         '<th data-csort="name">לקוח' + mark('name') + '</th>' +
         '<th data-csort="id">מס. לקוח' + mark('id') + '</th>' +
         '<th class="num" data-csort="sent">נשלח' + mark('sent') + '</th>' +
         '<th class="num" data-csort="returned">חזר' + mark('returned') + '</th>' +
         '<th class="num" data-csort="net">יתרה' + mark('net') + '</th>' +
-        '<th class="num" data-csort="pct">% החזרה' + mark('pct') + '</th>' +
+        '<th class="num pct-h-qty" data-csort="pct">% החזרה' + mark('pct') + '</th>' +
+        (money ? '<th class="num pct-h-amt" data-csort="pctAmt">% החזרה ₪' + mark('pctAmt') + '</th>' : '') +
         '</tr></thead><tbody>' +
         rows.map(r =>
           '<tr><td><button type="button" class="doc-open" data-pick-cust="' + escapeHtml(r.ids.join(',') || '__none__') + '" title="הצג דוח ללקוח">' + escapeHtml(r.name) + '</button></td>' +
           '<td class="doc-no">' + escapeHtml(r.id || '—') + '</td>' +
-          '<td class="num" data-label="נשלח">' + fmtNum(r.sent) + '</td>' +
-          '<td class="num" data-label="חזר">' + fmtNum(r.returned) + '</td>' +
-          '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + '</td>' +
-          '<td class="pct-col">' + pctCell(r.pct, r.returned, r.sent) + '</td></tr>'
+          '<td class="num" data-label="נשלח">' + fmtNum(r.sent) + amtHtml(r.sentAmt, r) + '</td>' +
+          '<td class="num" data-label="חזר">' + fmtNum(r.returned) + amtHtml(r.retAmt, r) + '</td>' +
+          '<td class="num" data-label="יתרה">' + netCell(r.sent, r.returned) + soldHtml(r) + '</td>' +
+          '<td class="pct-col" data-label="% החזרה">' + pctCell(r.pct, r.returned, r.sent) + '</td>' +
+          pctAmtCell(r) + '</tr>'
         ).join('') +
-        '</tbody><tfoot><tr><td>סה״כ · ' + rows.length + ' לקוחות</td><td></td>' +
-        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + '</td>' +
-        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + '</td>' +
-        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + '</td>' +
-        '<td class="pct-col">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td></tr></tfoot></table>';
+        '</tbody><tfoot><tr><td>סה״כ · ' + rows.length + ' לקוחות' + noPriceNote(totals) + '</td><td></td>' +
+        '<td class="num" data-label="נשלח">' + fmtNum(totals.sent) + amtHtml(totals.sentAmt, totals) + '</td>' +
+        '<td class="num" data-label="חזר">' + fmtNum(totals.returned) + amtHtml(totals.retAmt, totals) + '</td>' +
+        '<td class="num" data-label="יתרה">' + netCell(totals.sent, totals.returned) + soldHtml(totals) + '</td>' +
+        '<td class="pct-col" data-label="% החזרה">' + pctCell(totals.pct, totals.returned, totals.sent) + '</td>' +
+        pctAmtCell(totals) + '</tr></tfoot></table>';
     }
 
     function openCustPctModal() {
@@ -5604,14 +5640,19 @@
       if (!rows.length) { toast('אין נתונים לייצוא', 'err'); return; }
       try {
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, sheetFromRows(rows.map(r => ({
+        XLSX.utils.book_append_sheet(wb, sheetFromRows(rows.map(r => Object.assign({
           'לקוח': r.name,
           'מס. לקוח': r.id,
           'נשלח': r.sent,
           'חזר': r.returned,
           'יתרה': r.net,
           'אחוז החזרה': r.pct === null ? '' : Math.round(r.pct * 10) / 10
-        }))), 'אחוזי החזרה לפי לקוח');
+        }, pricing.loaded ? {
+          'נשלח ₪': Math.round(r.sentAmt),
+          'חזר ₪': Math.round(r.retAmt),
+          'מכר ₪': Math.round(r.sentAmt - r.retAmt),
+          'אחוז החזרה ₪': r.pctAmt === null ? '' : Math.round(r.pctAmt * 10) / 10
+        } : {}))), 'אחוזי החזרה לפי לקוח');
         markRtl(wb);
         downloadWorkbook(wb, 'אחוזי-החזרה-לפי-לקוח-' + new Date().toISOString().slice(0, 10) + '.xlsx')
           .then(() => toast('הטבלה ירדה לאקסל', 'ok'), saveFailed);
@@ -8487,6 +8528,13 @@ renderTable();
     });
     document.getElementById('custPctSearch').addEventListener('input', renderCustPct);
     document.getElementById('custPctExport').addEventListener('click', exportCustPct);
+    document.getElementById('custPctMode').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cmode]');
+      if (!b) return;
+      custPct.sortKey = b.dataset.cmode === 'money' ? 'pctAmt' : 'pct';
+      custPct.sortDir = 'desc';
+      renderCustPct();
+    });
     document.getElementById('custPctBody').addEventListener('click', (e) => {
       const th = e.target.closest('th[data-csort]');
       if (th) {
