@@ -503,6 +503,33 @@
     .sent-row .who { display: block; font-size: 0.76rem; font-weight: 600; margin-top: 3px; color: var(--text); }
     .sent-row .who i { font-style: normal; color: var(--success); }
     .sent-row .who u { text-decoration: none; color: var(--amber); }
+    .msg-row .chat { color: var(--accent); font-weight: 700; }
+    .msg-row.reply b::before { content: "💬 "; }
+    .sent-row .threads { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .sent-row .threads button {
+      font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+      padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--navy);
+    }
+    .sent-row .threads button.has { border-color: var(--accent); color: var(--accent); }
+    .sent-row .threads button.new { background: var(--accent); border-color: var(--accent); color: #fff; }
+    /* one conversation on a message */
+    .thread-box { display: flex; flex-direction: column; max-height: min(86vh, 760px); }
+    .thread-body { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px; background: #f4f6fa; display: flex; flex-direction: column; gap: 8px; }
+    .thread-orig { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+    .thread-orig p { white-space: pre-line; font-size: 0.9rem; }
+    .thread-orig .meta, .bubble .meta { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 600; margin-top: 4px; }
+    .thread-orig .btn { margin-top: 8px; }
+    .thread-note { text-align: center; color: var(--muted); font-size: 0.76rem; font-weight: 600; }
+    .bubble { max-width: 82%; padding: 8px 11px; border-radius: 14px; background: #fff; border: 1px solid var(--border); align-self: flex-start; }
+    .bubble.mine { align-self: flex-end; background: var(--accent-light); border-color: transparent; }
+    .bubble p { white-space: pre-line; font-size: 0.9rem; overflow-wrap: anywhere; }
+    .bubble.quick p { font-weight: 800; color: var(--success); }
+    .thread-compose { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px; border-top: 1px solid var(--border); background: #fff; border-radius: 0 0 var(--radius) var(--radius); }
+    .thread-compose textarea {
+      flex: 1 1 auto; min-width: 0; resize: none; max-height: 140px; font: inherit; font-size: 0.92rem;
+      padding: 9px 11px; border: 1px solid #d3dae8; border-radius: 12px; outline: none;
+    }
+    .thread-compose textarea:focus { border-color: var(--accent); }
     .send-to { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; }
     .send-to .check-line { justify-content: space-between; font-weight: 700; }
     .send-to small { color: var(--muted); font-weight: 600; font-size: 0.74rem; }
@@ -2454,12 +2481,28 @@
       <div class="modal-body" id="sentList"></div>
     </div>
   </div>
+  <div class="modal-backdrop no-print" id="threadModal">
+    <div class="modal-box thread-box" role="dialog" aria-modal="true" aria-labelledby="threadTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="threadTitle">הודעה</h3>
+          <p id="threadSub"></p>
+        </div>
+        <button type="button" class="modal-close" id="threadClose" aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body thread-body" id="threadBody"></div>
+      <form class="thread-compose" id="threadForm" autocomplete="off">
+        <textarea id="threadInput" maxlength="1000" rows="1" placeholder="כתבו תשובה..."></textarea>
+        <button type="submit" class="btn btn-primary" id="threadSend">שליחה</button>
+      </form>
+    </div>
+  </div>
   <div class="modal-backdrop no-print" id="sendModal">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="sendTitle">
       <div class="modal-head">
         <div>
           <h3 id="sendTitle">שליחת הודעה</h3>
-          <p id="sendSub">ההודעה תופיע אצלם בפעמון, ותישלח כהתראה למי שהפעיל התראות.</p>
+          <p id="sendSub">ההודעה תופיע אצלם בפעמון, ותישלח כהתראה למי שהפעיל התראות. כל אחד יוכל לענות לך עליה, והשיחה תופיע ב״התראות שנשלחו״.</p>
         </div>
         <button type="button" class="modal-close" data-close-modal aria-label="סגור">×</button>
       </div>
@@ -7889,15 +7932,122 @@ renderTable();
       b.textContent = inbox.unread > 99 ? '99+' : String(inbox.unread || '');
     }
 
+    // A message sent by hand opens its conversation (where one can answer); a reply opens the
+    // conversation it belongs to; the system's messages open their link.
     function renderInbox() {
       document.getElementById('inboxList').innerHTML = inbox.rows.length
-        ? inbox.rows.map(m =>
-            '<button type="button" class="msg-row' + (m.read ? '' : ' unread') + '" data-msg="' + escapeHtml(m.id) + '">' +
-            '<b>' + escapeHtml(m.title) + '</b><p>' + escapeHtml(m.body) + '</p>' +
-            '<span>' + escapeHtml(fmtWhen(m.at)) + (m.from ? ' · ' + escapeHtml(m.from) : '') +
-            (m.link ? ' · <em class="go">לחיצה פותחת</em>' : '') + '</span></button>').join('')
+        ? inbox.rows.map(m => {
+            const hint = m.kind === 'manual'
+              ? ' · <em class="chat">' + (m.replies ? '💬 ' + m.replies + ' · ' : '') + 'לחיצה לפתיחה ולתשובה</em>'
+              : m.kind === 'reply' ? ' · <em class="chat">לחיצה פותחת את השיחה</em>'
+              : m.link ? ' · <em class="go">לחיצה פותחת</em>' : '';
+            return '<button type="button" class="msg-row' + (m.read ? '' : ' unread') + (m.kind === 'reply' ? ' reply' : '') + '" data-msg="' + escapeHtml(m.id) + '">' +
+              '<b>' + escapeHtml(m.title) + '</b><p>' + escapeHtml(m.body) + '</p>' +
+              '<span>' + escapeHtml(fmtWhen(m.at)) + (m.from && m.kind !== 'reply' ? ' · ' + escapeHtml(m.from) : '') + hint + '</span></button>';
+          }).join('')
         : '<div class="modal-empty">אין עדיין הודעות.</div>';
     }
+
+    // ---------- a conversation on a message sent by hand ----------
+    // thread: the recipient whose conversation it is (null = the signed-in user's own)
+    const thread = { msg: null, user: null, data: null };
+
+    async function openThread(msgId, threadUser, focus) {
+      thread.msg = msgId;
+      thread.user = threadUser || null;
+      thread.data = null;
+      document.getElementById('threadTitle').textContent = 'הודעה';
+      document.getElementById('threadSub').textContent = '';
+      document.getElementById('threadBody').innerHTML = '<div class="thread-note">טוען...</div>';
+      document.getElementById('threadModal').classList.add('show');
+      await loadThread();
+      if (focus) document.getElementById('threadInput').focus();
+    }
+
+    async function loadThread() {
+      const msgId = thread.msg;
+      try {
+        const d = await call('svr_thread', { p_message: msgId, p_thread: thread.user });
+        if (thread.msg !== msgId) return;
+        thread.data = d;
+        renderThread();
+        loadMessages().catch(() => {});
+      } catch (err) {
+        if (err.code === 'AUTH') return;
+        document.getElementById('threadBody').innerHTML = '<div class="thread-note">' +
+          escapeHtml(err.code === 'NOT_FOUND' ? 'ההודעה הזו כבר לא קיימת' : errText(err)) + '</div>';
+      }
+    }
+
+    function renderThread() {
+      const d = thread.data;
+      const m = d.message;
+      const other = d.thread !== me.id;   // an admin looking at someone's conversation
+      document.getElementById('threadTitle').textContent = m.title || 'הודעה';
+      document.getElementById('threadSub').textContent = other
+        ? 'שיחה עם ' + d.user + (d.read_at ? ' · קרא/ה את ההודעה' : ' · עוד לא קרא/ה את ההודעה')
+        : (m.from ? 'מאת ' + m.from + ' · ' : '') + 'התשובה מגיעה למנהל';
+      const body = document.getElementById('threadBody');
+      body.innerHTML = '<div class="thread-orig"><p>' + escapeHtml(m.body) + '</p>' +
+        '<span class="meta">' + escapeHtml(fmtWhen(m.at)) + (m.from ? ' · ' + escapeHtml(m.from) : '') + '</span>' +
+        (m.link ? '<button type="button" class="btn btn-ghost btn-sm" data-thread-link>פתיחת הדוח</button>' : '') + '</div>' +
+        (d.replies.length
+          ? d.replies.map(r =>
+              '<div class="bubble' + (r.mine ? ' mine' : '') + (r.quick ? ' quick' : '') + '"><p>' + escapeHtml(r.body) + '</p>' +
+              '<span class="meta">' + (r.mine ? '' : escapeHtml(r.from) + ' · ') + escapeHtml(fmtWhen(r.at)) + '</span></div>').join('')
+          : '<div class="thread-note">' + (other ? 'עוד אין תגובות' : 'אפשר לענות כאן, והתשובה תגיע למנהל') + '</div>');
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function closeThread() {
+      document.getElementById('threadModal').classList.remove('show');
+      thread.msg = null;
+      // the admin's list of sent messages shows the new counts
+      if (document.getElementById('sentModal').classList.contains('show')) {
+        call('svr_messages_sent').then(r => { sentRows = r || []; renderSent(); }).catch(() => {});
+      }
+    }
+
+    document.getElementById('threadClose').addEventListener('click', closeThread);
+    document.getElementById('threadModal').addEventListener('click', (e) => {
+      if (e.target.id === 'threadModal') closeThread();
+    });
+    document.getElementById('threadBody').addEventListener('click', (e) => {
+      if (!e.target.closest('[data-thread-link]') || !thread.data) return;
+      const link = thread.data.message.link;
+      closeThread();
+      document.getElementById('inboxModal').classList.remove('show');
+      openLink(link);
+    });
+    const threadInput = document.getElementById('threadInput');
+    threadInput.addEventListener('input', () => {
+      threadInput.style.height = 'auto';
+      threadInput.style.height = Math.min(140, threadInput.scrollHeight) + 'px';
+    });
+    threadInput.addEventListener('keydown', (e) => {
+      // Enter sends on a computer; Shift+Enter, and every Enter on a phone, is a new line
+      if (e.key === 'Enter' && !e.shiftKey && !matchMedia('(pointer: coarse)').matches) {
+        e.preventDefault();
+        document.getElementById('threadForm').requestSubmit();
+      }
+    });
+    document.getElementById('threadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = threadInput.value.trim();
+      if (!text || !thread.msg) return;
+      const btn = document.getElementById('threadSend');
+      btn.disabled = true;
+      try {
+        await call('svr_message_reply', { p_message: thread.msg, p_thread: thread.user, p_body: text });
+        threadInput.value = '';
+        threadInput.style.height = '';
+        await loadThread();
+      } catch (err) {
+        if (err.code !== 'AUTH') toast(err.code === 'NOT_FOUND' ? 'ההודעה הזו כבר לא קיימת' : errText(err), 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     async function openInbox() {
       document.getElementById('inboxModal').classList.add('show');
@@ -7932,10 +8082,20 @@ renderTable();
       }
     }
 
-    async function openMessageById(id) {
+    // From a notification: {id, thread, reply}. A conversation (a thread given, or a message sent by
+    // hand) opens in its window; any other message opens its link.
+    async function openMessageById(id, threadUser, focus) {
+      if (threadUser) {
+        await openThread(id, threadUser === me.id ? null : threadUser, focus);
+        return;
+      }
       await loadMessages();
       const m = inbox.rows.find(x => x.id === id);
       if (!m) return;
+      if (m.kind === 'manual') {
+        await openThread(m.id, null, focus);
+        return;
+      }
       if (!m.read) {
         m.read = true;
         inbox.unread = Math.max(0, inbox.unread - 1);
@@ -7945,15 +8105,24 @@ renderTable();
       await openLink(m.link);
     }
 
-    // A notification tapped while the app was closed opens it with ?m=<message>
-    let pendingMsg = new URLSearchParams(location.search).get('m');
+    function msgFromUrl(url) {
+      try {
+        const p = new URL(url, location.href).searchParams;
+        return p.get('m') ? { id: p.get('m'), thread: p.get('t') || null, reply: p.get('r') === '1' } : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    // A notification tapped while the app was closed opens it with ?m=<message>[&t=<conversation>][&r=1]
+    let pendingMsg = msgFromUrl(location.href);
 
     async function openPendingMessage() {
       if (!pendingMsg) return;
-      const id = pendingMsg;
+      const p = pendingMsg;
       pendingMsg = null;
       try { history.replaceState(history.state, '', location.pathname); } catch (e) {}
-      await openMessageById(id);
+      await openMessageById(p.id, p.thread, p.reply);
     }
 
     document.getElementById('btnBell').addEventListener('click', openInbox);
@@ -7961,7 +8130,16 @@ renderTable();
       const row = e.target.closest('[data-msg]');
       if (!row) return;
       const m = inbox.rows.find(x => x.id === row.dataset.msg);
-      if (!m || !m.link) return;
+      if (!m) return;
+      if (m.kind === 'manual') {
+        openThread(m.id, null);
+        return;
+      }
+      if (m.kind === 'reply' && m.link && m.link.msg) {
+        openThread(m.link.msg, m.link.thread === me.id ? null : m.link.thread);
+        return;
+      }
+      if (!m.link) return;
       document.getElementById('inboxModal').classList.remove('show');
       openLink(m.link);
     });
@@ -7969,14 +8147,17 @@ renderTable();
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (e) => {
         const d = e.data || {};
-        if (d.type === 'pushed' && me) loadMessages().catch(() => {});
+        if (d.type === 'pushed' && me) {
+          loadMessages().catch(() => {});
+          // the open conversation shows a new reply right away
+          if (thread.msg && document.getElementById('threadModal').classList.contains('show')) loadThread();
+        }
         if (d.type === 'open-message') {
-          let id = null;
-          try { id = new URL(d.url).searchParams.get('m'); } catch (err) {}
-          if (!id) return;
+          const p = msgFromUrl(d.url);
+          if (!p) return;
           // signed out (for example after an idle hour): it opens right after signing in again
-          if (me) openMessageById(id).catch(() => {});
-          else pendingMsg = id;
+          if (me) openMessageById(p.id, p.thread, p.reply).catch(() => {});
+          else pendingMsg = p;
         }
       });
     }
@@ -8185,6 +8366,13 @@ renderTable();
                     (unread.length ? '<u>עוד לא: ' + unread.map(t => escapeHtml(t.name)).join(', ') + '</u>' : '') +
                   '</span>'
                 : '') +
+              // a message sent by hand: one conversation per recipient
+              (m.kind === 'manual' && to.length
+                ? '<div class="threads">' + to.map(t =>
+                    '<button type="button" class="' + (t.unread ? 'new' : t.replies ? 'has' : '') + '" data-thread-msg="' + escapeHtml(m.id) +
+                    '" data-thread-user="' + escapeHtml(t.id) + '">💬 ' + escapeHtml(t.name) +
+                    (t.unread ? ' · ' + t.unread + ' חדשות' : t.replies ? ' · ' + t.replies : '') + '</button>').join('') + '</div>'
+                : '') +
               '</div><button type="button" class="btn btn-danger btn-sm" data-sent-del="' + escapeHtml(m.id) + '">מחק</button></div>';
           }).join('')
         : '<div class="modal-empty">עוד לא נשלחו התראות.</div>';
@@ -8192,6 +8380,11 @@ renderTable();
 
     document.getElementById('btnSentMsgs').addEventListener('click', openSent);
     document.getElementById('sentList').addEventListener('click', async (e) => {
+      const chat = e.target.closest('[data-thread-msg]');
+      if (chat) {
+        await openThread(chat.dataset.threadMsg, chat.dataset.threadUser);
+        return;
+      }
       const btn = e.target.closest('[data-sent-del]');
       if (!btn) return;
       if (!btn.dataset.armed) {
@@ -8923,6 +9116,10 @@ renderTable();
       }
       if (overlapDone) {
         finishOverlap('cancel');
+        return true;
+      }
+      if (shown('threadModal')) {
+        closeThread();
         return true;
       }
       const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'itemsModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal', 'passwordModal', 'usersModal'].find(shown);
