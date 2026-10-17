@@ -1699,6 +1699,14 @@
     .excl-prev .excl-hit b { color: var(--navy); }
     .excl-prev .excl-hit .doc-detail-bar { border-bottom: none; border-top: 1px solid var(--border); }
     .excl-note { color: var(--amber); font-weight: 700; }
+    /* גלופה */
+    #glufaBody tr.glufa-cust td { background: #f3f6fb; color: var(--navy); font-weight: 800; font-size: 0.86rem; }
+    .glufa-out { display: inline-block; margin-inline-start: 6px; padding: 1px 7px; border-radius: 999px; background: #eef0f4; color: var(--muted); font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+    .glufa-m { display: inline-block; margin-inline-start: 4px; padding: 0 6px; border-radius: 6px; background: var(--accent-light); color: var(--accent); font-size: 0.72rem; font-weight: 800; }
+    #markBox .mark-hint { margin: 0; padding: 0 12px 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+    #markBox > .btn { margin: 0 12px 10px; }
+    #markBox .mark-result { padding: 0 12px; font-size: 0.84rem; line-height: 1.7; }
+    #markBox .mark-result:not(:empty) { padding-bottom: 10px; }
     .modal-box td.doc-no {
       font-weight: 800;
       color: var(--navy);
@@ -1807,7 +1815,6 @@
       .tab { padding: 6px 10px; font-size: 0.76rem; white-space: nowrap; }
       .report-toolbar { width: 100%; justify-content: flex-start; flex-wrap: nowrap; gap: 6px; }
       .report-toolbar .btn { min-height: 36px; padding: 6px 10px; font-size: 0.8rem; white-space: nowrap; }
-      .report-toolbar #btnHighReturn { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
       #statusText { display: none; }
       #scopeCount { display: inline; }
       .scope-banner { background: none; border: none; padding: 0 2px; margin-bottom: 8px; font-size: 0.82rem; font-weight: 700; }
@@ -2154,7 +2161,13 @@
               <button type="button" id="btnPrint">הדפסה</button>
             </div>
           </div>
-          <button type="button" class="btn btn-ghost" id="btnHighReturn" hidden>תעודות שחזרו מעל 90%</button>
+          <div class="menu-wrap" id="docsMenu" hidden>
+            <button type="button" class="btn btn-ghost" id="btnDocsMenu" data-menu-toggle>תעודות ▾</button>
+            <div class="menu-pop" hidden>
+              <button type="button" id="btnHighReturn">תעודות שחזרו מעל 90%</button>
+              <button type="button" id="btnGlufa" hidden>גלופה</button>
+            </div>
+          </div>
           <button type="button" class="btn btn-ghost" id="btnRestore" hidden>שחזר שורות</button>
           <span id="statusText"></span>
         </div>
@@ -2223,6 +2236,14 @@
           <div class="excl-prev" id="exclPreview"></div>
           <div id="exclList"></div>
         </details>
+        <details class="trash-box admin-only upload-part" id="markBox">
+          <summary>השלמת איתור לקבצים קיימים</summary>
+          <p class="mark-hint">לקבצי מכירות שהועלו לפני שהכלי קרא את עמודת <b>איתור</b>. בוחרים קובץ מכירות מהפריוריטי (גם רחב יותר, גם כמה קבצים),
+            וכל שורה באתר עם אותה תעודה ואותו מק״ט מסומנת M — בכל החבילות. שום דבר לא מתווסף לדוחות, שום דבר אחר לא משתנה ולא נשלחת התראה.</p>
+          <input type="file" id="markFiles" accept=".xlsx,.xls,.xlsm,.csv" multiple hidden>
+          <button type="button" class="btn btn-ghost btn-sm" id="markPick">בחירת קובץ מכירות...</button>
+          <div class="mark-result" id="markResult"></div>
+        </details>
         <details class="hint admin-only upload-part">
           <summary>איזה קבצים אפשר להעלות?</summary>
           <div>
@@ -2247,6 +2268,7 @@
           <div class="picker-actions">
             <button type="button" class="btn btn-ghost btn-sm" id="btnCustPct" data-icon="percent">אחוזי החזרה לכל לקוח</button>
             <button type="button" class="btn btn-danger btn-sm" id="btnOverReturn" data-icon="return"><span id="btnOverReturnLabel">החזרות מעל 100%</span></button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnGlufaAll" hidden>גלופה</button>
           </div>
           <div class="seen-bar" id="seenBar">
             <span class="seen-count" id="seenCount"></span>
@@ -2700,6 +2722,18 @@
       <div class="modal-body" id="highReturnBody"></div>
     </div>
   </div>
+  <div class="modal-backdrop no-print" id="glufaModal">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="glufaTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="glufaTitle">גלופה</h3>
+          <p id="glufaSub"></p>
+        </div>
+        <button type="button" class="modal-close" id="glufaClose" aria-label="סגור">×</button>
+      </div>
+      <div class="modal-body" id="glufaBody"></div>
+    </div>
+  </div>
 
   <script>
     document.documentElement.dir = 'rtl';
@@ -2985,14 +3019,17 @@
       return ERR_TEXT[err && err.code] || 'משהו השתבש בשרת. נסו שוב';
     }
 
+    // a[8] is 'M' for a sales row with M in the איתור column (גלופה); other rows have 8 cells
     function packItem(it) {
-      return [String(it.sku), it.desc || '', Number(it.qty) || 0, it.family || '', it.customerId || '', it.customerName || '', it.doc || '', it.date || ''];
+      const a = [String(it.sku), it.desc || '', Number(it.qty) || 0, it.family || '', it.customerId || '', it.customerName || '', it.doc || '', it.date || ''];
+      if (it.mark) a.push('M');
+      return a;
     }
 
     function unpackItem(a) {
       return {
         sku: String(a[0]), desc: a[1] || '', qty: Number(a[2]) || 0, family: a[3] || '',
-        customerId: a[4] || '', customerName: a[5] || '', doc: a[6] || '', date: a[7] || ''
+        customerId: a[4] || '', customerName: a[5] || '', doc: a[6] || '', date: a[7] || '', mark: a[8] === 'M'
       };
     }
 
@@ -3091,6 +3128,7 @@
       applyRole();
       restoreView();
       renderAll();
+      armBackGuard();
       try {
         await syncData(true);
         await openPendingMessage();
@@ -3315,7 +3353,7 @@
       });
     }
 
-    // The admin's button in a document's own view. where: 'doc' | 'high' | 'list' (which view to draw again)
+    // The admin's button in a document's own view. where: 'doc' | 'high' | 'glufa' | 'list' (which view to draw again)
     function exclAttrs(kind, doc, where) {
       return ' data-kind="' + kind + '" data-doc="' + escapeHtml(doc) + '" data-where="' + where + '"';
     }
@@ -3406,6 +3444,10 @@
       renderAll();
       if (where === 'doc' && docModalCtx && docModalCtx.openDoc === doc) renderDocLines(doc);
       if (where === 'high' && highOpenDoc && highOpenDoc.doc === doc) renderHighReturnLines(highOpenDoc);
+      if (where === 'glufa' && glufaCtx.openDoc === doc) {
+        glufaCtx.list = glufaDocs(glufaCtx.all);
+        renderGlufaLines(doc);
+      }
     }
 
     document.addEventListener('click', async (e) => {
@@ -3535,7 +3577,9 @@
         customer: findCustomerCol(headers, rows, headerIdx),
         custName: findCol(headers, CUST_NAME_KEYS),
         doc: findCol(headers, DOC_KEYS, ['זהות', 'לקוח', 'מפנקס', 'הזמנות']),
-        date: pickDateCol(headers, rows, headerIdx, kind)
+        date: pickDateCol(headers, rows, headerIdx, kind),
+        // sales only, and the column named exactly איתור (not לאיתור)
+        mark: kind === 'returns' ? -1 : headers.findIndex(h => normalizeHeader(h) === 'איתור')
       };
     }
 
@@ -3576,7 +3620,7 @@
     }
 
     function findHeader(rows, kind) {
-      let best = { idx: 0, score: -1, map: { sku: 0, desc: 1, qty: -1, family: -1, customer: -1, custName: -1, doc: -1, date: -1 } };
+      let best = { idx: 0, score: -1, map: { sku: 0, desc: 1, qty: -1, family: -1, customer: -1, custName: -1, doc: -1, date: -1, mark: -1 } };
       const max = Math.min(rows.length, 40);
       for (let i = 0; i < max; i++) {
         const headers = (rows[i] || []).map(c => String(c ?? ''));
@@ -3692,7 +3736,7 @@
         return { items: [], warning: 'לא נמצאו עמודות מק״ט / כמות', header: found };
       }
 
-      const { sku, desc, qty, family, customer, custName, doc, date } = found.map;
+      const { sku, desc, qty, family, customer, custName, doc, date, mark } = found.map;
       const fileDoc = normalizeDoc(findFirstUnderHeader(rows, ['תעודה']));
       const fileDate = (kind === 'shipped' && date >= 0)
         ? ''
@@ -3745,7 +3789,8 @@
           customerId: rowCust || lastCustId,
           customerName: rowName || lastCustName,
           doc: (rowDoc && !isHeaderLike(rowDoc) ? rowDoc : '') || lastDoc,
-          date: rowDate || lastDate
+          date: rowDate || lastDate,
+          mark: mark >= 0 && String(row[mark] ?? '').trim().toUpperCase() === 'M'
         });
       }
 
@@ -5208,7 +5253,7 @@
         document.getElementById('filtersBar').hidden = true;
         document.getElementById('statsRow').hidden = true;
         document.getElementById('reportScope').hidden = true;
-        document.getElementById('btnHighReturn').hidden = true;
+        document.getElementById('docsMenu').hidden = true;
         updateActionButtons(0);
         document.getElementById('statusText').textContent = '';
         document.getElementById('reportArea').innerHTML = '<div class="empty-state onboarding">' +
@@ -5478,13 +5523,111 @@
 
     let highReturnList = [];
 
+    // "תעודות ▾" next to the export: the documents that came back over 90%, and the גלופה ones
     function updateHighReturnButton() {
-      const btn = document.getElementById('btnHighReturn');
       const hasFiles = state.shipped.length + state.returns.length > 0;
-      btn.hidden = !hasFiles;
+      document.getElementById('docsMenu').hidden = !hasFiles;
+      const all = hasFiles ? glufaDocs(true).length : 0;
+      const glufaAll = document.getElementById('btnGlufaAll');
+      glufaAll.hidden = !all;
+      glufaAll.textContent = 'גלופה' + (all ? ' · ' + all : '');
       if (!hasFiles) return;
       const n = highReturnDocs().length;
-      btn.textContent = 'תעודות שחזרו מעל 90%' + (n ? ' · ' + n : '');
+      document.getElementById('btnHighReturn').textContent = 'תעודות שחזרו מעל 90%' + (n ? ' · ' + n : '');
+      const g = glufaDocs(false).length;
+      const btn = document.getElementById('btnGlufa');
+      btn.hidden = !g;
+      btn.textContent = 'גלופה' + (g ? ' · ' + g : '');
+    }
+
+    // ---------- גלופה: sales documents with M in the איתור column ----------
+    // all: every customer in the package (files window); otherwise the customers of the report on screen.
+    // Documents taken out of the reports are listed to the admin only, marked.
+    let glufaCtx = { all: false, list: [], openDoc: null };
+
+    function glufaDocs(all) {
+      const docs = new Map();
+      state.shipped.forEach(f => rowsOf(f).forEach(item => {
+        if (!item.mark) return;
+        const doc = docKey(item);
+        if (!doc) return;
+        if (!all && (!customerMatches(item.customerId) || !dateInRange(item.date, 'shipped'))) return;
+        if (!isAdmin() && isExcluded('shipped', doc)) return;
+        let d = docs.get(doc);
+        if (!d) {
+          d = { doc, date: item.date || '', customerId: item.customerId || '', name: custUnit(item.customerId).name };
+          docs.set(doc, d);
+        }
+        if (!d.date && item.date) d.date = item.date;
+      }));
+      // the lines and quantity of the whole document, not only its M rows
+      state.shipped.forEach(f => rowsOf(f).forEach(item => {
+        const d = docs.get(docKey(item));
+        if (!d) return;
+        d.lines = (d.lines || 0) + 1;
+        d.qty = (d.qty || 0) + (Number(item.qty) || 0);
+      }));
+      return Array.from(docs.values()).sort((a, b) =>
+        a.name.localeCompare(b.name, 'he') || dateKey(b.date) - dateKey(a.date) || a.doc.localeCompare(b.doc, 'he', { numeric: true }));
+    }
+
+    function openGlufaModal(all) {
+      glufaCtx = { all, list: glufaDocs(all), openDoc: null };
+      renderGlufaList();
+      document.getElementById('glufaModal').classList.add('show');
+    }
+
+    function closeGlufaModal() {
+      document.getElementById('glufaModal').classList.remove('show');
+      glufaCtx.openDoc = null;
+    }
+
+    function renderGlufaList() {
+      const rows = glufaCtx.list;
+      glufaCtx.openDoc = null;
+      const customers = new Set(rows.map(r => custUnitKey(r.customerId)));
+      document.getElementById('glufaTitle').textContent = 'גלופה';
+      document.getElementById('glufaSub').textContent = (glufaCtx.all ? 'כל הלקוחות בחבילה' : reportScopeLabel()) + ' · ' +
+        countText(rows.length, 'תעודה אחת', 'תעודות') + (customers.size > 1 ? ' אצל ' + customers.size + ' לקוחות' : '') +
+        ' · לחיצה על תעודה מציגה את הפירוט';
+      const body = document.getElementById('glufaBody');
+      if (!rows.length) {
+        body.innerHTML = '<div class="modal-empty">אין תעודות גלופה.</div>';
+        return;
+      }
+      let lastCust = null;
+      body.innerHTML = '<table class="stack-sm"><thead><tr><th>מספר תעודה</th><th>תאריך</th><th>שורות</th><th>כמות</th></tr></thead><tbody>' +
+        rows.map((r, i) => {
+          const key = custUnitKey(r.customerId);
+          const head = customers.size > 1 && key !== lastCust
+            ? '<tr class="glufa-cust"><td colspan="4">' + escapeHtml(r.name) + '</td></tr>' : '';
+          lastCust = key;
+          const out = isExcluded('shipped', r.doc) ? ' <span class="glufa-out">הוצאה מהדוחות</span>' : '';
+          return head + '<tr><td class="doc-no"><button type="button" class="doc-open" data-glufa-idx="' + i + '">' + escapeHtml(r.doc) + '</button>' + out + '</td>' +
+            '<td class="doc-date">' + escapeHtml(r.date || '—') + '</td>' +
+            '<td class="num" data-label="שורות">' + fmtNum(r.lines || 0) + '</td>' +
+            '<td class="num" data-label="כמות">' + fmtNum(r.qty || 0) + '</td></tr>';
+        }).join('') +
+        '</tbody></table>';
+    }
+
+    function renderGlufaLines(doc) {
+      const d = glufaCtx.list.find(r => r.doc === doc);
+      if (!d) return;
+      glufaCtx.openDoc = doc;
+      const lines = [];
+      state.shipped.forEach(f => rowsOf(f).forEach(item => { if (docKey(item) === doc) lines.push(item); }));
+      document.getElementById('glufaTitle').textContent = doc;
+      document.getElementById('glufaSub').textContent = [d.date, d.name, countText(lines.length, 'שורה אחת', 'שורות')].filter(Boolean).join(' · ');
+      const total = lines.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+      document.getElementById('glufaBody').innerHTML = '<div class="doc-detail-bar"><button type="button" class="btn btn-ghost btn-sm" data-glufa-back>חזרה לרשימה</button>' +
+        exclButtonHtml('shipped', doc, 'glufa') + '</div>' + exclBannerHtml('shipped', doc, 'glufa') +
+        '<table><thead><tr><th>מק״ט</th><th>תאור מוצר</th><th>כמות</th></tr></thead><tbody>' +
+        lines.map(r =>
+          '<tr><td class="doc-no">' + escapeHtml(r.sku) + (r.mark ? ' <span class="glufa-m" title="M בעמודת איתור">M</span>' : '') + '</td>' +
+          '<td>' + escapeHtml(r.desc || '—') + '</td><td class="num">' + fmtNum(r.qty) + '</td></tr>'
+        ).join('') +
+        '</tbody><tfoot><tr><td colspan="2">סה״כ</td><td class="num">' + fmtNum(total) + '</td></tr></tfoot></table>';
     }
 
     function closeHighReturnModal() {
@@ -5996,6 +6139,7 @@
 
     // mode 'pick': the same window without the upload part, for picking a customer
     function openImportModal(mode) {
+      pickerByBack = false;
       const modal = document.getElementById('importModal');
       const pick = mode === 'pick' && isAdmin();
       modal.querySelector('.import-modal').classList.toggle('pick-only', pick);
@@ -6012,6 +6156,7 @@
     function closeImportModal() {
       const modal = document.getElementById('importModal');
       if (!modal.classList.contains('show')) return;
+      pickerByBack = false;
       modal.classList.remove('show');
       modal.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('modal-open');
@@ -7819,7 +7964,7 @@ renderTable();
       if (!pendingMsg) return;
       const id = pendingMsg;
       pendingMsg = null;
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      try { history.replaceState(history.state, '', location.pathname); } catch (e) {}
       await openMessageById(id);
     }
 
@@ -8768,40 +8913,122 @@ renderTable();
         copyText(all.dataset.copyAll).then(ok => toast(ok ? 'כל מספרי התעודות הועתקו' : 'לא הצלחנו להעתיק', ok ? 'ok' : 'err'));
       }
     });
-    document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
+    // ---------- one step back: Escape, and the phone's / browser's back ----------
+    // Closes what is on top: a small menu, the side menu, a window, or a document's lines inside a
+    // window (back to its list). Returns false when nothing was open.
+    function closeTopLayer() {
+      const shown = (id) => document.getElementById(id).classList.contains('show');
+      // a window showing one document goes back to its list first
+      const backToList = (bodyId, sel) => {
+        const btn = document.querySelector('#' + bodyId + ' ' + sel);
+        if (btn) btn.click();
+        return !!btn;
+      };
+      if (document.querySelector('.menu-pop:not([hidden]):not(.pkg-pop)')) {
+        closeMenus();
+        return true;
+      }
       closeMenus();
       if (document.getElementById('drawer').classList.contains('open')) {
         closeDrawer();
-        return;
+        return true;
       }
       if (overlapDone) {
         finishOverlap('cancel');
-        return;
+        return true;
       }
-      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'itemsModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal', 'passwordModal', 'usersModal'].map(id => document.getElementById(id)).find(m => m.classList.contains('show'));
+      const top = ['fileEditModal', 'pkgModal', 'trackModal', 'custListModal', 'itemsModal', 'inboxModal', 'sendModal', 'sentModal', 'restoreModal', 'passwordModal', 'usersModal'].find(shown);
       if (top) {
-        top.classList.remove('show');
-        return;
+        document.getElementById(top).classList.remove('show');
+        return true;
       }
-      if (document.getElementById('overReturnModal').classList.contains('show')) {
-        if (document.getElementById('docModal').classList.contains('show')) closeDocModal();
-        else closeOverReturnModal();
-        return;
+      if (shown('overReturnModal')) {
+        if (!shown('docModal')) closeOverReturnModal();
+        else if (!backToList('docModalBody', '[data-doc-back]')) closeDocModal();
+        return true;
       }
-      if (document.getElementById('custPctModal').classList.contains('show')) {
+      if (shown('custPctModal')) {
         closeCustPctModal();
+        return true;
+      }
+      if (shown('highReturnModal')) {
+        if (!backToList('highReturnBody', '[data-high-back]')) closeHighReturnModal();
+        return true;
+      }
+      if (shown('glufaModal')) {
+        if (!backToList('glufaBody', '[data-glufa-back]')) closeGlufaModal();
+        return true;
+      }
+      if (shown('docModal')) {
+        if (!backToList('docModalBody', '[data-doc-back]')) closeDocModal();
+        return true;
+      }
+      if (shown('importModal')) {
+        closeImportModal();
+        return true;
+      }
+      return false;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeTopLayer();
+    });
+
+    // While the app is open, history holds one extra entry of ours. A back press uses it up: we close
+    // one layer and add it again. In a report with nothing open, back opens the customer picker; back
+    // in that picker, or with no customer picked, asks once ("press again") and then lets the app go.
+    let backGuard = false;
+    let pickerByBack = false;
+    let exitTimer = 0;
+
+    try { if (history.state && history.state.svrBack) backGuard = true; } catch (e) {}
+
+    function armBackGuard() {
+      if (backGuard || !me || IN_VIEWER) return;
+      clearTimeout(exitTimer);
+      try {
+        history.pushState({ svrBack: 1 }, '', location.pathname);
+        backGuard = true;
+      } catch (e) {}
+    }
+
+    // the browser counts an entry only after the user touched the page, so it is added again then too
+    document.addEventListener('pointerup', armBackGuard, true);
+    document.addEventListener('keydown', armBackGuard, true);
+
+    function onlyPickerOpen() {
+      return document.getElementById('importModal').classList.contains('show') &&
+        document.querySelectorAll('.modal-backdrop.show').length === 1 &&
+        !document.getElementById('drawer').classList.contains('open') &&
+        !document.querySelector('.menu-pop:not([hidden]):not(.pkg-pop)');
+    }
+
+    function askBeforeLeaving() {
+      toast('לחיצה נוספת על אחורה תצא מהאפליקציה');
+      // no new entry now, so the next back leaves; after a few seconds it is a normal back again
+      clearTimeout(exitTimer);
+      exitTimer = setTimeout(armBackGuard, 3000);
+    }
+
+    window.addEventListener('popstate', () => {
+      if (!backGuard) return;
+      backGuard = false;
+      if (!me) return;
+      if (pickerByBack && onlyPickerOpen()) {
+        askBeforeLeaving();
         return;
       }
-      if (document.getElementById('highReturnModal').classList.contains('show')) {
-        closeHighReturnModal();
+      if (closeTopLayer()) {
+        armBackGuard();
         return;
       }
-      if (document.getElementById('docModal').classList.contains('show')) {
-        closeDocModal();
+      if (state.shipped.length + state.returns.length > 0 && hasSelection()) {
+        openImportModal('pick');
+        pickerByBack = true;
+        armBackGuard();
         return;
       }
-      closeImportModal();
+      askBeforeLeaving();
     });
     document.getElementById('btnExport').addEventListener('click', () => exportExcel());
     document.getElementById('btnExportHtml').addEventListener('click', () => {
@@ -8835,6 +9062,93 @@ renderTable();
       const open = e.target.closest('[data-high-idx]');
       if (open) renderHighReturnLines(Number(open.dataset.highIdx));
     });
+    document.getElementById('btnGlufa').addEventListener('click', () => openGlufaModal(false));
+    document.getElementById('btnGlufaAll').addEventListener('click', () => openGlufaModal(true));
+    document.getElementById('glufaClose').addEventListener('click', closeGlufaModal);
+    document.getElementById('glufaModal').addEventListener('click', (e) => {
+      if (e.target.id === 'glufaModal') closeGlufaModal();
+    });
+    document.getElementById('glufaBody').addEventListener('click', (e) => {
+      if (e.target.closest('[data-glufa-back]')) {
+        glufaCtx.list = glufaDocs(glufaCtx.all);
+        renderGlufaList();
+        return;
+      }
+      const open = e.target.closest('[data-glufa-idx]');
+      if (open) renderGlufaLines(glufaCtx.list[Number(open.dataset.glufaIdx)].doc);
+    });
+
+    // ---------- temporary: השלמת איתור for the sales files uploaded before the column was read ----------
+    // Reads sales exports on this computer and sends the server only [document, SKU] of their M rows;
+    // the server marks the stored rows that match, in every package, and changes nothing else.
+    document.getElementById('markPick').addEventListener('click', () => document.getElementById('markFiles').click());
+    document.getElementById('markFiles').addEventListener('change', async (e) => {
+      const input = e.currentTarget;
+      const files = Array.from(input.files || []);
+      input.value = '';
+      if (!files.length || !isAdmin()) return;
+      const out = document.getElementById('markResult');
+      const btn = document.getElementById('markPick');
+      btn.disabled = true;
+      out.textContent = 'קורא את הקבצים...';
+      try {
+        const marks = new Map();
+        const fileDocs = new Set();
+        const notes = [];
+        let minDate = '';
+        let maxDate = '';
+        for (const file of files) {
+          const parsed = await parseExcelFile(file, 'shipped');
+          if (!parsed.header || parsed.header.map.mark < 0) {
+            notes.push('בקובץ ' + file.name + ' אין עמודת איתור — דילגתי עליו.');
+            continue;
+          }
+          parsed.items.forEach(it => {
+            const doc = docKey(it);
+            if (!doc) return;
+            fileDocs.add(doc);
+            const k = dateKey(it.date);
+            if (k && (!minDate || k < dateKey(minDate))) minDate = it.date;
+            if (k && (!maxDate || k > dateKey(maxDate))) maxDate = it.date;
+            if (it.mark) marks.set(doc + '\n' + it.sku.toLowerCase(), [doc, it.sku]);
+          });
+        }
+        if (!fileDocs.size) {
+          out.innerHTML = notes.map(escapeHtml).join('<br>') || 'לא נמצאו שורות בקבצים.';
+          return;
+        }
+        out.textContent = 'מסמן בשרת...';
+        const r = marks.size ? await call('svr_file_marks', { p_marks: Array.from(marks.values()) }) : { rows: 0, docs: [] };
+        const found = new Set(r.docs || []);
+        const markDocs = new Set(Array.from(marks.values()).map(m => m[0]));
+        const skipped = Array.from(markDocs).filter(d => !found.has(d)).length;
+        // sales documents of the open package that the files do not have at all
+        const siteDocs = new Set();
+        state.shipped.forEach(f => rowsOf(f).forEach(it => { const d = docKey(it); if (d) siteDocs.add(d); }));
+        const missing = Array.from(siteDocs).filter(d => !fileDocs.has(d)).length;
+        const lines = [
+          'בקבצים: ' + countText(fileDocs.size, 'תעודה אחת', 'תעודות') + (minDate ? ', ' + minDate + (maxDate !== minDate ? ' עד ' + maxDate : '') : '') +
+            '. עם M: ' + fmtNum(markDocs.size) + '.',
+          '<b>' + countText(found.size, 'תעודה אחת באתר מסומנת', 'תעודות באתר מסומנות') + ' גלופה</b>' +
+            (r.rows ? ' (' + countText(r.rows, 'שורה אחת סומנה עכשיו', 'שורות סומנו עכשיו') + ')' : ' (כבר היו מסומנות)') + '.',
+          skipped ? countText(skipped, 'תעודה אחת', 'תעודות') + ' עם M בקובץ לא נמצאו באתר — דילגתי עליהן.' : '',
+          missing ? countText(missing, 'תעודת מכירה אחת', 'תעודות מכירה') + ' בחבילה הפתוחה לא מופיעות בקבצים שבחרת — אם יש בהן גלופה, צריך קובץ שמכסה גם אותן.' : 'כל תעודות המכירה בחבילה הפתוחה נמצאות בקבצים.'
+        ].concat(notes).filter(Boolean);
+        out.innerHTML = lines.map(l => '<div>' + (l.startsWith('<b>') ? l : escapeHtml(l)) + '</div>').join('');
+        if (r.rows) {
+          // the rows changed on the server: download the open package again
+          fileCache.clear();
+          await syncData(true);
+          renderAll();
+        }
+      } catch (err) {
+        out.textContent = '';
+        if (err.code !== 'AUTH') toast(errText(err), 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
     document.getElementById('btnRestore').addEventListener('click', () => {
       const n = state.hiddenSkus.size;
       if (!n) return;
