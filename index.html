@@ -1703,10 +1703,6 @@
     #glufaBody tr.glufa-cust td { background: #f3f6fb; color: var(--navy); font-weight: 800; font-size: 0.86rem; }
     .glufa-out { display: inline-block; margin-inline-start: 6px; padding: 1px 7px; border-radius: 999px; background: #eef0f4; color: var(--muted); font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
     .glufa-m { display: inline-block; margin-inline-start: 4px; padding: 0 6px; border-radius: 6px; background: var(--accent-light); color: var(--accent); font-size: 0.72rem; font-weight: 800; }
-    #markBox .mark-hint { margin: 0; padding: 0 12px 8px; color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
-    #markBox > .btn { margin: 0 12px 10px; }
-    #markBox .mark-result { padding: 0 12px; font-size: 0.84rem; line-height: 1.7; }
-    #markBox .mark-result:not(:empty) { padding-bottom: 10px; }
     .modal-box td.doc-no {
       font-weight: 800;
       color: var(--navy);
@@ -2235,14 +2231,6 @@
           </div>
           <div class="excl-prev" id="exclPreview"></div>
           <div id="exclList"></div>
-        </details>
-        <details class="trash-box admin-only upload-part" id="markBox">
-          <summary>השלמת איתור לקבצים קיימים</summary>
-          <p class="mark-hint">לקבצי מכירות שהועלו לפני שהכלי קרא את עמודת <b>איתור</b>. בוחרים קובץ מכירות מהפריוריטי (גם רחב יותר, גם כמה קבצים),
-            וכל שורה באתר עם אותה תעודה ואותו מק״ט מסומנת M — בכל החבילות. שום דבר לא מתווסף לדוחות, שום דבר אחר לא משתנה ולא נשלחת התראה.</p>
-          <input type="file" id="markFiles" accept=".xlsx,.xls,.xlsm,.csv" multiple hidden>
-          <button type="button" class="btn btn-ghost btn-sm" id="markPick">בחירת קובץ מכירות...</button>
-          <div class="mark-result" id="markResult"></div>
         </details>
         <details class="hint admin-only upload-part">
           <summary>איזה קבצים אפשר להעלות?</summary>
@@ -9076,77 +9064,6 @@ renderTable();
       }
       const open = e.target.closest('[data-glufa-idx]');
       if (open) renderGlufaLines(glufaCtx.list[Number(open.dataset.glufaIdx)].doc);
-    });
-
-    // ---------- temporary: השלמת איתור for the sales files uploaded before the column was read ----------
-    // Reads sales exports on this computer and sends the server only [document, SKU] of their M rows;
-    // the server marks the stored rows that match, in every package, and changes nothing else.
-    document.getElementById('markPick').addEventListener('click', () => document.getElementById('markFiles').click());
-    document.getElementById('markFiles').addEventListener('change', async (e) => {
-      const input = e.currentTarget;
-      const files = Array.from(input.files || []);
-      input.value = '';
-      if (!files.length || !isAdmin()) return;
-      const out = document.getElementById('markResult');
-      const btn = document.getElementById('markPick');
-      btn.disabled = true;
-      out.textContent = 'קורא את הקבצים...';
-      try {
-        const marks = new Map();
-        const fileDocs = new Set();
-        const notes = [];
-        let minDate = '';
-        let maxDate = '';
-        for (const file of files) {
-          const parsed = await parseExcelFile(file, 'shipped');
-          if (!parsed.header || parsed.header.map.mark < 0) {
-            notes.push('בקובץ ' + file.name + ' אין עמודת איתור — דילגתי עליו.');
-            continue;
-          }
-          parsed.items.forEach(it => {
-            const doc = docKey(it);
-            if (!doc) return;
-            fileDocs.add(doc);
-            const k = dateKey(it.date);
-            if (k && (!minDate || k < dateKey(minDate))) minDate = it.date;
-            if (k && (!maxDate || k > dateKey(maxDate))) maxDate = it.date;
-            if (it.mark) marks.set(doc + '\n' + it.sku.toLowerCase(), [doc, it.sku]);
-          });
-        }
-        if (!fileDocs.size) {
-          out.innerHTML = notes.map(escapeHtml).join('<br>') || 'לא נמצאו שורות בקבצים.';
-          return;
-        }
-        out.textContent = 'מסמן בשרת...';
-        const r = marks.size ? await call('svr_file_marks', { p_marks: Array.from(marks.values()) }) : { rows: 0, docs: [] };
-        const found = new Set(r.docs || []);
-        const markDocs = new Set(Array.from(marks.values()).map(m => m[0]));
-        const skipped = Array.from(markDocs).filter(d => !found.has(d)).length;
-        // sales documents of the open package that the files do not have at all
-        const siteDocs = new Set();
-        state.shipped.forEach(f => rowsOf(f).forEach(it => { const d = docKey(it); if (d) siteDocs.add(d); }));
-        const missing = Array.from(siteDocs).filter(d => !fileDocs.has(d)).length;
-        const lines = [
-          'בקבצים: ' + countText(fileDocs.size, 'תעודה אחת', 'תעודות') + (minDate ? ', ' + minDate + (maxDate !== minDate ? ' עד ' + maxDate : '') : '') +
-            '. עם M: ' + fmtNum(markDocs.size) + '.',
-          '<b>' + countText(found.size, 'תעודה אחת באתר מסומנת', 'תעודות באתר מסומנות') + ' גלופה</b>' +
-            (r.rows ? ' (' + countText(r.rows, 'שורה אחת סומנה עכשיו', 'שורות סומנו עכשיו') + ')' : ' (כבר היו מסומנות)') + '.',
-          skipped ? countText(skipped, 'תעודה אחת', 'תעודות') + ' עם M בקובץ לא נמצאו באתר — דילגתי עליהן.' : '',
-          missing ? countText(missing, 'תעודת מכירה אחת', 'תעודות מכירה') + ' בחבילה הפתוחה לא מופיעות בקבצים שבחרת — אם יש בהן גלופה, צריך קובץ שמכסה גם אותן.' : 'כל תעודות המכירה בחבילה הפתוחה נמצאות בקבצים.'
-        ].concat(notes).filter(Boolean);
-        out.innerHTML = lines.map(l => '<div>' + (l.startsWith('<b>') ? l : escapeHtml(l)) + '</div>').join('');
-        if (r.rows) {
-          // the rows changed on the server: download the open package again
-          fileCache.clear();
-          await syncData(true);
-          renderAll();
-        }
-      } catch (err) {
-        out.textContent = '';
-        if (err.code !== 'AUTH') toast(errText(err), 'err');
-      } finally {
-        btn.disabled = false;
-      }
     });
 
     document.getElementById('btnRestore').addEventListener('click', () => {
